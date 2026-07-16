@@ -8,8 +8,13 @@ useMobileSplitViewGuard()
 const { loggedIn } = useUserSession()
 const preferences = usePreferencesStore()
 
+// import.meta.client guard: this runs during SSR too (top-level watch with
+// immediate:true in <script setup>), where an internal $fetch wouldn't carry
+// the incoming request's session cookie and would 401 pointlessly - see
+// decisions.md. Preferences are only read client-side (tab open, editor
+// mount) anyway, so there's nothing SSR needs this for.
 watch(loggedIn, (isLoggedIn) => {
-  if (isLoggedIn) void preferences.load()
+  if (isLoggedIn && import.meta.client) void preferences.load()
 }, { immediate: true })
 </script>
 

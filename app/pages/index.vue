@@ -42,7 +42,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKeydown)
       <TabBar v-if="tabs.tabs.length" />
 
       <div class="min-h-0 flex-1">
-        <NoteEditor v-if="tabs.activeTab" :key="tabs.activeTab.path" :path="tabs.activeTab.path" />
+        <LazyNoteEditor v-if="tabs.activeTab" :key="tabs.activeTab.path" :path="tabs.activeTab.path" />
         <div v-else class="flex h-full items-center justify-center text-content-tertiary">
           Keine Note geöffnet
         </div>

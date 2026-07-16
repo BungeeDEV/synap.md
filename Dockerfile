@@ -17,11 +17,20 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup -S synap && adduser -S synap -G synap
+# su-exec drops root privileges in entrypoint.sh after it fixes /data
+# ownership - see entrypoint.sh for why the container can't just start as
+# `synap` directly.
+RUN apk add --no-cache su-exec && \
+    addgroup -S synap && adduser -S synap -G synap
 
 COPY --from=build /app/.output ./.output
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-USER synap
+# No `USER synap` here - the container must start as root so entrypoint.sh
+# can chown the mounted /data volume, then it drops to `synap` itself via
+# su-exec before the app process (CMD below) runs.
 
 EXPOSE 3000
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", ".output/server/index.mjs"]

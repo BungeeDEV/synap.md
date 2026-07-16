@@ -41,6 +41,15 @@ export default defineNuxtConfig({
         '@lezer/highlight',
         'lucide-vue-next'
       ]
+    },
+    build: {
+      // The CodeMirror stack (state+view+commands+autocomplete+lang-markdown
+      // +lezer-highlight) is its own lazy chunk (index.vue uses
+      // <LazyNoteEditor>, not <NoteEditor>) and only loads once a note is
+      // actually opened - it just doesn't fit Rollup's generic 500kB default
+      // on its own. Raised rather than silenced entirely so a genuinely
+      // oversized *eager* chunk would still warn.
+      chunkSizeWarningLimit: 600
     }
   },
 
