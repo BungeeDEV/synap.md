@@ -1,0 +1,37 @@
+# Without this, the build stage's `COPY . .` overwrites the node_modules
+# that `pnpm install --frozen-lockfile` just built inside the container with
+# the host's own node_modules (wrong platform binaries, and pnpm's symlinks
+# there point at absolute host paths like C:/Users/.../node_modules/.pnpm/...
+# which don't exist in the container) - this is what caused `pnpm build` to
+# fail with "Cannot find package '@nuxt/cli'", nothing to do with the app
+# itself. See decisions.md.
+node_modules
+
+# Nuxt dev/build outputs - the image builds its own via `pnpm build`
+.output
+.nuxt
+.nitro
+.cache
+dist
+
+# Local dev vault + SQLite index - real (or test) user data that must never
+# ship inside an image
+.data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+.git
+logs
+*.log
+
+.DS_Store
+.fleet
+.idea
+.claude
+
+.env
+.env.*
+!.env.example

@@ -4,10 +4,14 @@ import Database from 'better-sqlite3'
 
 let db: Database.Database | null = null
 let initPromise: Promise<Database.Database> | null = null
+let initError: Error | null = null
 
 /** Returns the already-initialized DB connection. Throws if initDb() hasn't run yet. */
 export function getDb(): Database.Database {
   if (!db) {
+    if (initError) {
+      throw new Error(`Database not initialized - initDb() failed: ${initError.message}. See earlier log output for the full stack trace.`)
+    }
     throw new Error('Database not initialized - initDb() must run before getDb() is called')
   }
   return db
@@ -34,7 +38,14 @@ export async function initDb(): Promise<Database.Database> {
       instance.pragma('journal_mode = WAL')
       instance.pragma('foreign_keys = ON')
 
-      await runMigrations(instance)
+      try {
+        await runMigrations(instance)
+      } catch (err) {
+        instance.close()
+        initError = err instanceof Error ? err : new Error(String(err))
+        console.error('Database migration failed:', initError.stack ?? initError.message)
+        throw initError
+      }
 
       db = instance
       return instance
