@@ -29,7 +29,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       <OutlinePanel v-else />
     </div>
 
-    <div class="flex shrink-0 items-center justify-between border-t border-border px-2 py-1.5 pb-safe-b">
+    <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-t border-border px-2 py-1.5 pb-safe-b">
       <span class="truncate text-xs text-content-tertiary">{{ vaultTree.stats.files }} Dateien, {{ vaultTree.stats.folders }} Ordner</span>
       <div class="flex shrink-0 items-center gap-1">
         <SidebarPanelSwitcher />

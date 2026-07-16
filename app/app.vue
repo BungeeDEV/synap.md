@@ -19,7 +19,7 @@ watch(loggedIn, (isLoggedIn) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base font-sans text-content-primary">
+  <div class="h-app flex flex-col overflow-hidden bg-base font-sans text-content-primary">
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <ToastContainer />

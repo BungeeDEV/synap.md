@@ -37,7 +37,7 @@ const buttons = [
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-0.5 overflow-x-auto">
+  <div class="flex min-w-0 touch-manipulation select-none items-center gap-0.5 overflow-x-auto">
     <button
       v-for="button in buttons"
       :key="button.label"

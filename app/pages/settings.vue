@@ -33,8 +33,8 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
 </script>
 
 <template>
-  <div class="flex h-screen w-screen overflow-hidden bg-base text-content-primary">
-    <aside class="flex w-64 shrink-0 flex-col border-r border-border bg-surface-1 text-sm">
+  <div class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary">
+    <aside class="flex w-64 shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-sm">
       <div class="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
         <button
           type="button"
@@ -62,7 +62,7 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
       </nav>
     </aside>
 
-    <main class="min-h-0 flex-1 overflow-y-auto p-8">
+    <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8">
       <div class="mx-auto max-w-2xl">
         <component :is="activeTab.component" />
       </div>

@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
         class="w-full border-b border-border bg-transparent px-4 py-4 text-lg text-content-primary placeholder:text-content-tertiary focus:outline-none md:py-3 md:text-base"
       >
 
-      <div ref="resultsRef" class="min-h-0 flex-1 overflow-y-auto p-2 md:max-h-96 md:flex-none">
+      <div ref="resultsRef" class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 md:max-h-96 md:flex-none">
         <template v-if="hasAnyResults">
           <div class="mb-1">
             <p class="px-2 py-1 text-xs font-medium tracking-wider text-content-tertiary uppercase">
@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
                 <button
                   :ref="(el) => (resultRefs[flatIndexOf('file', i)] = el as HTMLElement)"
                   type="button"
-                  class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors duration-150"
+                  class="flex w-full touch-manipulation items-center gap-2 rounded-md px-2 py-2 text-left transition-colors duration-150"
                   :class="isSelected('file', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
                   @click="openResult(flatResults[flatIndexOf('file', i)])"
                   @mouseenter="selectedIndex = flatIndexOf('file', i)"
@@ -186,7 +186,7 @@ onBeforeUnmount(() => {
                 <button
                   :ref="(el) => (resultRefs[flatIndexOf('content', i)] = el as HTMLElement)"
                   type="button"
-                  class="flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left transition-colors duration-150"
+                  class="flex w-full touch-manipulation flex-col gap-0.5 rounded-md px-2 py-2 text-left transition-colors duration-150"
                   :class="isSelected('content', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
                   @click="openResult(flatResults[flatIndexOf('content', i)])"
                   @mouseenter="selectedIndex = flatIndexOf('content', i)"

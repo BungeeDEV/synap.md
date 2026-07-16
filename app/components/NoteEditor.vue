@@ -184,6 +184,7 @@ onMounted(() => {
           },
           '.cm-scroller': {
             overflow: 'auto',
+            overscrollBehavior: 'contain',
             fontFamily: fontFamily.mono.join(', '),
             fontSize: `${preferences.preferences.editorFontSize}px`
           },

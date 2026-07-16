@@ -8,7 +8,7 @@ const tabs = useTabsStore()
 </script>
 
 <template>
-  <header class="flex h-9 shrink-0 items-center justify-between gap-1 border-b border-border bg-surface-1 px-1 pt-safe-t md:hidden">
+  <header class="flex h-9 shrink-0 touch-manipulation select-none items-center justify-between gap-1 border-b border-border bg-surface-1 px-1 pt-safe-t md:hidden">
     <button
       type="button"
       class="shrink-0 rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"

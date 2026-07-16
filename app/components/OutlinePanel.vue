@@ -59,7 +59,7 @@ function jumpToHeading(heading: Heading): void {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div class="flex h-full min-h-0 touch-manipulation select-none flex-col">
     <div class="flex h-9 shrink-0 items-center justify-between border-b border-border px-2">
       <span class="text-xs font-medium tracking-wider text-content-tertiary uppercase">Outline</span>
       <button
@@ -83,7 +83,7 @@ function jumpToHeading(heading: Heading): void {
         >
       </div>
 
-      <div class="flex-1 overflow-y-auto p-1">
+      <div class="flex-1 overflow-y-auto overscroll-contain p-1">
         <p v-if="!filteredHeadings.length" class="p-2 text-sm text-content-tertiary">
           Keine Überschriften gefunden
         </p>

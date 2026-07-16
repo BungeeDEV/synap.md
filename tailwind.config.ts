@@ -34,6 +34,13 @@ export default {
       boxShadow: {
         float: '0 20px 60px rgba(0,0,0,0.5)'
       },
+      height: {
+        // 100dvh instead of 100vh: vh is computed against the largest
+        // possible viewport and doesn't shrink when the mobile browser's
+        // address bar is showing, leaving a gap at the bottom; dvh tracks
+        // the actual visible viewport as browser chrome shows/hides.
+        app: '100dvh'
+      },
       maxHeight: {
         // Caps modal-style panels (e.g. MoveToDialog's folder list) so they
         // never touch the viewport edges, without an arbitrary [80vh] value.

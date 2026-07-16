@@ -25,7 +25,7 @@ function confirmClose(): void {
 </script>
 
 <template>
-  <div class="flex h-9 shrink-0 overflow-x-auto border-b border-border bg-surface-1 text-sm">
+  <div class="flex h-9 shrink-0 touch-manipulation select-none overflow-x-auto border-b border-border bg-surface-1 text-sm">
     <button
       v-for="tab in tabs.tabs"
       :key="tab.path"

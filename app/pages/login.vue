@@ -28,7 +28,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-base p-4">
+  <main class="flex min-h-0 flex-1 items-center justify-center overflow-y-auto overscroll-contain bg-base p-4">
     <form class="flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border-strong bg-surface-1 p-6" @submit.prevent="handleSubmit">
       <h1 class="text-2xl font-semibold tracking-tight text-content-primary">
         synap.md

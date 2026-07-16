@@ -371,7 +371,7 @@ function isDragging(node: VaultTreeNode): boolean {
 </script>
 
 <template>
-  <div v-if="isRoot" class="flex h-full flex-col text-sm text-content-primary">
+  <div v-if="isRoot" class="flex h-full select-none flex-col text-sm text-content-primary touch-manipulation">
     <div class="flex items-center gap-1 border-b border-border p-2">
       <button
         type="button"
@@ -454,7 +454,7 @@ function isDragging(node: VaultTreeNode): boolean {
       {{ vaultTree.error }}
     </p>
 
-    <div class="flex-1 overflow-y-auto p-1">
+    <div class="flex-1 overflow-y-auto overscroll-contain p-1">
       <VaultTree :nodes="displayNodes" parent-path="" />
     </div>
 

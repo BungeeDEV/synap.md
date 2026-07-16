@@ -5,7 +5,7 @@ const sidebarPanel = useSidebarPanelStore()
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
+  <div class="flex touch-manipulation select-none items-center gap-1">
     <button
       type="button"
       class="rounded-full p-2.5 transition-colors duration-150 md:p-1.5"

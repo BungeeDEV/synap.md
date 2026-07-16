@@ -1,2 +1,27 @@
 @import "tailwindcss";
 @config "../../../tailwind.config.ts";
+
+/*
+ * App-shell mobile behavior (viewport/scroll architecture + native-app
+ * feel). This is the one sanctioned exception to STYLEGUIDE.md's
+ * Tailwind-only rule (see section 1): html/body aren't targetable with a
+ * utility class in a component template, so their reset lives here as a
+ * regular @layer base block, not a new style source. `bg-base` is applied
+ * via @apply rather than a hardcoded hex so it can never drift from the
+ * `base` token in tailwind.config.ts.
+ */
+@layer base {
+  html,
+  body {
+    height: 100%;
+    /* html/body are the fixed frame, not a scroll container - actual
+       scrolling happens only inside individual panels (sidebar, editor,
+       command palette, ...). This is what stops the whole page from
+       rubber-banding/bouncing on iOS/Android and eliminates the white
+       edges that bounce exposes. */
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    @apply bg-base;
+  }
+}

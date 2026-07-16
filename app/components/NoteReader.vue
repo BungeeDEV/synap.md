@@ -42,7 +42,7 @@ function onClick(event: MouseEvent): void {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto px-6 py-6">
+  <div class="h-full overflow-y-auto overscroll-contain px-6 py-6">
     <p v-if="loading && !html" class="text-sm text-content-tertiary">
       Lädt…
     </p>

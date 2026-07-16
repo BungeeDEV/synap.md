@@ -19,7 +19,7 @@ const modes = computed(() => isMobile.value ? allModes.filter((mode) => mode.val
 </script>
 
 <template>
-  <div class="inline-flex items-center gap-0.5 rounded-full border border-border p-0.5">
+  <div class="inline-flex touch-manipulation select-none items-center gap-0.5 rounded-full border border-border p-0.5">
     <button
       v-for="mode in modes"
       :key="mode.value"
