@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    # Dokploy's Traefik instance handles all inbound routing (via the
+    # Domains tab) and expects to reach the container on its internal
+    # network - do NOT publish 80/443 (or anything) to the host here.
+    expose:
+      - "${PORT:-3000}"
+    environment:
+      # Must be NUXT_-prefixed: Nitro only re-reads runtimeConfig values from
+      # process.env at container start (and per-request) when the env var
+      # follows its NUXT_<KEY> convention - a bare VAULT_PATH/DATA_PATH would
+      # silently get ignored at runtime (only affects the build-time
+      # default), leaving the /data volume below unused. See decisions.md.
+      NUXT_VAULT_PATH: ${NUXT_VAULT_PATH:-/data/vault}
+      NUXT_DATA_PATH: ${NUXT_DATA_PATH:-/data/app.db}
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD}
+      PORT: ${PORT:-3000}
+      NUXT_TRASH_RETENTION_DAYS: ${NUXT_TRASH_RETENTION_DAYS:-30}
+      NUXT_MAX_ATTACHMENT_SIZE_MB: ${NUXT_MAX_ATTACHMENT_SIZE_MB:-10}
+    volumes:
+      - data:/data
+    # Only needed if "Isolated Deployments" is OFF in the Dokploy project
+    # settings - in that case, uncomment so this service can be reached by
+    # Traefik on the shared network:
+    # networks:
+    #   dokploy-network:
+    #     external: true
+
+volumes:
+  data:
+
+# networks:
+#   dokploy-network:
+#     external: true
