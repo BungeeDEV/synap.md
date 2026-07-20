@@ -231,7 +231,9 @@ watch(
     </div>
 
     <div class="grid min-h-0 flex-1" :class="mode === 'split' ? 'grid-cols-2 gap-4' : 'grid-cols-1'">
-      <div ref="editorContainer" class="min-h-0" :class="mode === 'reader' ? 'hidden' : 'h-full'" />
+      <div class="flex min-h-0 justify-center overflow-hidden" :class="mode === 'reader' ? 'hidden' : 'h-full'">
+        <div ref="editorContainer" class="h-full w-full max-w-3xl" />
+      </div>
       <NoteReader v-if="mode !== 'code'" :path="props.path" class="min-h-0" />
     </div>
 
@@ -239,9 +241,7 @@ watch(
 
     <SlashCommandMenu />
 
-    <p v-if="saving" class="absolute right-2 bottom-2 text-xs text-content-tertiary">
-      Speichert…
-    </p>
+    <StatusBar :content="tab?.content ?? ''" :saving="saving" :conflict="!!conflict" />
 
     <div v-if="conflict" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-md">
       <div class="w-full max-w-md rounded-xl border border-border-strong bg-surface-1 p-6 text-sm text-content-primary shadow-float">

@@ -46,6 +46,6 @@ function onClick(event: MouseEvent): void {
     <p v-if="loading && !html" class="text-sm text-content-tertiary">
       Lädt…
     </p>
-    <div v-else ref="container" class="prose prose-sm max-w-none" @click="onClick" v-html="html" />
+    <div v-else ref="container" class="prose prose-sm mx-auto max-w-3xl" @click="onClick" v-html="html" />
   </div>
 </template>

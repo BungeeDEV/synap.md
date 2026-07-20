@@ -44,7 +44,7 @@ const contextMenu = useState<{ node: VaultTreeNode, x: number, y: number } | nul
 const pendingDelete = useState<VaultTreeNode | null>('vaultTreePendingDelete', () => null)
 const moveDialogTarget = useState<VaultTreeNode | null>('vaultTreeMoveDialogTarget', () => null)
 
-interface TreeEditState {
+export interface TreeEditState {
   kind: 'create-file' | 'create-folder' | 'rename'
   parentPath: string
   node?: VaultTreeNode
