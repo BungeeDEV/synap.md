@@ -34,15 +34,15 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
 
 <template>
   <div class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary">
-    <aside class="flex w-64 shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-sm">
-      <div class="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
+    <aside class="flex w-72 shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-base">
+      <div class="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
         <button
           type="button"
-          class="rounded-md p-1 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
+          class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
           title="Zurück zum Editor"
           @click="navigateTo('/')"
         >
-          <ArrowLeft class="h-4 w-4" stroke-width="1.5" />
+          <ArrowLeft class="h-5 w-5" stroke-width="1.5" />
         </button>
         <span class="text-content-primary">Einstellungen</span>
       </div>
@@ -52,11 +52,11 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
-          class="flex w-full items-center gap-2 px-2 py-1.5 text-left"
+          class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
           :class="tab.id === activeTabId ? 'bg-surface-2 rounded-md text-content-primary' : 'rounded-md text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]'"
           @click="activeTabId = tab.id"
         >
-          <component :is="tab.icon" class="h-4 w-4 shrink-0" stroke-width="1.5" />
+          <component :is="tab.icon" class="h-5 w-5 shrink-0" stroke-width="1.5" />
           {{ tab.label }}
         </button>
       </nav>

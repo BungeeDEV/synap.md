@@ -26,12 +26,12 @@ function onKeydown(event: KeyboardEvent): void {
       ref="inputRef"
       :value="props.modelValue"
       type="text"
-      class="w-full rounded bg-surface-2 px-1 py-0.5 text-sm text-content-primary focus:outline-none focus:ring-1 focus:ring-accent/50"
+      class="w-full rounded bg-surface-2 px-1.5 py-1 text-base text-content-primary focus:outline-none focus:ring-1 focus:ring-accent/50"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       @keydown="onKeydown"
       @click.stop
     >
-    <p v-if="props.error" class="mt-0.5 text-xs text-danger">
+    <p v-if="props.error" class="mt-0.5 text-sm text-danger">
       {{ props.error }}
     </p>
   </div>

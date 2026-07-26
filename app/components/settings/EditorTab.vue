@@ -51,11 +51,11 @@ async function setLineWrap(event: Event): Promise<void> {
           :key="mode.value"
           type="button"
           :aria-pressed="preferences.preferences.defaultViewMode === mode.value"
-          class="flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors duration-150"
+          class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-base transition-colors duration-150"
           :class="preferences.preferences.defaultViewMode === mode.value ? 'bg-surface-2 text-content-primary' : 'text-content-tertiary hover:text-content-secondary'"
           @click="setDefaultViewMode(mode.value)"
         >
-          <component :is="mode.icon" class="h-4 w-4" stroke-width="1.5" />
+          <component :is="mode.icon" class="h-5 w-5" stroke-width="1.5" />
           {{ mode.label }}
         </button>
       </div>
@@ -91,10 +91,10 @@ async function setLineWrap(event: Event): Promise<void> {
           @change="setLineWrap"
         >
         <span
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+          class="flex h-5 w-5 shrink-0 items-center justify-center rounded"
           :class="preferences.preferences.lineWrap ? 'bg-accent' : 'border border-white/20'"
         >
-          <Check v-if="preferences.preferences.lineWrap" class="h-3 w-3 text-white" stroke-width="2" />
+          <Check v-if="preferences.preferences.lineWrap" class="h-3.5 w-3.5 text-white" stroke-width="2" />
         </span>
         Zeilenumbruch im Editor aktivieren
       </label>

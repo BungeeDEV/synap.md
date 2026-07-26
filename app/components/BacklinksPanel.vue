@@ -28,14 +28,14 @@ function open(path: string): void {
 
 <template>
   <div v-if="!loading && backlinks.length" class="max-h-32 shrink-0 overflow-y-auto overscroll-contain border-t border-border px-4 py-2">
-    <p class="mb-1.5 text-xs font-medium tracking-wider text-content-tertiary uppercase">
+    <p class="mb-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
       Erwähnt in
     </p>
     <ul class="flex flex-wrap gap-2">
       <li v-for="link in backlinks" :key="link.path">
         <button
           type="button"
-          class="touch-manipulation rounded-full bg-surface-2 px-3 py-1 text-sm text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+          class="touch-manipulation rounded-full bg-surface-2 px-3.5 py-1.5 text-base text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
           @click="open(link.path)"
         >
           {{ link.title }}

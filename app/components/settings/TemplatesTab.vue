@@ -147,14 +147,14 @@ const templateDropdownOptions = computed(() => templates.value)
             class="rounded-md border border-border bg-surface-2 px-3 py-2 font-mono text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
           >
         </label>
-        <p class="text-xs text-content-tertiary">
+        <p class="text-sm text-content-tertiary">
           Heute: <span class="font-mono text-content-secondary">{{ todayPreview }}.md</span>
         </p>
 
         <button
           type="button"
           :disabled="savingDailyNotes"
-          class="self-start rounded-md bg-accent px-3 py-1.5 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="self-start rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
           @click="saveDailyNotesSettings"
         >
           Speichern
@@ -183,10 +183,10 @@ const templateDropdownOptions = computed(() => templates.value)
         Vorlagen verwalten
         <button
           type="button"
-          class="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-normal text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
+          class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-base font-normal text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
           @click="startCreateTemplate"
         >
-          <FilePlus class="h-4 w-4" stroke-width="1.5" />
+          <FilePlus class="h-5 w-5" stroke-width="1.5" />
           Neue Vorlage
         </button>
       </h2>
@@ -206,8 +206,8 @@ const templateDropdownOptions = computed(() => templates.value)
         </li>
 
         <li v-if="!creatingTemplate && templates.length === 0" class="flex flex-col items-center gap-2 py-12 text-center">
-          <FilePlus class="h-6 w-6 text-content-tertiary" stroke-width="1.5" />
-          <p class="text-sm text-content-tertiary">
+          <FilePlus class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
+          <p class="text-base text-content-tertiary">
             Noch keine Vorlagen vorhanden.
           </p>
         </li>
@@ -215,7 +215,7 @@ const templateDropdownOptions = computed(() => templates.value)
         <li v-for="template in templates" :key="template.path" class="flex items-center justify-between gap-4 py-2">
           <button
             type="button"
-            class="min-w-0 flex-1 truncate rounded-md px-2 py-1 text-left text-sm text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
+            class="min-w-0 flex-1 truncate rounded-md px-2.5 py-1.5 text-left text-base text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
             @click="openTemplate(template)"
           >
             {{ template.name }}
@@ -223,10 +223,10 @@ const templateDropdownOptions = computed(() => templates.value)
           <button
             type="button"
             title="Vorlage löschen"
-            class="shrink-0 rounded-md p-1.5 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
+            class="shrink-0 rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
             @click="pendingDelete = template"
           >
-            <Trash2 class="h-4 w-4" stroke-width="1.5" />
+            <Trash2 class="h-5 w-5" stroke-width="1.5" />
           </button>
         </li>
       </ul>

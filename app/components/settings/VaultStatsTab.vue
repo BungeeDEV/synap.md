@@ -49,7 +49,7 @@ function formatBytes(bytes: number): string {
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.noteCount }}
         </p>
-        <p class="text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
           Notes
         </p>
       </div>
@@ -57,7 +57,7 @@ function formatBytes(bytes: number): string {
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.folderCount }}
         </p>
-        <p class="text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
           Ordner
         </p>
       </div>
@@ -65,7 +65,7 @@ function formatBytes(bytes: number): string {
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.attachmentCount }}
         </p>
-        <p class="text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
           Anhänge
         </p>
       </div>
@@ -73,7 +73,7 @@ function formatBytes(bytes: number): string {
         <p class="text-2xl font-semibold text-content-primary">
           {{ formatBytes(stats.attachmentSizeBytes) }}
         </p>
-        <p class="text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
           Anhänge-Größe
         </p>
       </div>
@@ -81,7 +81,7 @@ function formatBytes(bytes: number): string {
         <p class="text-2xl font-semibold text-content-primary">
           {{ formatBytes(stats.totalSizeBytes) }}
         </p>
-        <p class="text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
           Gesamtgröße
         </p>
       </div>

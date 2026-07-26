@@ -43,10 +43,10 @@ const buttons = [
       :key="button.label"
       type="button"
       :title="button.label"
-      class="shrink-0 rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+      class="shrink-0 rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
       @click="button.action()"
     >
-      <component :is="button.icon" class="h-4 w-4" stroke-width="1.5" />
+      <component :is="button.icon" class="h-5 w-5" stroke-width="1.5" />
     </button>
   </div>
 </template>

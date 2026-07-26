@@ -22,7 +22,7 @@ const statusDotClass = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-7 shrink-0 touch-manipulation select-none items-center justify-between border-t border-border bg-surface-1 px-3 text-xs text-content-tertiary">
+  <div class="flex h-9 shrink-0 touch-manipulation select-none items-center justify-between border-t border-border bg-surface-1 px-3 text-sm text-content-tertiary">
     <span>{{ wordCount }} Wörter · {{ charCount }} Zeichen</span>
     <span class="flex items-center gap-1.5">
       <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="statusDotClass" />

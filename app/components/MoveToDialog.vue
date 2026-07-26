@@ -61,7 +61,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <h2 class="font-semibold text-content-primary">
           Verschieben nach…
         </h2>
-        <p class="mt-0.5 truncate text-xs text-content-tertiary">
+        <p class="mt-0.5 truncate text-sm text-content-tertiary">
           {{ node.name }}
         </p>
       </div>
@@ -72,11 +72,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             <button
               type="button"
               :disabled="isDisabled(option.path)"
-              class="flex w-full items-center gap-1.5 rounded-md py-2 pr-2 text-left text-sm transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+              class="flex w-full items-center gap-2 rounded-md py-2.5 pr-2 text-left text-base transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
               :class="[indentClass(option.depth), selectedFolder === option.path ? 'bg-surface-2 text-content-primary' : 'text-content-secondary hover:bg-white/[0.04]']"
               @click="selectedFolder = option.path"
             >
-              <Folder class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
+              <Folder class="h-5 w-5 shrink-0 text-content-tertiary" stroke-width="1.5" />
               <span class="truncate">{{ option.name }}</span>
             </button>
           </li>
@@ -86,7 +86,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       <div class="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-3">
         <button
           type="button"
-          class="rounded-md border border-border-strong px-3 py-1.5 text-content-primary transition-colors duration-150 hover:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-accent/50"
+          class="rounded-md border border-border-strong px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-accent/50"
           @click="emit('cancel')"
         >
           Abbrechen
@@ -94,7 +94,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <button
           type="button"
           :disabled="isDisabled(selectedFolder)"
-          class="rounded-md bg-accent px-3 py-1.5 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
           @click="emit('confirm', selectedFolder)"
         >
           Verschieben

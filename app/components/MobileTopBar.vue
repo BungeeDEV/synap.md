@@ -8,36 +8,36 @@ const tabs = useTabsStore()
 </script>
 
 <template>
-  <header class="flex h-9 shrink-0 touch-manipulation select-none items-center justify-between gap-1 border-b border-border bg-surface-1 px-1 pt-safe-t md:hidden">
+  <header class="flex h-12 shrink-0 touch-manipulation select-none items-center justify-between gap-1 border-b border-border bg-surface-1 px-1 pt-safe-t md:hidden">
     <button
       type="button"
-      class="shrink-0 rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
+      class="shrink-0 rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
       title="Menü"
       @click="mobileNav.toggle()"
     >
-      <Menu class="h-4 w-4" stroke-width="1.5" />
+      <Menu class="h-5 w-5" stroke-width="1.5" />
     </button>
 
-    <span class="min-w-0 flex-1 truncate text-center text-xs text-content-tertiary">
+    <span class="min-w-0 flex-1 truncate text-center text-sm text-content-tertiary">
       {{ tabs.activeTab?.title ?? 'synap.md' }}
     </span>
 
     <div class="flex shrink-0 items-center gap-0.5">
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
         title="Suche"
         @click="emit('openCommandPalette')"
       >
-        <Search class="h-4 w-4" stroke-width="1.5" />
+        <Search class="h-5 w-5" stroke-width="1.5" />
       </button>
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
         title="Log out"
         @click="emit('logout')"
       >
-        <LogOut class="h-4 w-4" stroke-width="1.5" />
+        <LogOut class="h-5 w-5" stroke-width="1.5" />
       </button>
     </div>
   </header>

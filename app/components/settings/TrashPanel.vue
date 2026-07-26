@@ -75,8 +75,8 @@ async function confirmDeletePermanent(): Promise<void> {
     </p>
 
     <div v-else-if="entries.length === 0" class="flex flex-col items-center gap-2 py-12 text-center">
-      <Trash2 class="h-6 w-6 text-content-tertiary" stroke-width="1.5" />
-      <p class="text-sm text-content-tertiary">
+      <Trash2 class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
+      <p class="text-base text-content-tertiary">
         Der Papierkorb ist leer.
       </p>
     </div>
@@ -84,10 +84,10 @@ async function confirmDeletePermanent(): Promise<void> {
     <ul v-else class="divide-y divide-border">
       <li v-for="entry in entries" :key="entry.id" class="flex items-center justify-between gap-4 py-3">
         <div class="min-w-0">
-          <p class="truncate text-sm text-content-primary">
+          <p class="truncate text-base text-content-primary">
             {{ nameOf(entry.originalPath) }}
           </p>
-          <p class="truncate text-xs text-content-tertiary">
+          <p class="truncate text-sm text-content-tertiary">
             {{ entry.originalPath }} · gelöscht vor {{ daysAgo(entry.deletedAt) }} {{ daysAgo(entry.deletedAt) === 1 ? 'Tag' : 'Tagen' }}
             · wird in {{ entry.daysRemaining }} {{ entry.daysRemaining === 1 ? 'Tag' : 'Tagen' }} endgültig gelöscht
           </p>
@@ -96,18 +96,18 @@ async function confirmDeletePermanent(): Promise<void> {
           <button
             type="button"
             title="Wiederherstellen"
-            class="rounded-md p-1.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+            class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
             @click="restore(entry)"
           >
-            <RotateCcw class="h-4 w-4" stroke-width="1.5" />
+            <RotateCcw class="h-5 w-5" stroke-width="1.5" />
           </button>
           <button
             type="button"
             title="Endgültig löschen"
-            class="rounded-md p-1.5 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
+            class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
             @click="pendingDelete = entry"
           >
-            <Trash2 class="h-4 w-4" stroke-width="1.5" />
+            <Trash2 class="h-5 w-5" stroke-width="1.5" />
           </button>
         </div>
       </li>

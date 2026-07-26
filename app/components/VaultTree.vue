@@ -371,56 +371,56 @@ function isDragging(node: VaultTreeNode): boolean {
 </script>
 
 <template>
-  <div v-if="isRoot" class="flex h-full select-none flex-col text-sm text-content-primary touch-manipulation">
+  <div v-if="isRoot" class="flex h-full select-none flex-col text-base text-content-primary touch-manipulation">
     <div class="flex items-center gap-1 border-b border-border p-2">
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         title="Neue Datei"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
-        <FilePlus class="h-4 w-4" stroke-width="1.5" />
+        <FilePlus class="h-5 w-5" stroke-width="1.5" />
       </button>
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         title="Neuer Ordner"
         @click="startCreate('create-folder', vaultTree.selectedFolder)"
       >
-        <FolderPlus class="h-4 w-4" stroke-width="1.5" />
+        <FolderPlus class="h-5 w-5" stroke-width="1.5" />
       </button>
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         title="Heutige Note öffnen"
         @click="openDailyNote"
       >
-        <Calendar class="h-4 w-4" stroke-width="1.5" />
+        <Calendar class="h-5 w-5" stroke-width="1.5" />
       </button>
       <div class="relative">
         <button
           type="button"
-          class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+          class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
           title="Neu aus Vorlage"
           @click="toggleTemplateMenu"
         >
-          <LayoutTemplate class="h-4 w-4" stroke-width="1.5" />
+          <LayoutTemplate class="h-5 w-5" stroke-width="1.5" />
         </button>
 
         <template v-if="showTemplateMenu">
           <div class="fixed inset-0 z-40" @click="closeTemplateMenu" />
           <div class="absolute top-full left-0 z-50 mt-1 min-w-40 rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float">
-            <p v-if="loadingTemplates" class="px-3 py-1.5 text-xs text-content-tertiary">
+            <p v-if="loadingTemplates" class="px-3.5 py-2 text-sm text-content-tertiary">
               Lädt…
             </p>
-            <p v-else-if="templateOptions.length === 0" class="px-3 py-1.5 text-xs text-content-tertiary">
+            <p v-else-if="templateOptions.length === 0" class="px-3.5 py-2 text-sm text-content-tertiary">
               Keine Vorlagen vorhanden
             </p>
             <button
               v-for="template in templateOptions"
               :key="template.path"
               type="button"
-              class="flex w-full items-center px-3 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2"
+              class="flex w-full items-center px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
               @click="pickTemplate(template)"
             >
               {{ template.name }}
@@ -430,20 +430,20 @@ function isDragging(node: VaultTreeNode): boolean {
       </div>
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         :title="sortTitle"
         @click="vaultSort.cycle()"
       >
-        <ArrowUpDown class="h-4 w-4" stroke-width="1.5" />
+        <ArrowUpDown class="h-5 w-5" stroke-width="1.5" />
       </button>
       <button
         type="button"
-        class="ml-auto rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="ml-auto rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         :title="vaultTree.allExpanded ? 'Alles einklappen' : 'Alles ausklappen'"
         @click="vaultTree.toggleExpandAll()"
       >
-        <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-4 w-4" stroke-width="1.5" />
-        <ChevronsUpDown v-else class="h-4 w-4" stroke-width="1.5" />
+        <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-5 w-5" stroke-width="1.5" />
+        <ChevronsUpDown v-else class="h-5 w-5" stroke-width="1.5" />
       </button>
     </div>
 
@@ -467,44 +467,44 @@ function isDragging(node: VaultTreeNode): boolean {
         <button
           v-if="contextMenu.node.type === 'folder'"
           type="button"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
           @click="startCreate('create-file', contextMenu.node.path)"
         >
-          <FilePlus class="h-4 w-4 text-content-tertiary" stroke-width="1.5" />
+          <FilePlus class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
           Neue Note hier
         </button>
         <button
           v-if="contextMenu.node.type === 'folder'"
           type="button"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
           @click="startCreate('create-folder', contextMenu.node.path)"
         >
-          <FolderPlus class="h-4 w-4 text-content-tertiary" stroke-width="1.5" />
+          <FolderPlus class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
           Neuer Unterordner
         </button>
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
           @click="startRename(contextMenu.node)"
         >
-          <Pencil class="h-4 w-4 text-content-tertiary" stroke-width="1.5" />
+          <Pencil class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
           Umbenennen
         </button>
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
           @click="openMoveDialog(contextMenu.node)"
         >
-          <Move class="h-4 w-4 text-content-tertiary" stroke-width="1.5" />
+          <Move class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
           Verschieben nach…
         </button>
         <button
           v-if="contextMenu.node.type === 'file'"
           type="button"
-          class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-danger transition-colors duration-150 hover:bg-surface-2"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-danger transition-colors duration-150 hover:bg-surface-2"
           @click="requestDelete(contextMenu.node)"
         >
-          <Trash2 class="h-4 w-4" stroke-width="1.5" />
+          <Trash2 class="h-5 w-5" stroke-width="1.5" />
           Löschen
         </button>
       </div>
@@ -529,10 +529,10 @@ function isDragging(node: VaultTreeNode): boolean {
 
   <ul v-else class="space-y-0.5">
     <li v-if="editState && editState.kind !== 'rename' && editState.parentPath === props.parentPath">
-      <div class="flex items-center gap-1.5 rounded-md px-2 py-1.5">
-        <span class="flex h-4 w-4 shrink-0 items-center justify-center text-content-tertiary">
-          <Folder v-if="editState.kind === 'create-folder'" class="h-4 w-4" stroke-width="1.5" />
-          <File v-else class="h-4 w-4" stroke-width="1.5" />
+      <div class="flex items-center gap-2 rounded-md px-2.5 py-2">
+        <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
+          <Folder v-if="editState.kind === 'create-folder'" class="h-5 w-5" stroke-width="1.5" />
+          <File v-else class="h-5 w-5" stroke-width="1.5" />
         </span>
         <TreeInlineInput
           :model-value="editState.value"
@@ -547,14 +547,14 @@ function isDragging(node: VaultTreeNode): boolean {
     <li v-for="node in displayNodes" :key="node.path">
       <div
         v-if="editState?.kind === 'rename' && editState.node?.path === node.path"
-        class="flex items-center gap-1.5 rounded-md px-2 py-1.5"
+        class="flex items-center gap-2 rounded-md px-2.5 py-2"
       >
-        <span class="flex h-4 w-4 shrink-0 items-center justify-center text-content-tertiary">
+        <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
           <template v-if="node.type === 'folder'">
-            <ChevronDown v-if="isExpanded(node)" class="h-4 w-4" stroke-width="1.5" />
-            <ChevronRight v-else class="h-4 w-4" stroke-width="1.5" />
+            <ChevronDown v-if="isExpanded(node)" class="h-5 w-5" stroke-width="1.5" />
+            <ChevronRight v-else class="h-5 w-5" stroke-width="1.5" />
           </template>
-          <File v-else class="h-4 w-4" stroke-width="1.5" />
+          <File v-else class="h-5 w-5" stroke-width="1.5" />
         </span>
         <TreeInlineInput
           :model-value="editState.value"
@@ -569,7 +569,7 @@ function isDragging(node: VaultTreeNode): boolean {
         v-else
         type="button"
         draggable="true"
-        class="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left transition-colors duration-150"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150"
         :class="[
           tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
           isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
@@ -583,12 +583,12 @@ function isDragging(node: VaultTreeNode): boolean {
         @dragleave="onDragLeave(node)"
         @drop="onDrop($event, node)"
       >
-        <span class="flex h-4 w-4 shrink-0 items-center justify-center text-content-tertiary">
+        <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
           <template v-if="node.type === 'folder'">
-            <ChevronDown v-if="isExpanded(node)" class="h-4 w-4" stroke-width="1.5" />
-            <ChevronRight v-else class="h-4 w-4" stroke-width="1.5" />
+            <ChevronDown v-if="isExpanded(node)" class="h-5 w-5" stroke-width="1.5" />
+            <ChevronRight v-else class="h-5 w-5" stroke-width="1.5" />
           </template>
-          <File v-else class="h-4 w-4" stroke-width="1.5" />
+          <File v-else class="h-5 w-5" stroke-width="1.5" />
         </span>
         <span>{{ node.name }}</span>
       </button>

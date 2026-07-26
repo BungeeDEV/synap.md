@@ -8,7 +8,7 @@ const { toasts, dismiss } = useToast()
       v-for="toast in toasts"
       :key="toast.id"
       type="button"
-      class="pointer-events-auto rounded-full border border-border-strong bg-surface-1 px-4 py-2 text-sm shadow-float transition-colors duration-150"
+      class="pointer-events-auto rounded-full border border-border-strong bg-surface-1 px-5 py-2.5 text-base shadow-float transition-colors duration-150"
       :class="toast.variant === 'error' ? 'text-danger' : 'text-content-primary'"
       @click="dismiss(toast.id)"
     >

@@ -27,11 +27,11 @@ const modes = computed(() => isMobile.value ? allModes.filter((mode) => mode.val
       :title="mode.label"
       :aria-label="mode.label"
       :aria-pressed="modelValue === mode.value"
-      class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm transition-colors duration-150 md:py-1"
+      class="flex items-center gap-1.5 rounded-full px-3.5 py-2.5 text-base transition-colors duration-150 md:py-2"
       :class="modelValue === mode.value ? 'bg-surface-2 text-content-primary' : 'text-content-tertiary hover:text-content-secondary'"
       @click="modelValue = mode.value"
     >
-      <component :is="mode.icon" class="h-4 w-4" stroke-width="1.5" />
+      <component :is="mode.icon" class="h-5 w-5" stroke-width="1.5" />
       <span v-if="modelValue === mode.value">{{ mode.label }}</span>
     </button>
   </div>

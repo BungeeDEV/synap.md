@@ -60,43 +60,43 @@ function jumpToHeading(heading: Heading): void {
 
 <template>
   <div class="flex h-full min-h-0 touch-manipulation select-none flex-col">
-    <div class="flex h-9 shrink-0 items-center justify-between border-b border-border px-2">
-      <span class="text-xs font-medium tracking-wider text-content-tertiary uppercase">Outline</span>
+    <div class="flex h-11 shrink-0 items-center justify-between border-b border-border px-2">
+      <span class="text-sm font-medium tracking-wider text-content-tertiary uppercase">Outline</span>
       <button
         type="button"
-        class="rounded-md p-2.5 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-1.5"
+        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
         title="Zurück zum Explorer"
         @click="sidebarPanel.setPanel('explorer')"
       >
-        <X class="h-4 w-4" stroke-width="1.5" />
+        <X class="h-5 w-5" stroke-width="1.5" />
       </button>
     </div>
 
     <div v-if="activeTab" class="flex min-h-0 flex-1 flex-col">
-      <div class="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
-        <Search class="h-3.5 w-3.5 shrink-0 text-content-tertiary" stroke-width="1.5" />
+      <div class="flex items-center gap-2 border-b border-border px-2.5 py-2">
+        <Search class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
         <input
           v-model="filterQuery"
           type="text"
           placeholder="Filter headings..."
-          class="w-full bg-transparent text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none"
+          class="w-full bg-transparent text-base text-content-primary placeholder:text-content-tertiary focus:outline-none"
         >
       </div>
 
       <div class="flex-1 overflow-y-auto overscroll-contain p-1">
-        <p v-if="!filteredHeadings.length" class="p-2 text-sm text-content-tertiary">
+        <p v-if="!filteredHeadings.length" class="p-2 text-base text-content-tertiary">
           Keine Überschriften gefunden
         </p>
         <ul v-else class="space-y-0.5">
           <li v-for="(heading, i) in filteredHeadings" :key="`${heading.line}-${i}`">
             <button
               type="button"
-              class="flex w-full items-center gap-2 rounded-md py-1.5 pr-2 text-left transition-colors duration-150 hover:bg-white/[0.04]"
+              class="flex w-full items-center gap-2 rounded-md py-2 pr-2 text-left transition-colors duration-150 hover:bg-white/[0.04]"
               :class="INDENT_CLASSES[heading.level]"
               @click="jumpToHeading(heading)"
             >
-              <span class="shrink-0 font-mono text-xs text-content-tertiary">H{{ heading.level }}</span>
-              <span class="truncate text-sm text-content-secondary">{{ heading.text }}</span>
+              <span class="shrink-0 font-mono text-sm text-content-tertiary">H{{ heading.level }}</span>
+              <span class="truncate text-base text-content-secondary">{{ heading.text }}</span>
             </button>
           </li>
         </ul>

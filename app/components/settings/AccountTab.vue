@@ -84,13 +84,13 @@ async function savePassword(): Promise<void> {
             class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
           >
         </label>
-        <p v-if="usernameError" class="text-xs text-danger">
+        <p v-if="usernameError" class="text-sm text-danger">
           {{ usernameError }}
         </p>
         <button
           type="submit"
           :disabled="usernameSaving"
-          class="self-start rounded-md bg-accent px-3 py-1.5 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="self-start rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Speichern
         </button>
@@ -111,7 +111,7 @@ async function savePassword(): Promise<void> {
             class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
           >
         </label>
-        <p v-if="currentPasswordError" class="text-xs text-danger">
+        <p v-if="currentPasswordError" class="text-sm text-danger">
           {{ currentPasswordError }}
         </p>
 
@@ -124,7 +124,7 @@ async function savePassword(): Promise<void> {
             class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
           >
         </label>
-        <p v-if="newPasswordError" class="text-xs text-danger">
+        <p v-if="newPasswordError" class="text-sm text-danger">
           {{ newPasswordError }}
         </p>
 
@@ -141,7 +141,7 @@ async function savePassword(): Promise<void> {
         <button
           type="submit"
           :disabled="passwordSaving"
-          class="self-start rounded-md bg-accent px-3 py-1.5 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="self-start rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Passwort ändern
         </button>

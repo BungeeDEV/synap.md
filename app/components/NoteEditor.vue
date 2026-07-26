@@ -221,7 +221,7 @@ watch(
 
 <template>
   <div class="relative flex h-full min-h-0 flex-col">
-    <div class="flex h-9 shrink-0 items-center justify-between border-b border-border bg-surface-1 px-2">
+    <div class="flex h-11 shrink-0 items-center justify-between border-b border-border bg-surface-1 px-2">
       <EditorToolbar v-if="mode !== 'reader'" :get-view="() => view" />
       <div v-else />
       <ViewModeToggle
@@ -254,14 +254,14 @@ watch(
         <div class="flex justify-end gap-2">
           <button
             type="button"
-            class="rounded-md bg-surface-2 px-3 py-1.5 text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
+            class="rounded-md bg-surface-2 px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
             @click="loadTheirs"
           >
             Externe Version laden
           </button>
           <button
             type="button"
-            class="rounded-md border border-danger/40 bg-surface-2 px-3 py-1.5 text-danger transition-colors duration-150 hover:bg-danger/10"
+            class="rounded-md border border-danger/40 bg-surface-2 px-4 py-2 text-danger transition-colors duration-150 hover:bg-danger/10"
             @click="keepMine"
           >
             Meine Version überschreiben

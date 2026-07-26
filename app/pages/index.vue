@@ -59,7 +59,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKeydown)
     <main class="flex min-w-0 flex-1 flex-col">
       <MobileTopBar @logout="handleLogout" @open-command-palette="toggleCommandPalette" />
 
-      <header class="hidden h-9 shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 text-xs text-content-tertiary md:flex">
+      <header class="hidden h-11 shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-4 text-sm text-content-tertiary md:flex">
         <span>synap.md<template v-if="user"> — {{ user.username }}</template></span>
         <button type="button" class="transition-colors duration-150 hover:text-content-primary" @click="handleLogout">
           Log out

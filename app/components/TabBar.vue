@@ -25,22 +25,22 @@ function confirmClose(): void {
 </script>
 
 <template>
-  <div class="flex h-9 shrink-0 touch-manipulation select-none overflow-x-auto border-b border-border bg-surface-1 text-sm">
+  <div class="flex h-11 shrink-0 touch-manipulation select-none overflow-x-auto border-b border-border bg-surface-1 text-base">
     <button
       v-for="tab in tabs.tabs"
       :key="tab.path"
       type="button"
-      class="group flex shrink-0 items-center gap-2 border-r border-border px-3 transition-colors duration-150"
+      class="group flex shrink-0 items-center gap-2 border-r border-border px-4 transition-colors duration-150"
       :class="tab.path === tabs.activePath ? 'bg-surface-2 text-content-primary' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary'"
       @click="selectTab(tab.path)"
     >
       <span>{{ tab.title }}</span>
       <span
-        class="flex h-4 w-4 items-center justify-center rounded transition-colors duration-150 hover:bg-white/[0.06]"
+        class="flex h-5 w-5 items-center justify-center rounded transition-colors duration-150 hover:bg-white/[0.06]"
         @click="closeTab(tab.path, $event)"
       >
         <span v-if="tab.dirty" class="h-1.5 w-1.5 rounded-full bg-content-tertiary group-hover:hidden" />
-        <X class="h-3 w-3" stroke-width="1.5" :class="tab.dirty ? 'hidden group-hover:inline' : 'inline'" />
+        <X class="h-3.5 w-3.5" stroke-width="1.5" :class="tab.dirty ? 'hidden group-hover:inline' : 'inline'" />
       </span>
     </button>
   </div>
