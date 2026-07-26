@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { completionKeymap } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { markdown } from '@codemirror/lang-markdown'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { defaultHighlightStyle, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
-import { EditorState, Prec } from '@codemirror/state'
+import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { colors, fontFamily, withAlpha } from '#shared/design-tokens'
+import { livePreview } from '~/editor/livePreview'
 import { slashCommandTrigger } from '~/editor/slashCommandTrigger'
 import { smartEditing } from '~/editor/smartEditing'
 import { wikilinkAutocomplete } from '~/editor/wikilinkAutocomplete'
@@ -58,6 +59,7 @@ const mode = computed(() => tab.value?.viewMode ?? 'code')
 const editorContainer = ref<HTMLDivElement | null>(null)
 let view: EditorView | null = null
 let syncingFromStore = false
+const livePreviewCompartment = new Compartment()
 
 interface PendingUploadMarker { from: number, to: number }
 const pendingUploads: PendingUploadMarker[] = []
@@ -106,7 +108,12 @@ onMounted(() => {
       doc: tab.content,
       extensions: [
         history(),
-        markdown(),
+        // base: markdownLanguage (not the bare default) opts into GFM -
+        // strikethrough/task-lists/tables/autolinks don't parse at all
+        // otherwise, which left tags.strikethrough above dead and meant
+        // "- [ ] todo" was just plain text with no Task/TaskMarker nodes
+        // for livePreview.ts to render as a checkbox.
+        markdown({ base: markdownLanguage }),
         syntaxHighlighting(markdownHighlightStyle),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         // Without this, CodeMirror falls back to the native contenteditable
@@ -116,6 +123,7 @@ onMounted(() => {
         // this near-black background. drawSelection() also activates the
         // `.cm-cursor`/`.cm-dropCursor` layer our theme below already styles.
         drawSelection(),
+        livePreviewCompartment.of(mode.value === 'live' ? [livePreview()] : []),
         wikilinkAutocomplete(),
         smartEditing(),
         slashCommandTrigger(),
@@ -223,6 +231,15 @@ watch(
     syncingFromStore = false
   }
 )
+
+// Toggling into/out of "live" mode doesn't remount NoteEditor (index.vue
+// only keys the component on the tab path, not the view mode - "reader"
+// mode already relies on this to keep the CodeMirror instance alive while
+// hidden), so the live-preview decorations are swapped via a Compartment
+// instead of being baked into the extensions list at mount time.
+watch(mode, (next) => {
+  view?.dispatch({ effects: livePreviewCompartment.reconfigure(next === 'live' ? [livePreview()] : []) })
+})
 </script>
 
 <template>
@@ -240,7 +257,7 @@ watch(
       <div class="min-h-0 overflow-hidden" :class="mode === 'reader' ? 'hidden' : 'h-full'">
         <div ref="editorContainer" class="h-full w-full" />
       </div>
-      <NoteReader v-if="mode !== 'code'" :path="props.path" class="min-h-0" />
+      <NoteReader v-if="mode === 'split' || mode === 'reader'" :path="props.path" class="min-h-0" />
     </div>
 
     <BacklinksPanel v-if="mode !== 'code'" :path="props.path" />

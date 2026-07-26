@@ -1,6 +1,6 @@
 import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '#shared/preferences'
 
-const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['code', 'split', 'reader']
+const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['code', 'split', 'reader', 'live']
 
 function parseDailyNotes(raw: unknown): DailyNotesPreferences {
   const parsed = (raw && typeof raw === 'object' ? raw : {}) as Partial<DailyNotesPreferences>

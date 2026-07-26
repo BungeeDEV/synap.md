@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Code2, Columns2, Eye } from 'lucide-vue-next'
+import { Check, Code2, Columns2, Eye, Wand2 } from 'lucide-vue-next'
 import type { ViewMode } from '~/stores/tabs'
 
 const preferences = usePreferencesStore()
@@ -8,7 +8,8 @@ const { show } = useToast()
 const modes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
   { value: 'reader', label: 'Reader', icon: Eye },
   { value: 'split', label: 'Split', icon: Columns2 },
-  { value: 'code', label: 'Code', icon: Code2 }
+  { value: 'code', label: 'Code', icon: Code2 },
+  { value: 'live', label: 'Live', icon: Wand2 }
 ]
 
 async function setDefaultViewMode(mode: ViewMode): Promise<void> {

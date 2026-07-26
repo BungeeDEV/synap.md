@@ -1,4 +1,4 @@
-export type ViewMode = 'code' | 'split' | 'reader'
+export type ViewMode = 'code' | 'split' | 'reader' | 'live'
 
 export interface TabState {
   path: string

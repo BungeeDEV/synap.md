@@ -5,7 +5,7 @@ export interface DailyNotesPreferences {
 }
 
 export interface EditorPreferences {
-  defaultViewMode: 'code' | 'split' | 'reader'
+  defaultViewMode: 'code' | 'split' | 'reader' | 'live'
   editorFontSize: number
   lineWrap: boolean
   dailyNotes: DailyNotesPreferences

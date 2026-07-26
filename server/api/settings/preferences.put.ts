@@ -13,14 +13,14 @@ interface PreferencesPutBody {
   dailyNotes?: DailyNotesPutBody
 }
 
-const VIEW_MODES = ['code', 'split', 'reader']
+const VIEW_MODES = ['code', 'split', 'reader', 'live']
 
 export default defineEventHandler(async (event) => {
   const { user } = await requireUserSession(event)
   const body = await readBody<PreferencesPutBody>(event)
 
   if (body?.defaultViewMode !== undefined && !VIEW_MODES.includes(body.defaultViewMode as string)) {
-    throw createError({ statusCode: 400, statusMessage: '"defaultViewMode" must be one of code, split, reader' })
+    throw createError({ statusCode: 400, statusMessage: '"defaultViewMode" must be one of code, split, reader, live' })
   }
   if (body?.editorFontSize !== undefined
     && (typeof body.editorFontSize !== 'number' || body.editorFontSize < 10 || body.editorFontSize > 24)) {
