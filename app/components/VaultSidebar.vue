@@ -21,27 +21,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   />
 
   <aside
-    class="fixed inset-y-0 left-0 z-50 flex h-full w-72 shrink-0 flex-col border-r border-border bg-surface-1 text-base text-content-primary transition-transform duration-150 md:static md:z-auto md:translate-x-0"
+    class="fixed inset-y-0 left-0 z-50 flex h-full w-80 shrink-0 flex-col border-r border-border bg-surface-1 text-base text-content-primary transition-transform duration-150 md:static md:z-auto md:translate-x-0"
     :class="mobileNav.isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
   >
-    <div class="min-h-0 flex-1 pt-safe-t">
+    <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 py-2 pt-safe-t">
+      <SidebarPanelSwitcher />
+      <button
+        type="button"
+        class="rounded-md p-3 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary md:p-2"
+        title="Einstellungen"
+        @click="navigateTo('/settings')"
+      >
+        <Settings class="h-5 w-5" stroke-width="1.5" />
+      </button>
+    </div>
+
+    <div class="min-h-0 flex-1">
       <VaultTree v-if="sidebarPanel.activePanel === 'explorer'" />
       <OutlinePanel v-else />
     </div>
 
-    <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-t border-border px-2 py-2 pb-safe-b">
-      <span class="truncate text-sm text-content-tertiary">{{ vaultTree.stats.files }} Dateien, {{ vaultTree.stats.folders }} Ordner</span>
-      <div class="flex shrink-0 items-center gap-1">
-        <SidebarPanelSwitcher />
-        <button
-          type="button"
-          class="rounded-md p-3 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary md:p-2"
-          title="Einstellungen"
-          @click="navigateTo('/settings')"
-        >
-          <Settings class="h-5 w-5" stroke-width="1.5" />
-        </button>
-      </div>
+    <div class="shrink-0 touch-manipulation select-none border-t border-border px-3 py-2 pb-safe-b text-sm text-content-tertiary">
+      {{ vaultTree.stats.files }} Dateien, {{ vaultTree.stats.folders }} Ordner
     </div>
   </aside>
 </template>

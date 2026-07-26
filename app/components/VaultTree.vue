@@ -428,6 +428,9 @@ function isDragging(node: VaultTreeNode): boolean {
           </div>
         </template>
       </div>
+
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
+
       <button
         type="button"
         class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"

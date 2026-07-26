@@ -188,6 +188,12 @@ onMounted(() => {
             fontFamily: fontFamily.mono.join(', '),
             fontSize: `${preferences.preferences.editorFontSize}px`
           },
+          // Left-aligned, full-width editor (no centered/narrow column) -
+          // padding lives on the content box itself now instead of an outer
+          // max-w wrapper, so long lines use the full pane width.
+          '.cm-content': {
+            padding: '1.25rem 2rem 8rem'
+          },
           '.cm-cursor, .cm-dropCursor': { borderLeftColor: colors.accent, borderLeftWidth: '2px' },
           '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: colors.accentSoft }
         }, { dark: true })
@@ -231,8 +237,8 @@ watch(
     </div>
 
     <div class="grid min-h-0 flex-1" :class="mode === 'split' ? 'grid-cols-2 gap-4' : 'grid-cols-1'">
-      <div class="flex min-h-0 justify-center overflow-hidden" :class="mode === 'reader' ? 'hidden' : 'h-full'">
-        <div ref="editorContainer" class="h-full w-full max-w-3xl" />
+      <div class="min-h-0 overflow-hidden" :class="mode === 'reader' ? 'hidden' : 'h-full'">
+        <div ref="editorContainer" class="h-full w-full" />
       </div>
       <NoteReader v-if="mode !== 'code'" :path="props.path" class="min-h-0" />
     </div>
