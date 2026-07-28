@@ -19,3 +19,30 @@ export function formatDate(date: Date, format: string): string {
   }
   return format.replace(TOKEN_RE, (token) => tokens[token]!)
 }
+
+const MINUTE_MS = 60 * 1000
+const HOUR_MS = 60 * MINUTE_MS
+const DAY_MS = 24 * HOUR_MS
+
+/**
+ * Coarse relative-time label for the document header's "zuletzt bearbeitet"
+ * meta line ("gerade eben", "vor 5 Minuten", "vor 3 Stunden", "vor 2 Tagen").
+ * Falls back to formatDate()'s absolute YYYY-MM-DD beyond 6 days, since
+ * "vor 3 Wochen" gets imprecise fast and this app has no i18n/relative-time
+ * library dependency to reach for instead.
+ */
+export function formatRelativeTime(date: Date, now: Date = new Date()): string {
+  const diffMs = Math.max(0, now.getTime() - date.getTime())
+  if (diffMs < MINUTE_MS) return 'gerade eben'
+  if (diffMs < HOUR_MS) {
+    const minutes = Math.floor(diffMs / MINUTE_MS)
+    return `vor ${minutes} ${minutes === 1 ? 'Minute' : 'Minuten'}`
+  }
+  if (diffMs < DAY_MS) {
+    const hours = Math.floor(diffMs / HOUR_MS)
+    return `vor ${hours} ${hours === 1 ? 'Stunde' : 'Stunden'}`
+  }
+  const days = Math.floor(diffMs / DAY_MS)
+  if (days < 7) return `vor ${days} ${days === 1 ? 'Tag' : 'Tagen'}`
+  return formatDate(date, 'YYYY-MM-DD')
+}

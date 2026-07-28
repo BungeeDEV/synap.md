@@ -24,4 +24,35 @@
     -webkit-tap-highlight-color: transparent;
     @apply bg-base;
   }
+
+  /*
+   * App-wide keyboard focus ring. Applied once here instead of a
+   * `focus-visible:ring-1 focus-visible:ring-accent/50` utility pair on
+   * every one of the app's ~60+ buttons/rows/links - a handful of
+   * form-heavy components (auth pages, settings forms, ConfirmDialog,
+   * MoveToDialog) already had their own explicit `focus:` classes, but most
+   * icon-only sidebar/toolbar/menu buttons had no focus indicator at all.
+   * `:focus-visible` (not `:focus`) so mouse/touch clicks don't show a ring,
+   * only keyboard/other non-pointer focus - matches STYLEGUIDE.md's "Fokus-
+   * States immer über accent/50-Ring" rule, just centralized.
+   */
+  :focus-visible {
+    @apply outline-none ring-1 ring-accent/50;
+  }
+}
+
+/*
+ * Respects prefers-reduced-motion by collapsing every transition/animation
+ * to effectively instant, app-wide - added once here rather than a
+ * `motion-reduce:` variant on every transition utility across the app.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

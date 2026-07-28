@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { File, SearchX } from 'lucide-vue-next'
+import { File, FileQuestion, SearchX } from 'lucide-vue-next'
 import { flattenFiles, fuzzyMatchFiles } from '~/utils/fuzzyMatch'
 
 interface ContentResult {
@@ -46,6 +46,10 @@ const flatResults = computed<FlatResult[]>(() => [
 ])
 
 const hasAnyResults = computed(() => flatResults.value.length > 0)
+// Distinguishes "nothing in the vault yet" from "searched, found nothing" -
+// both hit the same hasAnyResults=false branch otherwise, but deserve
+// different copy/icon (a genuinely empty vault isn't a failed search).
+const isVaultEmpty = computed(() => !query.value.trim() && vaultTree.tree.length === 0)
 
 function flatIndexOf(kind: 'file' | 'content', localIndex: number): number {
   return kind === 'file' ? localIndex : fileResults.value.length + localIndex
@@ -135,82 +139,95 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center md:backdrop-blur-md md:bg-black/40" @click="commandPalette.close()">
-    <div
-      class="flex h-full w-full flex-col border-border-strong bg-surface-1 pt-safe-t md:mx-4 md:h-auto md:max-w-xl md:rounded-xl md:border md:shadow-float"
-      @click.stop
-    >
-      <input
-        ref="inputRef"
-        v-model="query"
-        type="text"
-        placeholder="Notizen durchsuchen…"
-        class="w-full border-b border-border bg-transparent px-4 py-4 text-xl text-content-primary placeholder:text-content-tertiary focus:outline-none md:py-3.5 md:text-lg"
-      >
+  <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
+    <div class="fixed inset-0 z-50 flex items-center justify-center md:backdrop-blur-md md:bg-black/40" @click="commandPalette.close()">
+      <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="md:scale-95 md:opacity-0" leave-to-class="md:scale-95 md:opacity-0">
+        <div
+          class="flex h-full w-full flex-col border-border-strong bg-surface-1 pt-safe-t md:mx-4 md:h-auto md:max-w-xl md:rounded-xl md:border md:shadow-float"
+          @click.stop
+        >
+          <input
+            ref="inputRef"
+            v-model="query"
+            type="text"
+            placeholder="Notizen durchsuchen…"
+            class="w-full border-b border-border bg-transparent px-4 py-4 text-xl text-content-primary placeholder:text-content-tertiary focus:outline-none md:py-3.5 md:text-lg"
+          >
 
-      <div ref="resultsRef" class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 md:max-h-96 md:flex-none">
-        <template v-if="hasAnyResults">
-          <div class="mb-1">
-            <p class="px-2 py-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
-              Dateien
-            </p>
-            <ul>
-              <li v-for="(file, i) in fileResults" :key="`file-${file.path}`">
-                <button
-                  :ref="(el) => (resultRefs[flatIndexOf('file', i)] = el as HTMLElement)"
-                  type="button"
-                  class="flex w-full touch-manipulation items-center gap-2.5 rounded-md px-2.5 py-2.5 text-left transition-colors duration-150"
-                  :class="isSelected('file', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
-                  @click="openResult(flatResults[flatIndexOf('file', i)])"
-                  @mouseenter="selectedIndex = flatIndexOf('file', i)"
-                >
-                  <File class="h-5 w-5 shrink-0 text-content-tertiary" stroke-width="1.5" />
-                  <span class="min-w-0 flex-1">
-                    <span class="block truncate text-base text-content-primary">{{ file.title }}</span>
-                    <span class="block truncate text-sm text-content-tertiary">{{ file.path }}</span>
-                  </span>
-                </button>
-              </li>
-            </ul>
+          <div ref="resultsRef" class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 md:max-h-96 md:flex-none">
+            <template v-if="hasAnyResults">
+              <div class="mb-1">
+                <p class="px-2 py-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
+                  Dateien
+                </p>
+                <ul>
+                  <li v-for="(file, i) in fileResults" :key="`file-${file.path}`">
+                    <button
+                      :ref="(el) => (resultRefs[flatIndexOf('file', i)] = el as HTMLElement)"
+                      type="button"
+                      class="flex w-full touch-manipulation items-center gap-2.5 rounded-md px-2.5 py-2.5 text-left transition-colors duration-150"
+                      :class="isSelected('file', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
+                      @click="openResult(flatResults[flatIndexOf('file', i)])"
+                      @mouseenter="selectedIndex = flatIndexOf('file', i)"
+                    >
+                      <File class="h-5 w-5 shrink-0 text-content-tertiary" stroke-width="1.5" />
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-base text-content-primary">{{ file.title }}</span>
+                        <span class="block truncate text-sm text-content-tertiary">{{ file.path }}</span>
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="showContentGroup" class="mb-1">
+                <p class="px-2 py-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
+                  Inhalt
+                </p>
+                <p v-if="searchLoading && !contentResults.length" class="px-2.5 py-2 text-base text-content-tertiary">
+                  Sucht…
+                </p>
+                <ul>
+                  <li v-for="(result, i) in contentResults" :key="`content-${result.path}`">
+                    <button
+                      :ref="(el) => (resultRefs[flatIndexOf('content', i)] = el as HTMLElement)"
+                      type="button"
+                      class="flex w-full touch-manipulation flex-col gap-0.5 rounded-md px-2.5 py-2.5 text-left transition-colors duration-150"
+                      :class="isSelected('content', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
+                      @click="openResult(flatResults[flatIndexOf('content', i)])"
+                      @mouseenter="selectedIndex = flatIndexOf('content', i)"
+                    >
+                      <span class="truncate text-base text-content-primary">{{ result.title }}</span>
+                      <span class="truncate text-sm text-content-tertiary italic" v-html="result.snippet" />
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </template>
+
+            <div v-else-if="isVaultEmpty" class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+              <FileQuestion class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
+              <p class="text-base text-content-tertiary">
+                Noch keine Notizen im Vault
+              </p>
+              <p class="text-sm text-content-tertiary">
+                Leg über „+ Neue Note" in der Seitenleiste deine erste Notiz an.
+              </p>
+            </div>
+            <div v-else class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+              <SearchX class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
+              <p class="text-base text-content-tertiary">
+                Keine Treffer für „{{ query.trim() }}"
+              </p>
+            </div>
           </div>
 
-          <div v-if="showContentGroup" class="mb-1">
-            <p class="px-2 py-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
-              Inhalt
-            </p>
-            <p v-if="searchLoading && !contentResults.length" class="px-2.5 py-2 text-base text-content-tertiary">
-              Sucht…
-            </p>
-            <ul>
-              <li v-for="(result, i) in contentResults" :key="`content-${result.path}`">
-                <button
-                  :ref="(el) => (resultRefs[flatIndexOf('content', i)] = el as HTMLElement)"
-                  type="button"
-                  class="flex w-full touch-manipulation flex-col gap-0.5 rounded-md px-2.5 py-2.5 text-left transition-colors duration-150"
-                  :class="isSelected('content', i) ? 'bg-surface-2' : 'hover:bg-white/[0.04]'"
-                  @click="openResult(flatResults[flatIndexOf('content', i)])"
-                  @mouseenter="selectedIndex = flatIndexOf('content', i)"
-                >
-                  <span class="truncate text-base text-content-primary">{{ result.title }}</span>
-                  <span class="truncate text-sm text-content-tertiary italic" v-html="result.snippet" />
-                </button>
-              </li>
-            </ul>
+          <div class="flex shrink-0 items-center justify-between border-t border-border px-4 py-2.5 pb-safe-b font-mono text-sm text-content-tertiary">
+            <span>{{ flatResults.length }} Treffer</span>
+            <span>↑↓ navigieren · ↵ öffnen · esc schließen</span>
           </div>
-        </template>
-
-        <div v-else class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
-          <SearchX class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
-          <p class="text-base text-content-tertiary">
-            Keine Treffer
-          </p>
         </div>
-      </div>
-
-      <div class="flex shrink-0 items-center justify-between border-t border-border px-4 py-2.5 pb-safe-b font-mono text-sm text-content-tertiary">
-        <span>{{ flatResults.length }} Treffer</span>
-        <span>↑↓ navigieren · ↵ öffnen · esc schließen</span>
-      </div>
+      </Transition>
     </div>
-  </div>
+  </Transition>
 </template>

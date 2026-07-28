@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import { Settings } from 'lucide-vue-next'
+import { LayoutTemplate, Settings, Star, Trash2 } from 'lucide-vue-next'
+import { flattenFiles } from '~/utils/fuzzyMatch'
 
 const sidebarPanel = useSidebarPanelStore()
 const vaultTree = useVaultTreeStore()
 const mobileNav = useMobileNavStore()
+const tabs = useTabsStore()
+const { favorites } = useFavorites()
+
+// Favorites store bare vault-relative paths - resolve against the live tree
+// so a since-deleted/renamed favorite quietly drops out of the list instead
+// of opening a 404 when clicked (favorites.ts intentionally doesn't prune
+// the stored list itself, see its own comment).
+const favoriteFiles = computed(() => {
+  const byPath = new Map(flattenFiles(vaultTree.tree).map((file) => [file.path, file]))
+  return favorites.value.map((path) => byPath.get(path)).filter((file) => !!file)
+})
+
+function openFavorite(path: string): void {
+  void tabs.openTab(path)
+  mobileNav.close()
+}
 
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape' && mobileNav.isDrawerOpen) mobileNav.close()
@@ -14,11 +31,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>
-  <div
-    v-if="mobileNav.isDrawerOpen"
-    class="fixed inset-0 z-40 backdrop-blur-md bg-black/40 md:hidden"
-    @click="mobileNav.close()"
-  />
+  <Transition enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
+    <div
+      v-if="mobileNav.isDrawerOpen"
+      class="fixed inset-0 z-40 backdrop-blur-md bg-black/40 md:hidden"
+      @click="mobileNav.close()"
+    />
+  </Transition>
 
   <aside
     class="fixed inset-y-0 left-0 z-50 flex h-full w-80 shrink-0 flex-col border-r border-border bg-surface-1 text-base text-content-primary transition-transform duration-150 md:static md:z-auto md:translate-x-0"
@@ -36,9 +55,56 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </button>
     </div>
 
+    <div
+      v-if="sidebarPanel.activePanel === 'explorer' && favoriteFiles.length"
+      class="shrink-0 touch-manipulation select-none border-b border-border p-1"
+    >
+      <p class="px-2.5 pt-1.5 pb-1 text-xs font-medium tracking-wider text-content-tertiary uppercase">
+        Favoriten
+      </p>
+      <ul class="space-y-0.5 pb-1">
+        <li v-for="file in favoriteFiles" :key="file.path">
+          <button
+            type="button"
+            class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150"
+            :class="tabs.activePath === file.path ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary'"
+            @click="openFavorite(file.path)"
+          >
+            <Star class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" fill="currentColor" />
+            <span class="flex-1 truncate">{{ file.title }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
     <div class="min-h-0 flex-1">
       <VaultTree v-if="sidebarPanel.activePanel === 'explorer'" />
       <OutlinePanel v-else />
+    </div>
+
+    <!--
+      Papierkorb/Vorlagen leben serverseitig außerhalb des Vault-Baums
+      (SPECIAL_FOLDERS, siehe server/utils/specialFolders.ts) und werden nur
+      über die Settings-Tabs verwaltet - deshalb feste Links dorthin statt
+      (nicht existierender) Baumknoten.
+    -->
+    <div class="shrink-0 touch-manipulation select-none space-y-0.5 border-t border-border p-1">
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+        @click="navigateTo('/settings?tab=templates')"
+      >
+        <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        Vorlagen
+      </button>
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+        @click="navigateTo('/settings?tab=trash')"
+      >
+        <Trash2 class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        Papierkorb
+      </button>
     </div>
 
     <div class="shrink-0 touch-manipulation select-none border-t border-border px-3 py-2 pb-safe-b text-sm text-content-tertiary">

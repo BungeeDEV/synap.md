@@ -16,6 +16,10 @@ function parseDailyNotes(raw: unknown): DailyNotesPreferences {
   }
 }
 
+function parseStringArray(raw: unknown, fallback: string[]): string[] {
+  return Array.isArray(raw) && raw.every((entry) => typeof entry === 'string') ? raw : fallback
+}
+
 /** Parses a user's stored preferences_json, filling in defaults for any missing/invalid field. */
 export function parsePreferences(json: string): EditorPreferences {
   let parsed: Partial<Record<keyof EditorPreferences, unknown>>
@@ -33,6 +37,8 @@ export function parsePreferences(json: string): EditorPreferences {
       ? parsed.editorFontSize
       : DEFAULT_PREFERENCES.editorFontSize,
     lineWrap: typeof parsed.lineWrap === 'boolean' ? parsed.lineWrap : DEFAULT_PREFERENCES.lineWrap,
-    dailyNotes: parseDailyNotes(parsed.dailyNotes)
+    dailyNotes: parseDailyNotes(parsed.dailyNotes),
+    favorites: parseStringArray(parsed.favorites, DEFAULT_PREFERENCES.favorites),
+    expandedFolders: parseStringArray(parsed.expandedFolders, DEFAULT_PREFERENCES.expandedFolders)
   }
 }

@@ -161,7 +161,22 @@ verweisen.
 
 **Sidebar - aktiver Eintrag**
 ```
-bg-surface-2 rounded-md px-2 py-1.5 text-content-primary
+bg-surface-2 rounded-md px-2 py-1.5 text-content-primary font-medium
+```
+
+**Sidebar - System-Eintrag (Papierkorb/Vorlagen, außerhalb des Vault-Baums)**
+```
+flex items-center gap-2 rounded-md px-2.5 py-2 text-content-secondary
+hover:bg-white/[0.04] hover:text-content-primary transition-colors duration-150
+```
+Gleiche Zeilen-Optik wie normale Tree-Einträge, aber als feste Zeilen außerhalb
+von `VaultTree.vue` gerendert (nicht Teil des rekursiven Baums) - siehe
+components.md für die Begründung (Trash/Templates sind keine Vault-Tree-Knoten).
+
+**Sidebar - Favoriten-Stern**
+```
+text-content-tertiary hover:text-accent   /* unfavorisiert */
+text-accent                                /* favorisiert, fill="currentColor" */
 ```
 
 **Sidebar - Hover**
@@ -236,6 +251,32 @@ bg-surface-2 rounded-md
 text-content-tertiary font-mono text-xs
 ```
 
+**Slash-Menu - Gruppen-Header**
+```
+text-xs uppercase tracking-wider text-content-tertiary font-medium px-3.5 pt-2 pb-1
+```
+Trennlinie zwischen Gruppen: `border-t border-border` auf dem ersten Eintrag
+der Folgegruppe (kein extra `<hr>`-Element).
+
+**Slash-Menu - aktive Zeile**
+```
+bg-accent rounded-md text-white
+```
+Bewusste Abweichung von "Command Palette - aktive Zeile" (`bg-surface-2`):
+volltonige Hervorhebung wie beim aktiven View-Toggle-Pill, weil das Slash-Menü
+tastaturgetrieben ist und die aktive Zeile auf einen Blick erkennbar sein soll.
+
+**Slash-Menu - Shortcut-Hint**
+```
+text-content-tertiary font-mono text-xs   /* inaktive Zeile */
+text-white/70 font-mono text-xs            /* aktive Zeile, auf bg-accent */
+```
+
+**Slash-Menu - Footer-Hinweis**
+```
+border-t border-border px-3.5 py-2 text-xs text-content-tertiary
+```
+
 **Modal (z.B. Conflict-Dialog)**
 ```
 bg-surface-1 rounded-xl border border-border-strong p-6
@@ -254,6 +295,27 @@ focus:ring-1 focus:ring-accent/50 focus:outline-none
 **Skeleton/Loading**
 ```
 bg-white/5 rounded animate-pulse
+```
+
+**Dokument-Meta-Zeile** (z.B. "zuletzt bearbeitet vor 2 Stunden")
+```
+text-sm text-content-tertiary
+```
+Bewusst *nicht* die Meta/Label-Klasse (die ist für Sidebar-Sektionslabels wie
+"COLLECTIONS" mit `uppercase tracking-wider` reserviert) - eine Metazeile
+unter einem Dokumenttitel liest sich in Groß-/Kleinschreibung natürlicher.
+
+**Breadcrumb** (Vault-Pfad über dem Dokument)
+```
+flex items-center gap-1 text-sm text-content-tertiary
+```
+Segmente durch ein kleines `ChevronRight`-Icon (`h-3.5 w-3.5`) getrennt, das
+letzte Segment (Dateiname) in `text-content-secondary` statt `-tertiary`.
+
+**TOC-Zeile** (Sprungmarken-Spalte)
+```
+text-content-tertiary hover:text-content-secondary   /* inaktiv */
+text-accent font-medium                               /* aktiv (Scroll-Spy) */
 ```
 
 **Empty State**

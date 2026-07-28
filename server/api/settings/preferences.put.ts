@@ -11,9 +11,15 @@ interface PreferencesPutBody {
   editorFontSize?: unknown
   lineWrap?: unknown
   dailyNotes?: DailyNotesPutBody
+  favorites?: unknown
+  expandedFolders?: unknown
 }
 
 const VIEW_MODES = ['code', 'split', 'reader', 'live']
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+}
 
 export default defineEventHandler(async (event) => {
   const { user } = await requireUserSession(event)
@@ -41,6 +47,12 @@ export default defineEventHandler(async (event) => {
     && body.dailyNotes.templateName !== null && typeof body.dailyNotes.templateName !== 'string') {
     throw createError({ statusCode: 400, statusMessage: '"dailyNotes.templateName" must be a string or null' })
   }
+  if (body?.favorites !== undefined && !isStringArray(body.favorites)) {
+    throw createError({ statusCode: 400, statusMessage: '"favorites" must be an array of strings' })
+  }
+  if (body?.expandedFolders !== undefined && !isStringArray(body.expandedFolders)) {
+    throw createError({ statusCode: 400, statusMessage: '"expandedFolders" must be an array of strings' })
+  }
 
   const db = getDb()
   const row = db.prepare('SELECT preferences_json FROM users WHERE id = ?').get(user.id) as { preferences_json: string } | undefined
@@ -58,7 +70,9 @@ export default defineEventHandler(async (event) => {
         ...(body.dailyNotes.dateFormat !== undefined && { dateFormat: (body.dailyNotes.dateFormat as string).trim() }),
         ...(body.dailyNotes.templateName !== undefined && { templateName: body.dailyNotes.templateName as string | null })
       }
-    })
+    }),
+    ...(body.favorites !== undefined && { favorites: body.favorites as string[] }),
+    ...(body.expandedFolders !== undefined && { expandedFolders: body.expandedFolders as string[] })
   }
 
   db.prepare('UPDATE users SET preferences_json = ? WHERE id = ?').run(JSON.stringify(merged), user.id)

@@ -57,6 +57,7 @@ const tab = computed(() => tabs.tabs.find((t) => t.path === props.path))
 const mode = computed(() => tab.value?.viewMode ?? 'code')
 
 const editorContainer = ref<HTMLDivElement | null>(null)
+const attachmentInputRef = ref<HTMLInputElement | null>(null)
 let view: EditorView | null = null
 let syncingFromStore = false
 const livePreviewCompartment = new Compartment()
@@ -96,6 +97,28 @@ async function insertAttachment(file: File): Promise<void> {
     const index = pendingUploads.indexOf(marker)
     if (index !== -1) pendingUploads.splice(index, 1)
   }
+}
+
+// "Bild"/"Datei-Anhang" slash commands only ever get an EditorView, not
+// access to insertAttachment() above - they set this shared request instead
+// (see useAttachmentInsert.ts), and this watcher opens the native file
+// picker. It's a one-shot trigger, not persistent modal state like the
+// slash menu itself, so the flag is cleared right after opening the picker
+// rather than waiting for a change/cancel event.
+const attachmentInsertRequest = useAttachmentInsertRequest()
+
+watch(attachmentInsertRequest, (kind) => {
+  if (!kind || !attachmentInputRef.value) return
+  attachmentInputRef.value.accept = kind === 'image' ? 'image/*' : ''
+  attachmentInputRef.value.click()
+  attachmentInsertRequest.value = null
+})
+
+function onAttachmentInputChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (file) void insertAttachment(file)
 }
 
 onMounted(() => {
@@ -244,6 +267,8 @@ watch(mode, (next) => {
 
 <template>
   <div class="relative flex h-full min-h-0 flex-col">
+    <input ref="attachmentInputRef" type="file" class="hidden" @change="onAttachmentInputChange">
+
     <div class="flex h-11 shrink-0 items-center justify-between border-b border-border bg-surface-1 px-2">
       <EditorToolbar v-if="mode !== 'reader'" :get-view="() => view" />
       <div v-else />
@@ -266,31 +291,35 @@ watch(mode, (next) => {
 
     <StatusBar :content="tab?.content ?? ''" :saving="saving" :conflict="!!conflict" />
 
-    <div v-if="conflict" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-md">
-      <div class="w-full max-w-md rounded-xl border border-border-strong bg-surface-1 p-6 text-sm text-content-primary shadow-float">
-        <h2 class="mb-2 font-semibold text-content-primary">
-          Datei wurde extern geändert
-        </h2>
-        <p class="mb-4 text-content-secondary">
-          Die Datei wurde außerhalb der App geändert, seit sie geladen wurde. Wie soll fortgefahren werden?
-        </p>
-        <div class="flex justify-end gap-2">
-          <button
-            type="button"
-            class="rounded-md bg-surface-2 px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
-            @click="loadTheirs"
-          >
-            Externe Version laden
-          </button>
-          <button
-            type="button"
-            class="rounded-md border border-danger/40 bg-surface-2 px-4 py-2 text-danger transition-colors duration-150 hover:bg-danger/10"
-            @click="keepMine"
-          >
-            Meine Version überschreiben
-          </button>
-        </div>
+    <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
+      <div v-if="conflict" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-md">
+        <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="scale-95 opacity-0" leave-to-class="scale-95 opacity-0">
+          <div class="w-full max-w-md rounded-xl border border-border-strong bg-surface-1 p-6 text-sm text-content-primary shadow-float">
+            <h2 class="mb-2 font-semibold text-content-primary">
+              Datei wurde extern geändert
+            </h2>
+            <p class="mb-4 text-content-secondary">
+              Die Datei wurde außerhalb der App geändert, seit sie geladen wurde. Wie soll fortgefahren werden?
+            </p>
+            <div class="flex justify-end gap-2">
+              <button
+                type="button"
+                class="rounded-md bg-surface-2 px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
+                @click="loadTheirs"
+              >
+                Externe Version laden
+              </button>
+              <button
+                type="button"
+                class="rounded-md border border-danger/40 bg-surface-2 px-4 py-2 text-danger transition-colors duration-150 hover:bg-danger/10"
+                @click="keepMine"
+              >
+                Meine Version überschreiben
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>

@@ -37,6 +37,7 @@ function confirmClose(): void {
       <span>{{ tab.title }}</span>
       <span
         class="flex h-5 w-5 items-center justify-center rounded transition-colors duration-150 hover:bg-white/[0.06]"
+        title="Schließen"
         @click="closeTab(tab.path, $event)"
       >
         <span v-if="tab.dirty" class="h-1.5 w-1.5 rounded-full bg-content-tertiary group-hover:hidden" />

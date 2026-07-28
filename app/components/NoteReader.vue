@@ -5,11 +5,15 @@ const tabs = useTabsStore()
 const html = ref('')
 const loading = ref(false)
 const container = ref<HTMLDivElement | null>(null)
+const scrollContainer = ref<HTMLDivElement | null>(null)
+const tocVisible = ref(true)
 
+const activeTab = computed(() => tabs.tabs.find((t) => t.path === props.path))
+const title = computed(() => activeTab.value?.title ?? '')
 // Re-render whenever the on-disk content we know about changes (a save
 // completing, or "externe Version laden" during a conflict) - both update
 // lastKnownMtime, which render.get.ts's source (the file on disk) tracks.
-const mtime = computed(() => tabs.tabs.find((t) => t.path === props.path)?.lastKnownMtime ?? null)
+const mtime = computed(() => activeTab.value?.lastKnownMtime ?? null)
 
 async function load(): Promise<void> {
   loading.value = true
@@ -42,10 +46,23 @@ function onClick(event: MouseEvent): void {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto overscroll-contain px-6 py-6">
-    <p v-if="loading && !html" class="text-sm text-content-tertiary">
-      Lädt…
-    </p>
-    <div v-else ref="container" class="prose prose-sm mx-auto max-w-3xl" @click="onClick" v-html="html" />
+  <div class="flex h-full min-h-0 flex-col">
+    <DocumentBreadcrumb :path="props.path" :toc-visible="tocVisible" @toggle-toc="tocVisible = !tocVisible" />
+
+    <div ref="scrollContainer" class="flex min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div class="min-w-0 flex-1 px-6 py-6">
+        <p v-if="loading && !html" class="text-sm text-content-tertiary">
+          Lädt…
+        </p>
+        <template v-else>
+          <DocumentHeader :path="props.path" :title="title" :mtime="mtime" />
+          <div ref="container" class="prose prose-sm mx-auto max-w-3xl" @click="onClick" v-html="html" />
+        </template>
+      </div>
+
+      <Transition enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <TableOfContents v-if="tocVisible" :content="activeTab?.content ?? ''" :container="scrollContainer" />
+      </Transition>
+    </div>
   </div>
 </template>

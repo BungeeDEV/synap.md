@@ -28,7 +28,16 @@ const tabs: SettingsTab[] = [
   { id: 'about', label: 'Über', icon: Info, component: AboutTab }
 ]
 
-const activeTabId = ref(tabs[0]!.id)
+// Lets sidebar links (Papierkorb/Vorlagen system entries) deep-link straight
+// into a tab via /settings?tab=trash instead of always landing on the first
+// one - falls back silently to the default tab for an unknown/missing id.
+const route = useRoute()
+const requestedTabId = route.query.tab
+const initialTabId = typeof requestedTabId === 'string' && tabs.some((tab) => tab.id === requestedTabId)
+  ? requestedTabId
+  : tabs[0]!.id
+
+const activeTabId = ref(initialTabId)
 const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value) ?? tabs[0]!)
 </script>
 

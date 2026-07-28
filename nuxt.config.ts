@@ -22,7 +22,13 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' }
       ],
       meta: [
+        // apple-mobile-web-app-capable is iOS-Safari-specific and still the
+        // only one it honors, but Chromium now warns it's deprecated in
+        // favor of the standard mobile-web-app-capable - kept both rather
+        // than dropping the Apple one and breaking "Add to Home Screen" on
+        // iOS.
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
       ]
     }

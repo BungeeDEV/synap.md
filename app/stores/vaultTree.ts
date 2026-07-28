@@ -16,6 +16,8 @@ function collectFolderPaths(nodes: VaultTreeNode[]): string[] {
   return paths
 }
 
+const EXPANDED_PERSIST_DEBOUNCE_MS = 1500
+
 export const useVaultTreeStore = defineStore('vaultTree', () => {
   const tree = ref<VaultTreeNode[]>([])
   const expanded = ref(new Set<string>())
@@ -23,6 +25,28 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
   const error = ref<string | null>(null)
   // Path of the folder new-file/new-folder toolbar actions target - '' means vault root.
   const selectedFolder = ref('')
+
+  const preferences = usePreferencesStore()
+  // Seeded once from server preferences (which load async), so an empty
+  // `expanded` at store-creation time doesn't get persisted over a
+  // not-yet-loaded server value - see the `loaded` watcher below.
+  let expandedHydrated = false
+  let persistExpandedTimer: ReturnType<typeof setTimeout> | null = null
+
+  watch(() => preferences.loaded, (loaded) => {
+    if (!loaded || expandedHydrated) return
+    expandedHydrated = true
+    expanded.value = new Set(preferences.preferences.expandedFolders)
+  }, { immediate: true })
+
+  /** Debounced, synced across devices via the same preferences_json column as the rest of EditorPreferences - not persisted before hydration so a fast toggle can't overwrite the still-loading server value with an empty set. */
+  function persistExpanded(): void {
+    if (!expandedHydrated) return
+    if (persistExpandedTimer) clearTimeout(persistExpandedTimer)
+    persistExpandedTimer = setTimeout(() => {
+      void preferences.update({ expandedFolders: [...expanded.value] })
+    }, EXPANDED_PERSIST_DEBOUNCE_MS)
+  }
 
   const stats = computed(() => {
     let files = 0
@@ -66,10 +90,12 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
     } else {
       expanded.value.add(path)
     }
+    persistExpanded()
   }
 
   function expand(path: string): void {
     expanded.value.add(path)
+    persistExpanded()
   }
 
   function selectFolder(path: string): void {
@@ -78,6 +104,7 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
 
   function toggleExpandAll(): void {
     expanded.value = allExpanded.value ? new Set() : new Set(folderPaths.value)
+    persistExpanded()
   }
 
   return {

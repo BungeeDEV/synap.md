@@ -3,7 +3,15 @@ const { toasts, dismiss } = useToast()
 </script>
 
 <template>
-  <div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 pb-safe-b">
+  <TransitionGroup
+    tag="div"
+    class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 pb-safe-b"
+    enter-active-class="transition duration-150 ease-out"
+    leave-active-class="transition duration-150 ease-in absolute"
+    enter-from-class="translate-y-2 opacity-0"
+    leave-to-class="translate-y-2 opacity-0"
+    move-class="transition-transform duration-150 ease-out"
+  >
     <button
       v-for="toast in toasts"
       :key="toast.id"
@@ -14,5 +22,5 @@ const { toasts, dismiss } = useToast()
     >
       {{ toast.message }}
     </button>
-  </div>
+  </TransitionGroup>
 </template>

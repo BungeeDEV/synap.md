@@ -26,9 +26,11 @@ export function flattenFiles(nodes: VaultTreeNode[]): FileEntry[] {
  * subsequence match (order-preserving but non-contiguous), a match at the
  * very start of `text` scores a bit higher, and consecutive subsequence
  * characters score higher than scattered ones. Returns -1 if `query` isn't
- * a subsequence of `text` at all.
+ * a subsequence of `text` at all. Exported for reuse anywhere a single
+ * label needs fuzzy-scoring against a query (e.g. the slash-command menu),
+ * not just the file-shaped list this module was built for.
  */
-function scoreString(query: string, text: string): number {
+export function scoreString(query: string, text: string): number {
   const q = query.toLowerCase()
   const t = text.toLowerCase()
 

@@ -46,6 +46,15 @@ export default {
         // never touch the viewport edges, without an arbitrary [80vh] value.
         dialog: '80vh'
       },
+      gridTemplateRows: {
+        // Jank-free height transition for VaultTree's folder expand/collapse:
+        // the row wrapper transitions grid-template-rows between these two
+        // (grid-rows-collapsed/-expanded classes) instead of animating
+        // `height: auto`, which CSS can't do natively. Named tokens instead
+        // of grid-rows-[0fr]/[1fr] arbitrary values per STYLEGUIDE.md.
+        collapsed: '0fr',
+        expanded: '1fr'
+      },
       spacing: {
         'safe-t': 'env(safe-area-inset-top)',
         'safe-b': 'env(safe-area-inset-bottom)',
@@ -87,7 +96,19 @@ export default {
             },
             'blockquote p:first-of-type::before': { content: 'none' },
             'blockquote p:last-of-type::after': { content: 'none' },
+            // Rounded, softly-tinted box instead of bare mono text - same
+            // visual weight as the "Inline-Code / Shortcut-Badge" recipe in
+            // STYLEGUIDE.md (bg-white/[0.06] rounded px-1.5 py-0.5), just
+            // expressed as raw CSS since @tailwindcss/typography's
+            // CSS-variable API doesn't take Tailwind classes. Excluded from
+            // `pre code` (fenced blocks already get their own background via
+            // the `pre` rule below and shouldn't double up).
             code: { fontFamily: fontFamily.mono.join(', '), fontWeight: '400' },
+            ':not(pre) > code': {
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              borderRadius: '0.375rem',
+              padding: '0.15em 0.4em'
+            },
             'code::before': { content: 'none' },
             'code::after': { content: 'none' },
             pre: { backgroundColor: colors.surface2, border: `1px solid ${colors.borderDefault}` },
