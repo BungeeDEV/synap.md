@@ -38,7 +38,7 @@ onBeforeUnmount(() => { if (flashTimer) clearTimeout(flashTimer) })
 </script>
 
 <template>
-  <div class="flex h-9 shrink-0 touch-manipulation select-none items-center justify-between border-t border-border bg-surface-1 px-3 text-sm text-content-tertiary">
+  <div class="pointer-events-none fixed bottom-3 right-3 z-30 flex touch-manipulation select-none items-center gap-3 rounded-full border border-border bg-surface-1/95 px-3 py-1.5 text-sm text-content-tertiary shadow-float">
     <span>{{ wordCount }} Wörter · {{ charCount }} Zeichen</span>
     <span class="flex items-center gap-1.5">
       <span

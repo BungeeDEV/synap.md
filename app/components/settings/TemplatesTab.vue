@@ -94,6 +94,7 @@ async function submitCreateTemplate(): Promise<void> {
     await $fetch('/api/templates/create', { method: 'POST', body: { name: newTemplateName.value.trim() } })
     creatingTemplate.value = false
     await loadTemplates()
+    show('Vorlage erstellt')
   } catch (err) {
     newTemplateError.value = errorMessageOf(err, 'Vorlage konnte nicht erstellt werden')
   }

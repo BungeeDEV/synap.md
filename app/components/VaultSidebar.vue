@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutTemplate, Settings, Star, Trash2 } from 'lucide-vue-next'
+import { LayoutTemplate, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
 import { flattenFiles } from '~/utils/fuzzyMatch'
 
 const sidebarPanel = useSidebarPanelStore()
@@ -7,6 +7,7 @@ const vaultTree = useVaultTreeStore()
 const mobileNav = useMobileNavStore()
 const tabs = useTabsStore()
 const { favorites } = useFavorites()
+const { open: openCommandPalette } = useCommandPalette()
 
 // Favorites store bare vault-relative paths - resolve against the live tree
 // so a since-deleted/renamed favorite quietly drops out of the list instead
@@ -45,14 +46,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   >
     <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 py-2 pt-safe-t">
       <SidebarPanelSwitcher />
-      <button
-        type="button"
-        class="rounded-md p-3 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary md:p-2"
-        title="Einstellungen"
-        @click="navigateTo('/settings')"
-      >
-        <Settings class="h-5 w-5" stroke-width="1.5" />
-      </button>
+      <div class="flex items-center gap-0.5">
+        <button
+          type="button"
+          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-2"
+          title="Suche (⌘K)"
+          @click="openCommandPalette()"
+        >
+          <Search class="h-5 w-5" stroke-width="1.5" />
+        </button>
+        <button
+          type="button"
+          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-2"
+          title="Einstellungen"
+          @click="navigateTo('/settings')"
+        >
+          <Settings class="h-5 w-5" stroke-width="1.5" />
+        </button>
+      </div>
     </div>
 
     <div
@@ -66,7 +77,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <li v-for="file in favoriteFiles" :key="file.path">
           <button
             type="button"
-            class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150"
+            class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
             :class="tabs.activePath === file.path ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary'"
             @click="openFavorite(file.path)"
           >
@@ -91,7 +102,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
     <div class="shrink-0 touch-manipulation select-none space-y-0.5 border-t border-border p-1">
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=templates')"
       >
         <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
@@ -99,7 +110,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </button>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=trash')"
       >
         <Trash2 class="h-4 w-4 shrink-0" stroke-width="1.5" />

@@ -17,7 +17,7 @@ const metaLabel = computed(() => (props.mtime ? `Zuletzt bearbeitet ${formatRela
       </h1>
       <button
         type="button"
-        class="mt-1 shrink-0 rounded-md p-1.5 transition-colors duration-150"
+        class="mt-1 shrink-0 rounded-md p-1.5 transition duration-150 active:scale-90"
         :class="isFavorite(path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
         :title="isFavorite(path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
         @click="toggleFavorite(path)"

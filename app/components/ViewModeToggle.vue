@@ -36,7 +36,7 @@ const activeIndex = computed(() => modes.value.findIndex((mode) => mode.value ==
       :title="mode.label"
       :aria-label="mode.label"
       :aria-pressed="modelValue === mode.value"
-      class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 md:h-9 md:w-9"
+      class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition duration-150 active:scale-90 md:h-9 md:w-9"
       :class="modelValue === mode.value ? 'text-content-primary' : 'text-content-tertiary hover:text-content-secondary'"
       @click="modelValue = mode.value"
     >

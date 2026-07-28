@@ -1,6 +1,6 @@
 import { syntaxTree } from '@codemirror/language'
-import type { Extension } from '@codemirror/state'
-import { RangeSetBuilder } from '@codemirror/state'
+import type { Extension, Range } from '@codemirror/state'
+import { RangeSet } from '@codemirror/state'
 import { Decoration, ViewPlugin, WidgetType, type DecorationSet, type EditorView, type ViewUpdate } from '@codemirror/view'
 
 /**
@@ -46,6 +46,12 @@ class HrWidget extends WidgetType {
 }
 
 const HORIZONTAL_RULE = Decoration.replace({ widget: new HrWidget() })
+
+// Line-level decoration (accent bar + soft background), matching the
+// read-only Preview's blockquote treatment (tailwind.config.ts's
+// `typography.blockquote`) - QuoteMark handling above only conceals the
+// ">" character, it doesn't give the line itself any visual weight.
+const BLOCKQUOTE_LINE = Decoration.line({ class: 'cm-blockquote-line' })
 
 class ImageWidget extends WidgetType {
   constructor(private readonly alt: string, private readonly src: string) { super() }
@@ -116,6 +122,16 @@ function buildDecorations(view: EditorView): DecorationSet {
       to,
       enter: (node) => {
         const name = node.type.name
+
+        if (name === 'Blockquote') {
+          const startLine = view.state.doc.lineAt(node.from).number
+          const endLine = view.state.doc.lineAt(node.to).number
+          for (let ln = startLine; ln <= endLine; ln++) {
+            const line = view.state.doc.line(ln)
+            pieces.push({ from: line.from, to: line.from, deco: BLOCKQUOTE_LINE })
+          }
+          return
+        }
 
         if (name === 'HeaderMark' || name === 'QuoteMark') {
           const line = lineOf(view, node.from)
@@ -214,10 +230,13 @@ function buildDecorations(view: EditorView): DecorationSet {
     })
   }
 
-  pieces.sort((a, b) => a.from - b.from)
-  const builder = new RangeSetBuilder<Decoration>()
-  for (const piece of pieces) builder.add(piece.from, piece.to, piece.deco)
-  return builder.finish()
+  // RangeSet.of (sorted) rather than a manually pre-sorted RangeSetBuilder -
+  // line decorations (BLOCKQUOTE_LINE) and mark decorations (e.g. QuoteMark's
+  // HIDE) can start at the exact same position on a blockquote's first line,
+  // and RangeSetBuilder requires strict caller-side ordering for that case;
+  // RangeSet.of resolves it internally instead.
+  const ranges: Range<Decoration>[] = pieces.map((piece) => piece.deco.range(piece.from, piece.to))
+  return RangeSet.of(ranges, true)
 }
 
 export function livePreview(): Extension {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderPlus, LayoutTemplate, Move, Pencil, Star, Trash2 } from 'lucide-vue-next'
+import { ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, Move, Pencil, Star, Trash2 } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
 import { validateRawName } from '~/utils/validateFileName'
@@ -72,6 +72,24 @@ function isExpanded(node: VaultTreeNode): boolean {
   return vaultTree.isExpanded(node.path)
 }
 
+// Small fixed palette (Outline-style colored collection icons) instead of a
+// new accent hue - these are Tailwind's built-in default colors, not
+// arbitrary values, so STYLEGUIDE.md's "named tokens only" rule still holds.
+// Hashed by path (not name) so same-named folders in different parents don't
+// collide, and a folder keeps its color across sibling reordering/sorting.
+const FOLDER_ICON_COLORS = ['text-orange-400', 'text-emerald-400', 'text-sky-400', 'text-violet-400', 'text-amber-400', 'text-rose-400']
+
+function folderIconColor(path: string): string {
+  let hash = 0
+  for (let i = 0; i < path.length; i++) hash = (hash * 31 + path.charCodeAt(i)) | 0
+  return FOLDER_ICON_COLORS[Math.abs(hash) % FOLDER_ICON_COLORS.length]
+}
+
+function nodeIcon(node: VaultTreeNode): typeof File | typeof Folder | typeof FolderOpen {
+  if (node.type === 'file') return File
+  return isExpanded(node) ? FolderOpen : Folder
+}
+
 function onNodeClick(node: VaultTreeNode): void {
   if (node.type === 'folder') {
     vaultTree.toggleExpand(node.path)
@@ -108,6 +126,7 @@ async function confirmDelete(): Promise<void> {
   await $fetch('/api/vault/file', { method: 'DELETE', query: { path: node.path } })
   tabs.closeTab(node.path)
   await vaultTree.refresh()
+  toast.show(`"${node.name}" in den Papierkorb verschoben`)
 }
 
 function openMoveDialog(node: VaultTreeNode): void {
@@ -231,6 +250,7 @@ async function submitEdit(): Promise<void> {
   try {
     if (isFile && state.templateName) {
       await $fetch('/api/vault/note-from-template', { method: 'POST', body: { path, templateName: state.templateName } })
+      toast.show('Notiz aus Vorlage erstellt')
     } else if (isFile) {
       await $fetch('/api/vault/file', { method: 'PUT', body: { path, content: '' } })
     } else {
@@ -377,7 +397,7 @@ function isDragging(node: VaultTreeNode): boolean {
     <div class="flex items-center gap-1 border-b border-border p-2">
       <button
         type="button"
-        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
         title="Neue Datei"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
@@ -385,7 +405,7 @@ function isDragging(node: VaultTreeNode): boolean {
       </button>
       <button
         type="button"
-        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
         title="Neuer Ordner"
         @click="startCreate('create-folder', vaultTree.selectedFolder)"
       >
@@ -393,7 +413,7 @@ function isDragging(node: VaultTreeNode): boolean {
       </button>
       <button
         type="button"
-        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
         title="Heutige Note öffnen"
         @click="openDailyNote"
       >
@@ -402,7 +422,7 @@ function isDragging(node: VaultTreeNode): boolean {
       <div class="relative">
         <button
           type="button"
-          class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+          class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
           title="Neu aus Vorlage"
           @click="toggleTemplateMenu"
         >
@@ -443,7 +463,7 @@ function isDragging(node: VaultTreeNode): boolean {
 
       <button
         type="button"
-        class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
         :title="sortTitle"
         @click="vaultSort.cycle()"
       >
@@ -451,7 +471,7 @@ function isDragging(node: VaultTreeNode): boolean {
       </button>
       <button
         type="button"
-        class="ml-auto rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
+        class="ml-auto rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
         :title="vaultTree.allExpanded ? 'Alles einklappen' : 'Alles ausklappen'"
         @click="vaultTree.toggleExpandAll()"
       >
@@ -477,9 +497,17 @@ function isDragging(node: VaultTreeNode): boolean {
         <p class="text-base text-content-tertiary">
           Dein Vault ist noch leer
         </p>
-        <p class="text-sm text-content-tertiary">
-          Leg oben deine erste Notiz oder einen Ordner an.
+        <p class="mb-1 text-sm text-content-tertiary">
+          Leg deine erste Notiz an, um loszulegen.
         </p>
+        <button
+          type="button"
+          class="flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm text-white transition duration-150 hover:bg-accent/90 active:scale-95 focus:outline-none focus:ring-1 focus:ring-accent/50"
+          @click="startCreate('create-file', vaultTree.selectedFolder)"
+        >
+          <FilePlus class="h-4 w-4" stroke-width="1.5" />
+          Neue Notiz erstellen
+        </button>
       </div>
 
       <VaultTree v-else :nodes="displayNodes" parent-path="" />
@@ -605,7 +633,7 @@ function isDragging(node: VaultTreeNode): boolean {
         role="button"
         tabindex="0"
         draggable="true"
-        class="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150"
+        class="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
         :class="[
           tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
           isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
@@ -621,20 +649,26 @@ function isDragging(node: VaultTreeNode): boolean {
         @dragleave="onDragLeave(node)"
         @drop="onDrop($event, node)"
       >
-        <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
+        <span class="flex shrink-0 items-center gap-0.5">
           <ChevronRight
             v-if="node.type === 'folder'"
-            class="h-5 w-5 transition-transform duration-150"
+            class="h-4 w-4 text-content-tertiary transition-transform duration-150"
             :class="isExpanded(node) ? 'rotate-90' : ''"
             stroke-width="1.5"
           />
-          <File v-else class="h-5 w-5" stroke-width="1.5" />
+          <span v-else class="inline-block h-4 w-4" />
+          <component
+            :is="nodeIcon(node)"
+            class="h-5 w-5"
+            :class="node.type === 'folder' ? folderIconColor(node.path) : 'text-content-tertiary'"
+            stroke-width="1.5"
+          />
         </span>
         <span class="flex-1 truncate">{{ node.name }}</span>
         <button
           v-if="node.type === 'file'"
           type="button"
-          class="shrink-0 rounded-md p-1 transition-colors duration-150"
+          class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
           :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
           :title="isFavorite(node.path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
           @click.stop="toggleFavorite(node.path)"

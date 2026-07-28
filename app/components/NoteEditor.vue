@@ -225,6 +225,14 @@ onMounted(() => {
           '.cm-content': {
             padding: '1.25rem 2rem 8rem'
           },
+          // Matches the read-only Preview's blockquote box (tailwind.config.ts
+          // typography.blockquote) - QuoteMark concealment only hides the ">",
+          // this gives the line the same accent-bar + soft-background weight.
+          '.cm-blockquote-line': {
+            borderLeft: `2px solid ${colors.accentSoft}`,
+            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+            paddingLeft: '0.75rem'
+          },
           '.cm-cursor, .cm-dropCursor': { borderLeftColor: colors.accent, borderLeftWidth: '2px' },
           '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: colors.accentSoft }
         }, { dark: true })
