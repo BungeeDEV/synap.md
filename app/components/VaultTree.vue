@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, MoreHorizontal, Move, Pencil, Star, Trash2, Upload } from 'lucide-vue-next'
+import { Archive, ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, MoreHorizontal, Move, Pencil, Star, Trash2, Upload } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
 import { validateRawName } from '#shared/validateFileName'
@@ -83,7 +83,7 @@ const FOLDER_ICON_COLORS = ['text-orange-400', 'text-emerald-400', 'text-sky-400
 function folderIconColor(path: string): string {
   let hash = 0
   for (let i = 0; i < path.length; i++) hash = (hash * 31 + path.charCodeAt(i)) | 0
-  return FOLDER_ICON_COLORS[Math.abs(hash) % FOLDER_ICON_COLORS.length]
+  return FOLDER_ICON_COLORS[Math.abs(hash) % FOLDER_ICON_COLORS.length]!
 }
 
 function nodeIcon(node: VaultTreeNode): typeof File | typeof Folder | typeof FolderOpen {
@@ -128,6 +128,18 @@ async function confirmDelete(): Promise<void> {
   tabs.closeTab(node.path)
   await vaultTree.refresh()
   toast.show(`"${node.name}" in den Papierkorb verschoben`)
+}
+
+async function archiveNode(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  try {
+    await $fetch('/api/vault/archive', { method: 'POST', body: { path: node.path } })
+    tabs.closeTab(node.path)
+    await vaultTree.refresh()
+    toast.show(`"${node.name}" archiviert`)
+  } catch {
+    toast.show('Archivieren fehlgeschlagen', 'error')
+  }
 }
 
 function openMoveDialog(node: VaultTreeNode): void {
@@ -383,7 +395,7 @@ async function moveNode(source: DragDescriptor, targetFolderPath: string): Promi
 const dragState = useState<DragDescriptor | null>('vaultTreeDragState', () => null)
 const dragOverPath = useState<string | null>('vaultTreeDragOverPath', () => null)
 
-function isValidDropTarget(dragging: DragDescriptor | null, target: VaultTreeNode): boolean {
+function isValidDropTarget(dragging: DragDescriptor | null, target: VaultTreeNode): dragging is DragDescriptor {
   return dragging !== null && target.type === 'folder' && isValidMoveTarget(dragging, target.path)
 }
 
@@ -725,6 +737,15 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         >
           <Move class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
           Verschieben nach…
+        </button>
+        <button
+          v-if="contextMenu.node.type === 'file'"
+          type="button"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
+          @click="archiveNode(contextMenu.node)"
+        >
+          <Archive class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
+          Archivieren
         </button>
         <button
           v-if="contextMenu.node.type === 'file'"

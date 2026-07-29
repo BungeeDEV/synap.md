@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ArrowLeft, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User } from 'lucide-vue-next'
+import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import AboutTab from '~/components/settings/AboutTab.vue'
 import AccountTab from '~/components/settings/AccountTab.vue'
+import ArchivePanel from '~/components/settings/ArchivePanel.vue'
 import BackupTab from '~/components/settings/BackupTab.vue'
 import EditorTab from '~/components/settings/EditorTab.vue'
 import ShortcutsTab from '~/components/settings/ShortcutsTab.vue'
@@ -22,6 +23,7 @@ const tabs: SettingsTab[] = [
   { id: 'editor', label: 'Editor', icon: SettingsIcon, component: EditorTab },
   { id: 'templates', label: 'Vorlagen', icon: LayoutTemplate, component: TemplatesTab },
   { id: 'vault', label: 'Vault & Speicher', icon: HardDrive, component: VaultStatsTab },
+  { id: 'archive', label: 'Archiv', icon: Archive, component: ArchivePanel },
   { id: 'trash', label: 'Papierkorb', icon: Trash2, component: TrashPanel },
   { id: 'backup', label: 'Backup', icon: Download, component: BackupTab },
   { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard, component: ShortcutsTab },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
+import { Archive, Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
 import { flattenFiles } from '~/utils/fuzzyMatch'
 
 const sidebarPanel = useSidebarPanelStore()
@@ -153,7 +153,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
     </div>
 
     <!--
-      Papierkorb/Vorlagen leben serverseitig außerhalb des Vault-Baums
+      Papierkorb/Vorlagen/Archiv leben serverseitig außerhalb des Vault-Baums
       (SPECIAL_FOLDERS, siehe server/utils/specialFolders.ts) und werden nur
       über die Settings-Tabs verwaltet - deshalb feste Links dorthin statt
       (nicht existierender) Baumknoten.
@@ -166,6 +166,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       >
         <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
         Vorlagen
+      </button>
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
+        @click="navigateTo('/settings?tab=archive')"
+      >
+        <Archive class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        Archiv
       </button>
       <button
         type="button"
