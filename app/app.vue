@@ -23,5 +23,6 @@ watch(loggedIn, (isLoggedIn) => {
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <ToastContainer />
+    <ImportProgressPanel />
   </div>
 </template>

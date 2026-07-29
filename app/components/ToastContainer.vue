@@ -12,15 +12,22 @@ const { toasts, dismiss } = useToast()
     leave-to-class="translate-y-2 opacity-0"
     move-class="transition-transform duration-150 ease-out"
   >
-    <button
+    <div
       v-for="toast in toasts"
       :key="toast.id"
-      type="button"
-      class="pointer-events-auto rounded-full border border-border-strong bg-surface-1 px-5 py-2.5 text-base shadow-float transition-colors duration-150"
+      class="pointer-events-auto flex cursor-pointer items-center gap-3 rounded-full border border-border-strong bg-surface-1 py-2.5 pr-2.5 pl-5 text-base shadow-float transition-colors duration-150"
       :class="toast.variant === 'error' ? 'text-danger' : 'text-content-primary'"
       @click="dismiss(toast.id)"
     >
       {{ toast.message }}
-    </button>
+      <button
+        v-if="toast.action"
+        type="button"
+        class="shrink-0 rounded-full bg-white/[0.06] px-3 py-1 text-sm font-medium text-content-primary transition-colors duration-150 hover:bg-white/[0.1]"
+        @click.stop="toast.action.onClick(); dismiss(toast.id)"
+      >
+        {{ toast.action.label }}
+      </button>
+    </div>
   </TransitionGroup>
 </template>

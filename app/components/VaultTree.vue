@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, Move, Pencil, Star, Trash2 } from 'lucide-vue-next'
+import { ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, MoreHorizontal, Move, Pencil, Star, Trash2, Upload } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
-import { validateRawName } from '~/utils/validateFileName'
+import { validateRawName } from '#shared/validateFileName'
 import { isValidMoveTarget, parentFolderOf } from '~/utils/vaultMove'
 
 const { isFavorite, toggleFavorite } = useFavorites()
+const { openImportDialog, recentlyImported } = useVaultImport()
 
 const props = withDefaults(defineProps<{ nodes?: VaultTreeNode[] | null, parentPath?: string }>(), { nodes: null, parentPath: '' })
 
@@ -289,11 +290,48 @@ function closeTemplateMenu(): void {
   showTemplateMenu.value = false
 }
 
+const showOverflowMenu = ref(false)
+
+function toggleOverflowMenu(): void {
+  closeContextMenu()
+  closeTemplateMenu()
+  showOverflowMenu.value = !showOverflowMenu.value
+}
+
+function closeOverflowMenu(): void {
+  showOverflowMenu.value = false
+  closeTemplateMenu()
+}
+
+function openTemplateFromOverflow(): void {
+  showOverflowMenu.value = false
+  void toggleTemplateMenu()
+}
+
 function pickTemplate(template: TemplateOption): void {
   showTemplateMenu.value = false
   const parentPath = vaultTree.selectedFolder
   if (parentPath) vaultTree.expand(parentPath)
   editState.value = { kind: 'create-file', parentPath, value: 'Untitled', error: null, templateName: template.name }
+}
+
+// --- Import .md files from the OS (native file picker) ---
+
+const importFileInputRef = ref<HTMLInputElement | null>(null)
+const importPickerTargetFolder = ref('')
+
+function triggerImportPicker(targetFolder: string): void {
+  closeContextMenu()
+  showOverflowMenu.value = false
+  importPickerTargetFolder.value = targetFolder
+  importFileInputRef.value?.click()
+}
+
+function onImportInputChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const files = input.files ? Array.from(input.files) : []
+  input.value = ''
+  if (files.length > 0) openImportDialog(files, importPickerTargetFolder.value)
 }
 
 async function openDailyNote(): Promise<void> {
@@ -360,7 +398,33 @@ function onDragEnd(): void {
   dragOverPath.value = null
 }
 
+// --- External file drag & drop (importing .md files from the OS) ---
+//
+// Internal tree-reorder drags (above) only ever carry a "text/plain" payload
+// via setData() - real OS files dragged in from Explorer/Finder always
+// expose a "Files" entry in dataTransfer.types (readable during dragover,
+// unlike .files/.items which browsers only populate on the actual drop for
+// security). That's the one reliable signal to branch on, not timing or
+// pointer position.
+
+const externalDragOverPath = useState<string | null>('vaultTreeExternalDragOverPath', () => null)
+const rootDragActive = useState<boolean>('vaultTreeRootDragActive', () => false)
+
+function isExternalFileDrag(event: DragEvent): boolean {
+  return event.dataTransfer?.types.includes('Files') ?? false
+}
+
 function onDragOver(event: DragEvent, node: VaultTreeNode): void {
+  if (isExternalFileDrag(event)) {
+    if (node.type !== 'folder') return // not a valid import target - let it bubble to the root drop-anywhere overlay
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+    externalDragOverPath.value = node.path
+    rootDragActive.value = false
+    return
+  }
+
   if (!isValidDropTarget(dragState.value, node)) {
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'none'
     return
@@ -370,17 +434,54 @@ function onDragOver(event: DragEvent, node: VaultTreeNode): void {
   dragOverPath.value = node.path
 }
 
-function onDragLeave(node: VaultTreeNode): void {
+function onDragLeave(event: DragEvent, node: VaultTreeNode): void {
+  if (isExternalFileDrag(event)) {
+    if (externalDragOverPath.value === node.path) externalDragOverPath.value = null
+    return
+  }
   if (dragOverPath.value === node.path) dragOverPath.value = null
 }
 
 async function onDrop(event: DragEvent, node: VaultTreeNode): Promise<void> {
+  if (isExternalFileDrag(event)) {
+    if (node.type !== 'folder') return
+    event.preventDefault()
+    event.stopPropagation()
+    externalDragOverPath.value = null
+    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : []
+    if (files.length > 0) openImportDialog(files, node.path)
+    return
+  }
+
   event.preventDefault()
   dragOverPath.value = null
   const dragging = dragState.value
   dragState.value = null
   if (!isValidDropTarget(dragging, node)) return
   await moveNode(dragging, node.path)
+}
+
+function onRootDragOver(event: DragEvent): void {
+  if (!isExternalFileDrag(event)) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+  rootDragActive.value = true
+}
+
+function onRootDragLeave(event: DragEvent): void {
+  if (!isExternalFileDrag(event)) return
+  const container = event.currentTarget as HTMLElement
+  const related = event.relatedTarget as Node | null
+  if (related && container.contains(related)) return
+  rootDragActive.value = false
+}
+
+async function onRootDrop(event: DragEvent): Promise<void> {
+  if (!isExternalFileDrag(event)) return
+  event.preventDefault()
+  rootDragActive.value = false
+  const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : []
+  if (files.length > 0) openImportDialog(files, '')
 }
 
 function isDragOver(node: VaultTreeNode): boolean {
@@ -390,97 +491,154 @@ function isDragOver(node: VaultTreeNode): boolean {
 function isDragging(node: VaultTreeNode): boolean {
   return dragState.value?.path === node.path
 }
+
+function isExternalDragOver(node: VaultTreeNode): boolean {
+  return externalDragOverPath.value === node.path
+}
+
+function wasRecentlyImported(node: VaultTreeNode): boolean {
+  return recentlyImported.value.has(node.path)
+}
 </script>
 
 <template>
   <div v-if="isRoot" class="flex h-full select-none flex-col text-base text-content-primary touch-manipulation">
-    <div class="flex items-center gap-1 border-b border-border p-2">
+    <div class="flex items-center gap-2 border-b border-border p-2">
       <button
         type="button"
-        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-        title="Neue Datei"
+        class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition duration-150 hover:bg-accent/90 active:scale-95 focus:outline-none focus:ring-1 focus:ring-accent/50"
+        title="Neue Notiz"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
-        <FilePlus class="h-5 w-5" stroke-width="1.5" />
+        <FilePlus class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        Neue Notiz
       </button>
-      <button
-        type="button"
-        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-        title="Neuer Ordner"
-        @click="startCreate('create-folder', vaultTree.selectedFolder)"
-      >
-        <FolderPlus class="h-5 w-5" stroke-width="1.5" />
-      </button>
-      <button
-        type="button"
-        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-        title="Heutige Note öffnen"
-        @click="openDailyNote"
-      >
-        <Calendar class="h-5 w-5" stroke-width="1.5" />
-      </button>
-      <div class="relative">
+
+      <div class="ml-auto flex items-center gap-0.5">
         <button
           type="button"
-          class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-          title="Neu aus Vorlage"
-          @click="toggleTemplateMenu"
+          class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+          title="Neuer Ordner"
+          @click="startCreate('create-folder', vaultTree.selectedFolder)"
         >
-          <LayoutTemplate class="h-5 w-5" stroke-width="1.5" />
+          <FolderPlus class="h-4 w-4" stroke-width="1.5" />
+        </button>
+        <button
+          type="button"
+          class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+          :title="sortTitle"
+          @click="vaultSort.cycle()"
+        >
+          <ArrowUpDown class="h-4 w-4" stroke-width="1.5" />
         </button>
 
-        <div v-if="showTemplateMenu" class="fixed inset-0 z-40" @click="closeTemplateMenu" />
-        <Transition
-          enter-active-class="transition duration-150 ease-out"
-          leave-active-class="transition duration-100 ease-in"
-          enter-from-class="scale-95 opacity-0"
-          leave-to-class="scale-95 opacity-0"
-        >
-          <div
-            v-if="showTemplateMenu"
-            class="absolute top-full left-0 z-50 mt-1 min-w-40 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
+        <div class="relative">
+          <button
+            type="button"
+            class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+            title="Weitere Aktionen"
+            @click="toggleOverflowMenu"
           >
-            <p v-if="loadingTemplates" class="px-3.5 py-2 text-sm text-content-tertiary">
-              Lädt…
-            </p>
-            <p v-else-if="templateOptions.length === 0" class="px-3.5 py-2 text-sm text-content-tertiary">
-              Keine Vorlagen vorhanden
-            </p>
-            <button
-              v-for="template in templateOptions"
-              :key="template.path"
-              type="button"
-              class="flex w-full items-center px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-              @click="pickTemplate(template)"
+            <MoreHorizontal class="h-4 w-4" stroke-width="1.5" />
+          </button>
+
+          <div v-if="showOverflowMenu || showTemplateMenu" class="fixed inset-0 z-40" @click="closeOverflowMenu" />
+
+          <Transition
+            enter-active-class="transition duration-150 ease-out"
+            leave-active-class="transition duration-100 ease-in"
+            enter-from-class="scale-95 opacity-0"
+            leave-to-class="scale-95 opacity-0"
+          >
+            <div
+              v-if="showOverflowMenu"
+              class="absolute top-full right-0 z-50 mt-1 min-w-44 origin-top-right rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
             >
-              {{ template.name }}
-            </button>
-          </div>
-        </Transition>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+                @click="showOverflowMenu = false; openDailyNote()"
+              >
+                <Calendar class="h-4 w-4 shrink-0" stroke-width="1.5" />
+                Tagesnotiz
+              </button>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+                @click="openTemplateFromOverflow"
+              >
+                <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
+                Neu aus Vorlage
+              </button>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+                @click="triggerImportPicker(vaultTree.selectedFolder)"
+              >
+                <Upload class="h-4 w-4 shrink-0" stroke-width="1.5" />
+                Importieren
+              </button>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+                @click="showOverflowMenu = false; vaultTree.toggleExpandAll()"
+              >
+                <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-4 w-4 shrink-0" stroke-width="1.5" />
+                <ChevronsUpDown v-else class="h-4 w-4 shrink-0" stroke-width="1.5" />
+                {{ vaultTree.allExpanded ? 'Alles einklappen' : 'Alles ausklappen' }}
+              </button>
+            </div>
+          </Transition>
+
+          <Transition
+            enter-active-class="transition duration-150 ease-out"
+            leave-active-class="transition duration-100 ease-in"
+            enter-from-class="scale-95 opacity-0"
+            leave-to-class="scale-95 opacity-0"
+          >
+            <div
+              v-if="showTemplateMenu"
+              class="absolute top-full right-0 z-50 mt-1 min-w-40 origin-top-right rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
+            >
+              <p v-if="loadingTemplates" class="px-3.5 py-2 text-sm text-content-tertiary">
+                Lädt…
+              </p>
+              <p v-else-if="templateOptions.length === 0" class="px-3.5 py-2 text-sm text-content-tertiary">
+                Keine Vorlagen vorhanden
+              </p>
+              <button
+                v-for="template in templateOptions"
+                :key="template.path"
+                type="button"
+                class="flex w-full items-center px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
+                @click="pickTemplate(template)"
+              >
+                {{ template.name }}
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
-
-      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
-
-      <button
-        type="button"
-        class="rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-        :title="sortTitle"
-        @click="vaultSort.cycle()"
-      >
-        <ArrowUpDown class="h-5 w-5" stroke-width="1.5" />
-      </button>
-      <button
-        type="button"
-        class="ml-auto rounded-md p-3 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95 md:p-2"
-        :title="vaultTree.allExpanded ? 'Alles einklappen' : 'Alles ausklappen'"
-        @click="vaultTree.toggleExpandAll()"
-      >
-        <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-5 w-5" stroke-width="1.5" />
-        <ChevronsUpDown v-else class="h-5 w-5" stroke-width="1.5" />
-      </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto overscroll-contain p-1">
+    <div
+      class="relative flex-1 overflow-y-auto overscroll-contain p-1"
+      @dragover="onRootDragOver"
+      @dragleave="onRootDragLeave"
+      @drop="onRootDrop"
+    >
+      <Transition enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
+        <div
+          v-if="rootDragActive"
+          class="pointer-events-none absolute inset-1 z-30 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-accent bg-surface-1/90 text-center"
+        >
+          <Upload class="h-6 w-6 text-accent" stroke-width="1.5" />
+          <p class="text-sm font-medium text-content-primary">
+            Dateien hier ablegen zum Importieren
+          </p>
+        </div>
+      </Transition>
+
       <div v-if="vaultTree.loading" class="space-y-1 p-1">
         <div v-for="i in 8" :key="i" class="flex items-center gap-2 px-1.5 py-2">
           <div class="h-5 w-5 shrink-0 animate-pulse rounded bg-white/5" />
@@ -544,6 +702,15 @@ function isDragging(node: VaultTreeNode): boolean {
           Neuer Unterordner
         </button>
         <button
+          v-if="contextMenu.node.type === 'folder'"
+          type="button"
+          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
+          @click="triggerImportPicker(contextMenu.node.path)"
+        >
+          <Upload class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
+          Dateien importieren…
+        </button>
+        <button
           type="button"
           class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
           @click="startRename(contextMenu.node)"
@@ -586,6 +753,17 @@ function isDragging(node: VaultTreeNode): boolean {
       @confirm="confirmMove"
       @cancel="moveDialogTarget = null"
     />
+
+    <ImportDialog />
+
+    <input
+      ref="importFileInputRef"
+      type="file"
+      multiple
+      accept=".md,.markdown"
+      class="hidden"
+      @change="onImportInputChange"
+    >
   </div>
 
   <ul v-else class="space-y-0.5">
@@ -637,7 +815,9 @@ function isDragging(node: VaultTreeNode): boolean {
         :class="[
           tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
           isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
-          isDragging(node) ? 'opacity-50' : ''
+          isDragging(node) ? 'opacity-50' : '',
+          isExternalDragOver(node) ? 'border border-dashed border-accent bg-surface-2' : '',
+          wasRecentlyImported(node) ? 'bg-accent/20' : ''
         ]"
         @click="onNodeClick(node)"
         @keydown.enter.prevent="onNodeClick(node)"
@@ -646,7 +826,7 @@ function isDragging(node: VaultTreeNode): boolean {
         @dragstart="onDragStart($event, node)"
         @dragend="onDragEnd"
         @dragover="onDragOver($event, node)"
-        @dragleave="onDragLeave(node)"
+        @dragleave="onDragLeave($event, node)"
         @drop="onDrop($event, node)"
       >
         <span class="flex shrink-0 items-center gap-0.5">

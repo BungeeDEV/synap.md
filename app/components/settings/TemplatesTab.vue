@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FilePlus, Trash2 } from 'lucide-vue-next'
 import { formatDate } from '#shared/formatDate'
-import { validateRawName } from '~/utils/validateFileName'
+import { validateRawName } from '#shared/validateFileName'
 
 interface TemplateInfo {
   name: string

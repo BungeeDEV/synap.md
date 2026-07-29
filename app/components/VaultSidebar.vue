@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutTemplate, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
+import { Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
 import { flattenFiles } from '~/utils/fuzzyMatch'
 
 const sidebarPanel = useSidebarPanelStore()
@@ -8,6 +8,17 @@ const mobileNav = useMobileNavStore()
 const tabs = useTabsStore()
 const { favorites } = useFavorites()
 const { open: openCommandPalette } = useCommandPalette()
+
+const showWorkspaceMenu = ref(false)
+
+function toggleWorkspaceMenu(): void {
+  showWorkspaceMenu.value = !showWorkspaceMenu.value
+}
+
+function selectPanel(panel: 'explorer' | 'outline'): void {
+  sidebarPanel.setPanel(panel)
+  showWorkspaceMenu.value = false
+}
 
 // Favorites store bare vault-relative paths - resolve against the live tree
 // so a since-deleted/renamed favorite quietly drops out of the list instead
@@ -45,23 +56,71 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
     :class="mobileNav.isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
   >
     <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 py-2 pt-safe-t">
-      <SidebarPanelSwitcher />
+      <div class="relative">
+        <button
+          type="button"
+          class="flex items-center gap-1.5 rounded-md py-1 pl-1 pr-2 transition-colors duration-150 hover:bg-white/[0.04] active:scale-95"
+          aria-haspopup="menu"
+          :aria-expanded="showWorkspaceMenu"
+          @click="toggleWorkspaceMenu"
+        >
+          <img src="/icons/icon-192.png" alt="" class="h-6 w-6 shrink-0 rounded-md">
+          <span class="text-sm font-medium text-content-primary">synap</span>
+          <ChevronDown class="h-3.5 w-3.5 shrink-0 text-content-tertiary" stroke-width="1.5" />
+        </button>
+
+        <div v-if="showWorkspaceMenu" class="fixed inset-0 z-40" @click="showWorkspaceMenu = false" />
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          leave-active-class="transition duration-100 ease-in"
+          enter-from-class="scale-95 opacity-0"
+          leave-to-class="scale-95 opacity-0"
+        >
+          <div
+            v-if="showWorkspaceMenu"
+            class="absolute top-full left-0 z-50 mt-1 min-w-44 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
+          >
+            <p class="px-3.5 pt-1.5 pb-1 text-xs font-medium tracking-wider text-content-tertiary uppercase">
+              Ansicht
+            </p>
+            <button
+              type="button"
+              class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+              @click="selectPanel('explorer')"
+            >
+              <Folder class="h-4 w-4 shrink-0" stroke-width="1.5" />
+              <span class="flex-1">Explorer</span>
+              <Check v-if="sidebarPanel.activePanel === 'explorer'" class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" />
+            </button>
+            <button
+              type="button"
+              class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
+              @click="selectPanel('outline')"
+            >
+              <List class="h-4 w-4 shrink-0" stroke-width="1.5" />
+              <span class="flex-1">Gliederung</span>
+              <Check v-if="sidebarPanel.activePanel === 'outline'" class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" />
+            </button>
+          </div>
+        </Transition>
+      </div>
+
       <div class="flex items-center gap-0.5">
         <button
           type="button"
-          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-2"
+          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-1.5"
           title="Suche (⌘K)"
           @click="openCommandPalette()"
         >
-          <Search class="h-5 w-5" stroke-width="1.5" />
+          <Search class="h-4 w-4" stroke-width="1.5" />
         </button>
         <button
           type="button"
-          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-2"
+          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-1.5"
           title="Einstellungen"
           @click="navigateTo('/settings')"
         >
-          <Settings class="h-5 w-5" stroke-width="1.5" />
+          <Settings class="h-4 w-4" stroke-width="1.5" />
         </button>
       </div>
     </div>

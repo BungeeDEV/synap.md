@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Folder } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
+import { folderIndentClass, folderOptionsOf } from '~/utils/vaultFolders'
 import { isValidMoveTarget } from '~/utils/vaultMove'
 
 const props = defineProps<{ node: VaultTreeNode }>()
@@ -8,37 +9,7 @@ const emit = defineEmits<{ confirm: [targetFolderPath: string], cancel: [] }>()
 
 const vaultTree = useVaultTreeStore()
 
-interface FolderOption { path: string, name: string, depth: number }
-
-// Depth capped at the same level OutlinePanel's heading indent uses -
-// Tailwind classes only, no arbitrary per-depth inline styles.
-const INDENT_CLASSES: Record<number, string> = {
-  0: 'pl-2',
-  1: 'pl-4',
-  2: 'pl-6',
-  3: 'pl-8',
-  4: 'pl-10',
-  5: 'pl-12'
-}
-
-function indentClass(depth: number): string {
-  return INDENT_CLASSES[Math.min(depth, 5)]!
-}
-
-function flattenFolders(nodes: VaultTreeNode[], depth: number): FolderOption[] {
-  const result: FolderOption[] = []
-  for (const node of nodes) {
-    if (node.type !== 'folder') continue
-    result.push({ path: node.path, name: node.name, depth })
-    if (node.children) result.push(...flattenFolders(node.children, depth + 1))
-  }
-  return result
-}
-
-const folderOptions = computed<FolderOption[]>(() => [
-  { path: '', name: 'Vault-Wurzel', depth: 0 },
-  ...flattenFolders(vaultTree.tree, 1)
-])
+const folderOptions = computed(() => folderOptionsOf(vaultTree.tree))
 
 const selectedFolder = ref('')
 
@@ -75,7 +46,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                   type="button"
                   :disabled="isDisabled(option.path)"
                   class="flex w-full items-center gap-2 rounded-md py-2.5 pr-2 text-left text-base transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
-                  :class="[indentClass(option.depth), selectedFolder === option.path ? 'bg-surface-2 text-content-primary' : 'text-content-secondary hover:bg-white/[0.04]']"
+                  :class="[folderIndentClass(option.depth), selectedFolder === option.path ? 'bg-surface-2 text-content-primary' : 'text-content-secondary hover:bg-white/[0.04]']"
                   @click="selectedFolder = option.path"
                 >
                   <Folder class="h-5 w-5 shrink-0 text-content-tertiary" stroke-width="1.5" />
