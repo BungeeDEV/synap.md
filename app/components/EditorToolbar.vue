@@ -44,7 +44,7 @@ const buttons = [
 <template>
   <div class="flex min-w-0 touch-manipulation select-none items-center gap-0.5 overflow-x-auto">
     <template v-for="(button, index) in buttons" :key="button.label">
-      <div v-if="index > 0 && button.group !== buttons[index - 1].group" class="mx-1 h-5 w-px shrink-0 bg-border" />
+      <div v-if="index > 0 && button.group !== buttons[index - 1]!.group" class="mx-1 h-5 w-px shrink-0 bg-border" />
       <button
         type="button"
         :title="button.label"

@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, extname, join, relative, sep } from 'node:path'
 import type Database from 'better-sqlite3'
 import matter from 'gray-matter'
+import type { Root } from 'mdast'
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
@@ -29,7 +30,11 @@ interface ExtractedContent {
 
 function extractContent(db: Database.Database, markdown: string): ExtractedContent {
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkWikilinks, (target) => resolveWikilinkTargetPath(db, target))
-  const tree = processor.runSync(processor.parse(markdown))
+  // unified's chained .use() overloads don't preserve the specific mdast Root
+  // type across 3+ plugins (a known TS ergonomics gap in the unified type
+  // system) - asserted here since remark-parse always produces a Root and no
+  // plugin in this chain changes the root node type.
+  const tree = processor.runSync(processor.parse(markdown)) as Root
 
   const tags = new Set<string>()
   const wikilinks: ExtractedWikilink[] = []

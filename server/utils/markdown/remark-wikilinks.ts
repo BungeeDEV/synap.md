@@ -1,3 +1,4 @@
+import type { PhrasingContent, Root } from 'mdast'
 import { visit } from 'unist-util-visit'
 
 // [[Target]] or [[Target|Alias]]. Wikilinks aren't part of CommonMark/GFM, so
@@ -23,6 +24,16 @@ export interface WikilinkNodeData {
   hProperties: Record<string, string | undefined>
 }
 
+// mdast's own `LinkData` is an empty interface, extended via declaration
+// merging by whoever puts custom fields on a link node's `data` - this is
+// the standard mdast/unist pattern (see unifiedjs.com's "Data" typing docs),
+// not an ad-hoc workaround. Without it, the `link` nodes built below
+// wouldn't satisfy `PhrasingContent`'s `data?: LinkData` field.
+declare module 'mdast' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- declaration merging requires an interface here, not a type alias
+  interface LinkData extends WikilinkNodeData {}
+}
+
 /**
  * Remark plugin: rewrites `[[Target]]` / `[[Target|Alias]]` text into mdast
  * `link` nodes, so the indexer (extraction) and the reader pipeline
@@ -37,7 +48,7 @@ export interface WikilinkNodeData {
  * navigate/reload the page on click).
  */
 export function remarkWikilinks(resolve: WikilinkResolver) {
-  return (tree: object) => {
+  return (tree: Root) => {
     visit(tree, 'text', (node, index, parent) => {
       if (!parent || typeof index !== 'number') return
       if (!('value' in node) || typeof node.value !== 'string') return
@@ -48,7 +59,7 @@ export function remarkWikilinks(resolve: WikilinkResolver) {
       if (!WIKILINK_PATTERN.test(value)) return
       WIKILINK_PATTERN.lastIndex = 0
 
-      const newNodes: object[] = []
+      const newNodes: PhrasingContent[] = []
       let lastIndex = 0
       let match: RegExpExecArray | null
 

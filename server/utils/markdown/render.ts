@@ -4,6 +4,7 @@ import remarkParse from 'remark-parse'
 import remarkRehype from 'remark-rehype'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import rehypeStringify from 'rehype-stringify'
+import type { Root } from 'hast'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import { ATTACHMENTS_DIR } from '../attachments'
@@ -30,7 +31,7 @@ function rewriteIfAttachment(value: string): string {
  * (there's no static file server for the vault).
  */
 function rehypeRewriteAttachmentLinks() {
-  return (tree: object) => {
+  return (tree: Root) => {
     visit(tree, 'element', (node) => {
       if (!('tagName' in node) || typeof node.tagName !== 'string') return
       if (!('properties' in node) || typeof node.properties !== 'object' || node.properties === null) return
