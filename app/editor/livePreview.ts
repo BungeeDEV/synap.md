@@ -40,18 +40,28 @@ class HrWidget extends WidgetType {
   override eq(): boolean { return true }
   override toDOM(): HTMLElement {
     const hr = document.createElement('div')
-    hr.className = 'my-2 border-t border-border-strong'
+    // border-border (not -strong): matches the Preview's `--tw-prose-hr`,
+    // which points at the same `borderDefault` token.
+    hr.className = 'my-2 border-t border-border'
     return hr
   }
 }
 
 const HORIZONTAL_RULE = Decoration.replace({ widget: new HrWidget() })
 
-// Line-level decoration (accent bar + soft background), matching the
-// read-only Preview's blockquote treatment (tailwind.config.ts's
-// `typography.blockquote`) - QuoteMark handling above only conceals the
-// ">" character, it doesn't give the line itself any visual weight.
+// Line-level decoration: just the left accent bar, applied to every line
+// spanned by the blockquote so the bar reads as one continuous stripe next
+// to a multi-line quote. The soft background itself is a separate *mark*
+// decoration (BLOCKQUOTE_TEXT below) bounded to each line's actual quoted
+// text - putting the background on the line instead would color the whole
+// `.cm-line` (which spans the full editor width), reading as a generic
+// "active line" highlight rather than a deliberate box around the quote.
 const BLOCKQUOTE_LINE = Decoration.line({ class: 'cm-blockquote-line' })
+const BLOCKQUOTE_TEXT = Decoration.mark({ class: 'cm-blockquote-text' })
+// Matches a leading QuoteMark ("> ", possibly indented) so the text-box
+// decoration can start right after it without waiting for the QuoteMark
+// node's own (separately-timed) tree visit.
+const QUOTE_PREFIX_RE = /^\s*>\s?/
 
 class ImageWidget extends WidgetType {
   constructor(private readonly alt: string, private readonly src: string) { super() }
@@ -129,6 +139,12 @@ function buildDecorations(view: EditorView): DecorationSet {
           for (let ln = startLine; ln <= endLine; ln++) {
             const line = view.state.doc.line(ln)
             pieces.push({ from: line.from, to: line.from, deco: BLOCKQUOTE_LINE })
+
+            const prefix = QUOTE_PREFIX_RE.exec(view.state.sliceDoc(line.from, line.to))
+            const textFrom = line.from + (prefix?.[0].length ?? 0)
+            if (textFrom < line.to) {
+              pieces.push({ from: textFrom, to: line.to, deco: BLOCKQUOTE_TEXT })
+            }
           }
           return
         }

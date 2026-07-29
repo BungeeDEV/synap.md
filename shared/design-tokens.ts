@@ -18,11 +18,17 @@ export const fontFamily = {
   mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
 } as const
 
-/** Alpha-blends a `#rrggbb` token to rgba() - used by the CodeMirror heading highlight (graduated accent opacity per level) rather than adding new hue tokens. */
-export function withAlpha(hex: string, alpha: number): string {
-  const normalized = hex.replace('#', '')
-  const r = Number.parseInt(normalized.slice(0, 2), 16)
-  const g = Number.parseInt(normalized.slice(2, 4), 16)
-  const b = Number.parseInt(normalized.slice(4, 6), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
+/**
+ * Heading font-size ratios, shared by the CodeMirror Magic View highlight
+ * style (NoteEditor.vue) and derived from `@tailwindcss/typography`'s
+ * `prose-sm` scale (the read-only Preview's actual rendering, see
+ * tailwind.config.ts's `typography.css` block) - 30/20/18px over its 14px
+ * base. h4 has no size override in that scale either (bold + tight tracking
+ * only, same as body size) - Magic View mirrors that rather than inventing a
+ * 4th step, so both views stay pixel-equivalent instead of drifting apart.
+ */
+export const headingFontSize = {
+  h1: '2.143em',
+  h2: '1.429em',
+  h3: '1.286em'
+} as const

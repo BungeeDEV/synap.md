@@ -6,33 +6,44 @@ import { defaultHighlightStyle, HighlightStyle, syntaxHighlighting } from '@code
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { colors, fontFamily, withAlpha } from '#shared/design-tokens'
+import { colors, fontFamily, headingFontSize } from '#shared/design-tokens'
 import { livePreview } from '~/editor/livePreview'
 import { slashCommandTrigger } from '~/editor/slashCommandTrigger'
 import { smartEditing } from '~/editor/smartEditing'
 import { wikilinkAutocomplete } from '~/editor/wikilinkAutocomplete'
 import { uploadAttachment } from '~/utils/attachmentUpload'
 
-// Graduated accent opacity per heading level (plus weight/size) instead of
-// distinct hues - STYLEGUIDE.md's "ein einziger Akzentton" principle stays
-// intact while headings/emphasis/links/code are still visually distinct at
-// a glance. Tag names come from @lezer/markdown's styleTags map (ATXHeading1
-// -> tags.heading1, StrongEmphasis -> tags.strong, etc.) - the markdown
-// parser doesn't know about wikilinks, so `[[...]]` isn't separately styled
-// here (only in the rendered NoteReader output).
+// Heading sizes/color are pulled from `headingFontSize` (design-tokens.ts),
+// the same prose-sm scale the read-only Preview renders with - a previous
+// version graduated *accent* opacity per level instead, which both departed
+// from the Preview's actual (accent-free, size-driven) look and produced too
+// subtle a step between adjacent levels to read as a real hierarchy. h5/h6
+// have no Preview equivalent (prose-sm doesn't style them either), so they
+// keep a smaller ad-hoc step down, still in contentPrimary rather than
+// accent for consistency with h1-h4. Tag names come from @lezer/markdown's
+// styleTags map (ATXHeading1 -> tags.heading1, StrongEmphasis -> tags.strong,
+// etc.) - the markdown parser doesn't know about wikilinks, so `[[...]]`
+// isn't separately styled here (only in the rendered NoteReader output).
 const markdownHighlightStyle = HighlightStyle.define([
-  { tag: tags.heading1, color: colors.accent, fontWeight: '700', fontSize: '1.3em' },
-  { tag: tags.heading2, color: withAlpha(colors.accent, 0.85), fontWeight: '700', fontSize: '1.15em' },
-  { tag: tags.heading3, color: withAlpha(colors.accent, 0.7), fontWeight: '600', fontSize: '1.08em' },
-  { tag: tags.heading4, color: withAlpha(colors.accent, 0.6), fontWeight: '600' },
-  { tag: tags.heading5, color: withAlpha(colors.accent, 0.5), fontWeight: '600' },
-  { tag: tags.heading6, color: withAlpha(colors.accent, 0.45), fontWeight: '600', fontStyle: 'italic' },
+  { tag: tags.heading1, color: colors.contentPrimary, fontWeight: '600', letterSpacing: '-0.01em', fontSize: headingFontSize.h1 },
+  { tag: tags.heading2, color: colors.contentPrimary, fontWeight: '600', letterSpacing: '-0.01em', fontSize: headingFontSize.h2 },
+  { tag: tags.heading3, color: colors.contentPrimary, fontWeight: '600', letterSpacing: '-0.01em', fontSize: headingFontSize.h3 },
+  { tag: tags.heading4, color: colors.contentPrimary, fontWeight: '600', letterSpacing: '-0.01em' },
+  { tag: tags.heading5, color: colors.contentPrimary, fontWeight: '600', fontSize: '0.95em' },
+  { tag: tags.heading6, color: colors.contentPrimary, fontWeight: '600', fontSize: '0.9em', fontStyle: 'italic' },
   { tag: tags.strong, color: colors.contentPrimary, fontWeight: '700' },
   { tag: tags.emphasis, color: colors.contentPrimary, fontStyle: 'italic' },
   { tag: tags.strikethrough, color: colors.contentTertiary, textDecoration: 'line-through' },
-  { tag: tags.link, color: colors.accent, textDecoration: 'underline' },
+  { tag: tags.link, color: colors.accent, textDecoration: 'underline', textUnderlineOffset: '2px' },
   { tag: tags.url, color: colors.accent },
-  { tag: tags.monospace, color: colors.contentPrimary, backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  {
+    tag: tags.monospace,
+    color: colors.contentPrimary,
+    fontFamily: fontFamily.mono.join(', '),
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: '0.375rem',
+    padding: '0.15em 0.4em'
+  },
   { tag: tags.quote, color: colors.contentSecondary, fontStyle: 'italic' },
   { tag: tags.list, color: colors.contentSecondary },
   { tag: tags.atom, color: colors.accent },
@@ -146,6 +157,12 @@ onMounted(() => {
         // this near-black background. drawSelection() also activates the
         // `.cm-cursor`/`.cm-dropCursor` layer our theme below already styles.
         drawSelection(),
+        // Without this, the browser's native spell-checker runs over the
+        // contentEditable surface and draws its own squiggly underline
+        // across concealed/re-rendered Markdown spans (most visibly under
+        // Magic View's blockquote text) - easy to mistake for an app bug
+        // since nothing in this codebase ever draws that underline itself.
+        EditorView.contentAttributes.of({ spellcheck: 'false' }),
         livePreviewCompartment.of(mode.value === 'live' ? [livePreview()] : []),
         wikilinkAutocomplete(),
         smartEditing(),
@@ -225,13 +242,23 @@ onMounted(() => {
           '.cm-content': {
             padding: '1.25rem 2rem 8rem'
           },
-          // Matches the read-only Preview's blockquote box (tailwind.config.ts
-          // typography.blockquote) - QuoteMark concealment only hides the ">",
-          // this gives the line the same accent-bar + soft-background weight.
+          // Continuous accent bar for the whole quote block (line-level, so
+          // it spans every line even where the text itself is short) - the
+          // soft background lives on `.cm-blockquote-text` below instead, so
+          // it stays bounded to the quoted text rather than the full-width
+          // `.cm-line` box.
           '.cm-blockquote-line': {
             borderLeft: `2px solid ${colors.accentSoft}`,
-            backgroundColor: 'rgba(255, 255, 255, 0.02)',
             paddingLeft: '0.75rem'
+          },
+          // Matches the read-only Preview's blockquote box (tailwind.config.ts
+          // typography.blockquote / STYLEGUIDE.md's "Callout/Blockquote"
+          // recipe) - bounded to the actual quoted text per line via a mark
+          // decoration, not the full editor width.
+          '.cm-blockquote-text': {
+            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '0.25rem',
+            padding: '0.05rem 0.5rem'
           },
           '.cm-cursor, .cm-dropCursor': { borderLeftColor: colors.accent, borderLeftWidth: '2px' },
           '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: colors.accentSoft }

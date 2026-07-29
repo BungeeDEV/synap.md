@@ -184,10 +184,13 @@ text-accent                                /* favorisiert, fill="currentColor" *
 hover:bg-white/[0.04] transition-colors duration-150 rounded-md
 ```
 
-**View-Toggle Pill (Reader/Code/Split) - aktiv**
+**View-Toggle Pill (Quelltext/Magic View/Split/Vorschau) - aktiv**
 ```
-bg-surface-2 rounded-full px-3 py-1 text-content-primary
+bg-accent rounded-full text-white
 ```
+Volltonige Akzentfläche statt `bg-surface-2` - der Modus-Umschalter ist ein
+Segmented Control, dessen Aktiv-Zustand auf den ersten Blick eindeutig sein
+muss (gleiche Kontrast-Logik wie "Slash-Menu - aktive Zeile").
 
 **View-Toggle Pill - inaktiv**
 ```
