@@ -56,6 +56,62 @@
     pointer-events: none;
     @apply text-content-tertiary;
   }
+
+  /*
+   * Global custom scrollbar (WebKit + Firefox) - replaces the native
+   * light-on-dark scrollbar everywhere (sidebar, editor, dialogs, ...) with
+   * one rule set instead of a per-component class, since every scrollable
+   * panel should look the same. Scoped to `pointer: fine` only, so touch
+   * devices keep their own minimal native indicator untouched rather than
+   * getting this desktop treatment forced onto them.
+   *
+   * Idle state is track/thumb-transparent (Linear/Notion/VS Code-style
+   * "quiet until needed"), revealed on `:hover` *or* `:focus-within` rather
+   * than a JS scroll listener - mouse-wheel scrolling always requires the
+   * cursor to be over the element (`:hover` already true), and keyboard
+   * scrolling requires a focused descendant (`:focus-within` already true),
+   * so this covers "visible while scrolling" for both input modes without
+   * extra JS. Track/thumb keep their layout box at 0 opacity/transparent,
+   * so the thumb fading in never reflows content - no `scrollbar-gutter`
+   * needed on top of that.
+   */
+  @media (pointer: fine) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+
+    *:hover,
+    *:focus-within {
+      /* Mirrors border.strong in shared/design-tokens.ts - scrollbar-color
+         isn't a Tailwind-generated property, so it can't be @apply'd. */
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      @apply bg-transparent;
+      border-radius: 9999px;
+      transition: background-color 150ms ease-out;
+    }
+
+    *:hover::-webkit-scrollbar-thumb,
+    *:focus-within::-webkit-scrollbar-thumb {
+      @apply bg-border-strong;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-content-tertiary/50;
+    }
+  }
 }
 
 /*
@@ -66,7 +122,8 @@
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after {
+  *::after,
+  *::-webkit-scrollbar-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -53,7 +53,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 
   <aside
     class="fixed inset-y-0 left-0 z-50 flex h-full w-80 shrink-0 flex-col border-r border-border bg-surface-1 text-base text-content-primary transition-transform duration-150 md:static md:z-auto md:translate-x-0"
-    :class="mobileNav.isDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
+    :class="[
+      mobileNav.isDrawerOpen ? 'translate-x-0' : '-translate-x-full',
+      sidebarPanel.collapsed ? 'md:hidden' : ''
+    ]"
   >
     <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 py-2 pt-safe-t">
       <div class="relative">

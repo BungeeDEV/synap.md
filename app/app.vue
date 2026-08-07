@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useGlobalHotkeys()
+
 // Preferences require a session, so /login and /setup (which app.vue also
 // wraps, via NuxtPage) must not trigger the fetch - loggedIn flips true
 // right after login.vue's refreshSession(), which this watcher picks up

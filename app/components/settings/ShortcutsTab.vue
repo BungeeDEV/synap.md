@@ -3,9 +3,12 @@
 // in this phase, so add new entries here whenever a new keybinding ships.
 const shortcuts = [
   { keys: ['Cmd/Ctrl', 'K'], description: 'Command Palette öffnen' },
-  { keys: ['Cmd/Ctrl', 'N'], description: 'Neue Note erstellen' },
-  { keys: ['Cmd/Ctrl', 'Shift', 'F'], description: 'Suche öffnen' },
+  { keys: ['Cmd/Ctrl', 'F'], description: 'Suche öffnen' },
+  { keys: ['Cmd/Ctrl', 'Alt', 'N'], description: 'Neue Note erstellen' },
+  { keys: ['Cmd/Ctrl', '\\'], description: 'Seitenleiste ein-/ausblenden' },
   { keys: ['Cmd/Ctrl', 'S'], description: 'Note speichern' },
+  { keys: ['Cmd/Ctrl', 'B'], description: 'Fett' },
+  { keys: ['Cmd/Ctrl', 'I'], description: 'Kursiv' },
   { keys: ['Esc'], description: 'Dialog oder Palette schließen' },
   { keys: ['↑', '↓', 'Enter'], description: 'Navigation in Palette, Autocomplete und Slash-Menü' }
 ]

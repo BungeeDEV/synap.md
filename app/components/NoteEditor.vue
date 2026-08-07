@@ -61,15 +61,28 @@ function onAttachmentInputChange(event: Event): void {
   if (file) void insertAttachment(file)
 }
 
-/** Mod-S as a real ProseMirror keymap binding (not a DOM listener on the wrapper) - guaranteed to fire regardless of exactly which descendant of the contenteditable currently has focus. */
-const SaveShortcut = Extension.create({
-  name: 'saveShortcut',
+/**
+ * Editor-local hotkeys as real ProseMirror keymap bindings, not DOM
+ * listeners on the wrapper - guaranteed to fire regardless of exactly which
+ * descendant of the contenteditable currently has focus, and (per Tiptap/
+ * ProseMirror's keymap contract) a handler returning `true` already calls
+ * `event.preventDefault()` for us - no manual preventDefault needed here.
+ * Bold/Italic/Strike/Code/Headings/Lists/etc. don't need anything of their
+ * own: StarterKit's bundled extensions each ship their own standard
+ * shortcut (Mod-b, Mod-i, Mod-Shift-s, Mod-e, Mod-Alt-1..3, Mod-Shift-8/7,
+ * Mod-Shift-b, ...) automatically the moment they're included - only Mod-S
+ * (save) and Mod-Enter (task list toggle, not a Tiptap default) need
+ * explicit bindings here.
+ */
+const EditorHotkeys = Extension.create({
+  name: 'editorHotkeys',
   addKeyboardShortcuts() {
     return {
       'Mod-s': () => {
         saveNow()
         return true
-      }
+      },
+      'Mod-Enter': () => this.editor.chain().focus().toggleTaskList().run()
     }
   }
 })
@@ -78,7 +91,7 @@ const editor = useEditor({
   content: tab.value?.content ?? '',
   extensions: [
     ...buildEditorExtensions({ onWikilinkNavigate: (path) => void tabs.openTab(path) }),
-    SaveShortcut
+    EditorHotkeys
   ],
   editorProps: {
     attributes: {
