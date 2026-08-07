@@ -164,7 +164,16 @@ watch(
   <div class="relative flex h-full min-h-0 flex-col">
     <input ref="attachmentInputRef" type="file" class="hidden" @change="onAttachmentInputChange">
 
-    <div class="flex h-11 shrink-0 items-center justify-end border-b border-border bg-surface-1 px-2">
+    <!--
+      No more full-width toolbar row (wasted vertical space, read as an extra
+      "bar" of chrome above the document) - the mode toggle floats directly
+      over the top-right corner of the editor pane instead, outside the
+      scrolling container below so it stays put while the document scrolls
+      underneath it. Only in editor mode - reader mode has its own
+      DocumentBreadcrumb bar that hosts this same toggle inline instead
+      (avoids the two floating independently and colliding in that corner).
+    -->
+    <div v-if="mode !== 'reader'" class="absolute right-6 top-4 z-30">
       <ViewModeToggle
         :model-value="mode"
         @update:model-value="(next) => tabs.setViewMode(props.path, next)"
@@ -190,7 +199,7 @@ watch(
       :class="mode === 'reader' ? 'hidden' : ''"
       @mousedown="focusEditorIfOutsideContent"
     >
-      <div class="relative mx-auto max-w-editor px-8 pt-24 pb-48">
+      <div class="relative mx-auto max-w-editor px-8 pt-16 pb-48">
         <EditorBubbleMenu v-if="editor" :editor="editor" />
         <EditorContent :editor="editor" />
       </div>

@@ -6,13 +6,17 @@ import { extractHeadings } from '~/utils/extractHeadings'
 // element headings are queried from, since it contains the v-html'd prose.
 const props = defineProps<{ content: string, container: HTMLElement | null }>()
 
+// Level 1 sits flush with the "Contents" label above it (no extra indent);
+// each level below steps in further. Previously every level (including 1)
+// carried its own `pl-*`, which fought the row's shared `px-4` and left
+// top-level entries visibly offset from the label instead of flush under it.
 const INDENT_CLASSES: Record<number, string> = {
-  1: 'pl-2',
-  2: 'pl-4',
+  1: '',
+  2: 'pl-3',
   3: 'pl-6',
-  4: 'pl-8',
-  5: 'pl-10',
-  6: 'pl-12'
+  4: 'pl-9',
+  5: 'pl-12',
+  6: 'pl-14'
 }
 
 // Parsed from the raw Markdown (same extractHeadings.ts OutlinePanel.vue
@@ -64,16 +68,16 @@ function jumpTo(index: number): void {
 <template>
   <nav
     v-if="headings.length"
-    class="sticky top-0 hidden w-56 shrink-0 self-start overflow-y-auto overscroll-contain px-3 py-4 text-sm lg:block"
+    class="sticky top-0 hidden w-56 shrink-0 self-start overflow-y-auto overscroll-contain py-4 text-sm lg:block [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb:hover]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
   >
-    <p class="mb-2 px-2 text-xs font-medium tracking-wider text-content-tertiary uppercase">
+    <p class="mb-4 px-4 text-xs font-semibold tracking-wider text-content-tertiary uppercase">
       Contents
     </p>
-    <ul class="space-y-1">
+    <ul class="space-y-2 px-4">
       <li v-for="(heading, index) in headings" :key="`${heading.line}-${index}`">
         <button
           type="button"
-          class="block w-full truncate rounded-md px-2 py-1 text-left transition-colors duration-150"
+          class="block w-full truncate rounded-md py-1 text-left transition-colors duration-150"
           :class="[INDENT_CLASSES[heading.level], index === activeIndex ? 'font-medium text-accent' : 'text-content-tertiary hover:text-content-secondary']"
           @click="jumpTo(index)"
         >

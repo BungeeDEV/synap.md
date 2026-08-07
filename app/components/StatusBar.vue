@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { AlertTriangle, Check, Cloud } from 'lucide-vue-next'
+
 const props = defineProps<{ content: string, saving: boolean, conflict: boolean }>()
 
 const wordCount = computed(() => {
@@ -14,16 +16,15 @@ const statusLabel = computed(() => {
   return 'Gespeichert'
 })
 
-const statusDotClass = computed(() => {
-  if (props.conflict) return 'bg-danger'
-  if (props.saving) return 'bg-content-tertiary animate-pulse'
-  return 'bg-success'
-})
+// Monochrome by default (VS Code/Obsidian-style status bar, not a colored
+// badge) - conflict is the one state that stays red, since that's a real
+// problem the user needs to notice, not a routine save tick.
+const statusIcon = computed(() => (props.conflict ? AlertTriangle : props.saving ? Cloud : Check))
+const statusIconClass = computed(() => (props.conflict ? 'text-danger' : 'text-content-tertiary'))
 
-// Brief scale "pop" on the dot right when a save completes (saving -> not
-// saving, no conflict) - a quieter alternative to a toast/checkmark for
-// something that happens this often, per the "dezenter aufblitzender Punkt"
-// ask rather than console-only feedback.
+// Brief scale "pop" on the icon right when a save completes (saving -> not
+// saving, no conflict) - a quieter alternative to a toast for something
+// that happens this often.
 const justSaved = ref(false)
 let flashTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -38,13 +39,14 @@ onBeforeUnmount(() => { if (flashTimer) clearTimeout(flashTimer) })
 </script>
 
 <template>
-  <div class="pointer-events-none fixed bottom-3 right-3 z-30 flex touch-manipulation select-none items-center gap-3 rounded-full border border-border bg-surface-1/95 px-3 py-1.5 text-sm text-content-tertiary shadow-float">
+  <div class="flex h-6 w-full shrink-0 touch-manipulation select-none items-center justify-between border-t border-border px-3 text-xs text-content-tertiary">
     <span>{{ wordCount }} Wörter · {{ charCount }} Zeichen</span>
-    <span class="h-3.5 w-px bg-border" />
-    <span class="flex items-center gap-1.5">
-      <span
-        class="h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300"
-        :class="[statusDotClass, justSaved ? 'scale-150' : 'scale-100']"
+    <span class="flex items-center gap-1.5" :class="conflict ? 'text-danger' : ''">
+      <component
+        :is="statusIcon"
+        class="h-3.5 w-3.5 shrink-0 transition-transform duration-300"
+        :class="[statusIconClass, justSaved ? 'scale-125' : 'scale-100']"
+        stroke-width="1.75"
       />
       {{ statusLabel }}
     </span>

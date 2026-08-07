@@ -10,6 +10,7 @@ const tocVisible = ref(true)
 
 const activeTab = computed(() => tabs.tabs.find((t) => t.path === props.path))
 const title = computed(() => activeTab.value?.title ?? '')
+const mode = computed(() => activeTab.value?.viewMode ?? 'editor')
 // Re-render whenever the on-disk content we know about changes (a save
 // completing, or "externe Version laden" during a conflict) - both update
 // lastKnownMtime, which render.get.ts's source (the file on disk) tracks.
@@ -47,7 +48,13 @@ function onClick(event: MouseEvent): void {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <DocumentBreadcrumb :path="props.path" :toc-visible="tocVisible" @toggle-toc="tocVisible = !tocVisible" />
+    <DocumentBreadcrumb
+      :path="props.path"
+      :toc-visible="tocVisible"
+      :mode="mode"
+      @toggle-toc="tocVisible = !tocVisible"
+      @update:mode="(next) => tabs.setViewMode(props.path, next)"
+    />
 
     <div ref="scrollContainer" class="flex min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div class="min-w-0 flex-1 px-6 py-6">
