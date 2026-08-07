@@ -38,19 +38,27 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
     optimizeDeps: {
       include: [
-        '@codemirror/autocomplete',
-        '@codemirror/commands',
-        '@codemirror/lang-markdown',
-        '@codemirror/language',
-        '@codemirror/state',
-        '@codemirror/view',
-        '@lezer/highlight',
+        '@tiptap/core',
+        '@tiptap/vue-3',
+        '@tiptap/vue-3/menus',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-image',
+        '@tiptap/extension-task-list',
+        '@tiptap/extension-task-item',
+        '@tiptap/extension-placeholder',
+        '@tiptap/suggestion',
+        '@tiptap/pm/state',
+        '@tiptap/pm/model',
+        '@tiptap/pm/view',
+        '@tiptap/pm/tables',
+        '@floating-ui/dom',
+        'tiptap-markdown',
         'lucide-vue-next'
       ]
     },
     build: {
-      // The CodeMirror stack (state+view+commands+autocomplete+lang-markdown
-      // +lezer-highlight) is its own lazy chunk (index.vue uses
+      // The Tiptap/ProseMirror stack (core+vue-3+starter-kit+the extensions
+      // above+tiptap-markdown) is its own lazy chunk (index.vue uses
       // <LazyNoteEditor>, not <NoteEditor>) and only loads once a note is
       // actually opened - it just doesn't fit Rollup's generic 500kB default
       // on its own. Raised rather than silenced entirely so a genuinely

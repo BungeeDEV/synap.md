@@ -39,6 +39,23 @@
   :focus-visible {
     @apply outline-none ring-1 ring-accent/50;
   }
+
+  /*
+   * Tiptap's Placeholder extension (empty-editor hint text, NoteEditor.vue)
+   * needs this exact recipe - browsers have no way to style a contenteditable
+   * element's "placeholder" other than a real ::before + content: attr(...),
+   * and Tailwind has no utility for that. Same sanctioned exception as the
+   * block above and as CodeMirror's old EditorView.theme() was for the
+   * previous editor (see components.md) - a ProseMirror-internal structural
+   * rule Tailwind classes genuinely can't express, not a design decision.
+   */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    @apply text-content-tertiary;
+  }
 }
 
 /*

@@ -1,6 +1,6 @@
 import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '#shared/preferences'
 
-const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['code', 'split', 'reader', 'live']
+const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['editor', 'reader']
 
 function parseDailyNotes(raw: unknown): DailyNotesPreferences {
   const parsed = (raw && typeof raw === 'object' ? raw : {}) as Partial<DailyNotesPreferences>
@@ -36,7 +36,6 @@ export function parsePreferences(json: string): EditorPreferences {
     editorFontSize: typeof parsed.editorFontSize === 'number' && parsed.editorFontSize >= 10 && parsed.editorFontSize <= 24
       ? parsed.editorFontSize
       : DEFAULT_PREFERENCES.editorFontSize,
-    lineWrap: typeof parsed.lineWrap === 'boolean' ? parsed.lineWrap : DEFAULT_PREFERENCES.lineWrap,
     dailyNotes: parseDailyNotes(parsed.dailyNotes),
     favorites: parseStringArray(parsed.favorites, DEFAULT_PREFERENCES.favorites),
     expandedFolders: parseStringArray(parsed.expandedFolders, DEFAULT_PREFERENCES.expandedFolders)

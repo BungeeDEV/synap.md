@@ -9,13 +9,12 @@ interface DailyNotesPutBody {
 interface PreferencesPutBody {
   defaultViewMode?: unknown
   editorFontSize?: unknown
-  lineWrap?: unknown
   dailyNotes?: DailyNotesPutBody
   favorites?: unknown
   expandedFolders?: unknown
 }
 
-const VIEW_MODES = ['code', 'split', 'reader', 'live']
+const VIEW_MODES = ['editor', 'reader']
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
@@ -26,14 +25,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<PreferencesPutBody>(event)
 
   if (body?.defaultViewMode !== undefined && !VIEW_MODES.includes(body.defaultViewMode as string)) {
-    throw createError({ statusCode: 400, statusMessage: '"defaultViewMode" must be one of code, split, reader, live' })
+    throw createError({ statusCode: 400, statusMessage: '"defaultViewMode" must be one of editor, reader' })
   }
   if (body?.editorFontSize !== undefined
     && (typeof body.editorFontSize !== 'number' || body.editorFontSize < 10 || body.editorFontSize > 24)) {
     throw createError({ statusCode: 400, statusMessage: '"editorFontSize" must be a number between 10 and 24' })
-  }
-  if (body?.lineWrap !== undefined && typeof body.lineWrap !== 'boolean') {
-    throw createError({ statusCode: 400, statusMessage: '"lineWrap" must be a boolean' })
   }
   if (body?.dailyNotes?.folder !== undefined
     && (typeof body.dailyNotes.folder !== 'string' || body.dailyNotes.folder.trim().length === 0)) {
@@ -62,7 +58,6 @@ export default defineEventHandler(async (event) => {
     ...current,
     ...(body.defaultViewMode !== undefined && { defaultViewMode: body.defaultViewMode as EditorPreferences['defaultViewMode'] }),
     ...(body.editorFontSize !== undefined && { editorFontSize: body.editorFontSize as number }),
-    ...(body.lineWrap !== undefined && { lineWrap: body.lineWrap as boolean }),
     ...(body.dailyNotes !== undefined && {
       dailyNotes: {
         ...current.dailyNotes,

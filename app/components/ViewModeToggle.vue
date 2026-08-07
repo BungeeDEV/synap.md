@@ -1,26 +1,18 @@
 <script setup lang="ts">
-import { Code2, Columns2, Eye, Wand2 } from 'lucide-vue-next'
+import { Eye, PenLine } from 'lucide-vue-next'
 import type { ViewMode } from '~/stores/tabs'
 
 const modelValue = defineModel<ViewMode>({ required: true })
 
-const { isMobile } = useIsMobile()
-
-// Ordered raw -> rendered, mirroring the actual editing spectrum (Obsidian's
-// Source/Live Preview/Reading, plus our extra Split) rather than the
-// arbitrary order the four modes were added in.
-const allModes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
-  { value: 'code', label: 'Quelltext', icon: Code2 },
-  { value: 'live', label: 'Magic View', icon: Wand2 },
-  { value: 'split', label: 'Geteilte Ansicht', icon: Columns2 },
+// Just 2 modes now that the Tiptap editor itself is WYSIWYG/live-preview -
+// "Quelltext"/"Magic View"/"Split" all collapsed into the one editor mode,
+// see the Tiptap-Rewrite plan's view-mode consolidation decision.
+const modes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
+  { value: 'editor', label: 'Editor', icon: PenLine },
   { value: 'reader', label: 'Vorschau', icon: Eye }
 ]
 
-// Split-pane editing has no room on a phone-width viewport, so the pill
-// simply doesn't offer it there - see useMobileSplitViewGuard for the
-// matching reactive downgrade of tabs already sitting in 'split'.
-const modes = computed(() => isMobile.value ? allModes.filter((mode) => mode.value !== 'split') : allModes)
-const activeIndex = computed(() => modes.value.findIndex((mode) => mode.value === modelValue.value))
+const activeIndex = computed(() => modes.findIndex((mode) => mode.value === modelValue.value))
 </script>
 
 <template>

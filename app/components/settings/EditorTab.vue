@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Check, Code2, Columns2, Eye, Wand2 } from 'lucide-vue-next'
+import { Eye, PenLine } from 'lucide-vue-next'
 import type { ViewMode } from '~/stores/tabs'
 
 const preferences = usePreferencesStore()
 const { show } = useToast()
 
+// Just 2 modes now that the Tiptap editor is WYSIWYG/live-preview itself -
+// see ViewModeToggle.vue.
 const modes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
-  { value: 'reader', label: 'Reader', icon: Eye },
-  { value: 'split', label: 'Split', icon: Columns2 },
-  { value: 'code', label: 'Code', icon: Code2 },
-  { value: 'live', label: 'Live', icon: Wand2 }
+  { value: 'editor', label: 'Editor', icon: PenLine },
+  { value: 'reader', label: 'Vorschau', icon: Eye }
 ]
 
 async function setDefaultViewMode(mode: ViewMode): Promise<void> {
@@ -25,15 +25,6 @@ async function setFontSize(event: Event): Promise<void> {
   const size = Number((event.target as HTMLInputElement).value)
   try {
     await preferences.update({ editorFontSize: size })
-  } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
-  }
-}
-
-async function setLineWrap(event: Event): Promise<void> {
-  const checked = (event.target as HTMLInputElement).checked
-  try {
-    await preferences.update({ lineWrap: checked })
   } catch {
     show('Einstellung konnte nicht gespeichert werden', 'error')
   }
@@ -78,27 +69,6 @@ async function setLineWrap(event: Event): Promise<void> {
         >
         <span class="w-12 font-mono text-sm text-content-primary">{{ preferences.preferences.editorFontSize }}px</span>
       </div>
-    </section>
-
-    <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Zeilenumbruch
-      </h2>
-      <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-content-secondary">
-        <input
-          type="checkbox"
-          :checked="preferences.preferences.lineWrap"
-          class="sr-only"
-          @change="setLineWrap"
-        >
-        <span
-          class="flex h-5 w-5 shrink-0 items-center justify-center rounded"
-          :class="preferences.preferences.lineWrap ? 'bg-accent' : 'border border-white/20'"
-        >
-          <Check v-if="preferences.preferences.lineWrap" class="h-3.5 w-3.5 text-white" stroke-width="1.75" />
-        </span>
-        Zeilenumbruch im Editor aktivieren
-      </label>
     </section>
   </div>
 </template>

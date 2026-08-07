@@ -34,6 +34,14 @@ export default {
       boxShadow: {
         float: '0 20px 60px rgba(0,0,0,0.5)'
       },
+      maxWidth: {
+        // NoteEditor.vue's reading/writing column - named token instead of
+        // an arbitrary `max-w-[750px]` per STYLEGUIDE.md's "config first"
+        // rule. Distinct from the existing `max-w-3xl` (768px, NoteReader's
+        // width) - the full-page-canvas editor rewrite asked for exactly
+        // 750px, close but deliberately not unified with the reader's value.
+        editor: '750px'
+      },
       height: {
         // 100dvh instead of 100vh: vh is computed against the largest
         // possible viewport and doesn't shrink when the mobile browser's
@@ -85,7 +93,23 @@ export default {
             maxWidth: 'none',
             a: { fontWeight: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' },
             'h1, h2, h3, h4': { fontWeight: '600', letterSpacing: '-0.01em' },
-            h2: { borderBottom: `1px solid ${colors.borderDefault}`, paddingBottom: '0.5rem' },
+            // Deliberately more generous than the plugin's own defaults -
+            // large top gaps before h2/h3 (they start a new section) and a
+            // tight gap after (they belong with what follows), Notion/
+            // Outline-style. em-based (not fixed rem) so the rhythm scales
+            // correctly whether an element uses `prose` or `prose-sm`.
+            h1: { fontWeight: '700', marginTop: '0', marginBottom: '1.2em' },
+            h2: {
+              marginTop: '2em',
+              marginBottom: '0.5em',
+              borderBottom: `1px solid ${colors.borderDefault}`,
+              paddingBottom: '0.5rem'
+            },
+            h3: { marginTop: '1.75em', marginBottom: '0.5em' },
+            p: { lineHeight: '1.7' },
+            'ul, ol': { paddingLeft: '1.5em', marginTop: '1.25em', marginBottom: '1.25em' },
+            li: { marginTop: '0.35em', marginBottom: '0.35em' },
+            'li > p': { marginTop: '0.35em', marginBottom: '0.35em' },
             blockquote: {
               fontWeight: '400',
               fontStyle: 'italic',
@@ -112,7 +136,25 @@ export default {
             'code::before': { content: 'none' },
             'code::after': { content: 'none' },
             pre: { backgroundColor: colors.surface2, border: `1px solid ${colors.borderDefault}` },
-            'a[data-wikilink-broken]': { textDecorationStyle: 'dashed' }
+            'a[data-wikilink-broken]': { textDecorationStyle: 'dashed' },
+            // Tiptap's TaskList/TaskItem DOM (`<ul data-type="taskList"><li
+            // data-type="taskItem"><label><input type=checkbox>...`) isn't a
+            // plain <ul><li> list, so it needs its own layout - the native
+            // checkbox's own `accent-color` (accentColor below) replaces the
+            // read-only reader's own checkbox styling recipe, since there's
+            // no clean way to fake the "filled + white check icon" look on a
+            // real <input> without a background-image data URI.
+            'ul[data-type="taskList"]': { listStyle: 'none', margin: '0', padding: '0' },
+            'ul[data-type="taskList"] li': { display: 'flex', alignItems: 'flex-start', gap: '0.5rem' },
+            'ul[data-type="taskList"] li > label': { marginTop: '0.35em', userSelect: 'none' },
+            'ul[data-type="taskList"] li > div': { flex: '1 1 auto' },
+            'ul[data-type="taskList"] li > div > p': { margin: '0' },
+            'ul[data-type="taskList"] input[type="checkbox"]': {
+              width: '1rem',
+              height: '1rem',
+              borderRadius: '0.25rem',
+              accentColor: colors.accent
+            }
           }
         }
       }

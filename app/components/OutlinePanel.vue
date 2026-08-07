@@ -15,7 +15,7 @@ const INDENT_CLASSES: Record<number, string> = {
 
 const sidebarPanel = useSidebarPanelStore()
 const tabs = useTabsStore()
-const { view } = useActiveEditorView()
+const { editor } = useActiveEditor()
 
 const activeTab = computed(() => tabs.activeTab)
 const filterQuery = ref('')
@@ -49,12 +49,29 @@ const filteredHeadings = computed(() => {
   return headings.value.filter((heading) => heading.text.toLowerCase().includes(query))
 })
 
+/**
+ * Jumps by heading *index* (within the full, unfiltered `headings` list -
+ * `filteredHeadings` may only show a subset while searching, so this looks
+ * up `heading`'s true position via reference equality first), matched
+ * against the Nth `heading` node in the live editor doc. Same index-matching
+ * approach TableOfContents.vue uses against the rendered reader HTML - see
+ * decisions.md.
+ */
 function jumpToHeading(heading: Heading): void {
-  if (!view.value) return
-  const lineNumber = Math.min(Math.max(heading.line, 1), view.value.state.doc.lines)
-  const line = view.value.state.doc.line(lineNumber)
-  view.value.dispatch({ selection: { anchor: line.from }, scrollIntoView: true })
-  view.value.focus()
+  if (!editor.value) return
+  const targetIndex = headings.value.indexOf(heading)
+  if (targetIndex === -1) return
+
+  let currentIndex = 0
+  let targetPos: number | null = null
+  editor.value.state.doc.descendants((node, pos) => {
+    if (targetPos !== null || node.type.name !== 'heading') return
+    if (currentIndex === targetIndex) targetPos = pos
+    currentIndex++
+  })
+  if (targetPos === null) return
+
+  editor.value.chain().focus(targetPos + 1, { scrollIntoView: true }).run()
 }
 </script>
 
