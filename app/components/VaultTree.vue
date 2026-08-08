@@ -279,6 +279,15 @@ function swipeOffsetOf(node: VaultTreeNode): number {
   return rowSwipeState[node.path]?.offsetX ?? 0
 }
 
+/**
+ * Also used to hide the row's own inline favorite-star button while a swipe
+ * is active: it doesn't move with the reveal (it's part of the translating
+ * row content, not the strip underneath), so once the row shifts far enough
+ * it visually lands on top of the revealed Archive/Delete buttons - hiding
+ * it for the duration of any non-zero offset avoids that overlap entirely,
+ * regardless of exact reveal width.
+ */
+
 /** Opens the context menu straight into the move submenu - used by a folder's swipe-revealed "Verschieben nach…" button, which has no room for a full menu. */
 function openMoveFromSwipe(node: VaultTreeNode, event: MouseEvent): void {
   resetRowSwipe(node.path)
@@ -1133,6 +1142,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           role="button"
           tabindex="0"
           :draggable="!isMobile"
+          data-no-edge-swipe
           class="no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 bg-base px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
           :class="[
             draggingPath === node.path ? '' : 'transition-transform duration-150 ease-out',
@@ -1174,7 +1184,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           </span>
           <span class="flex-1 truncate">{{ node.name }}</span>
           <button
-            v-if="node.type === 'file'"
+            v-if="node.type === 'file' && swipeOffsetOf(node) === 0"
             type="button"
             class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
             :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"

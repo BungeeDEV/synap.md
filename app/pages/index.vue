@@ -10,6 +10,7 @@ const tabs = useTabsStore()
 // reads the Ref instance itself (always truthy) rather than tracking `.value`.
 const { isOpen: isCommandPaletteOpen, toggle: toggleCommandPalette } = useCommandPalette()
 const { triggerNewNote } = useNoteCreation()
+const edgeSwipe = useEdgeSwipe()
 
 async function handleLogout() {
   await $fetch('/api/auth/logout', { method: 'POST' })
@@ -36,7 +37,13 @@ const headerSegments = computed(() => {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary">
+  <div
+    class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary"
+    @pointerdown="edgeSwipe.onPointerDown"
+    @pointermove="edgeSwipe.onPointerMove"
+    @pointerup="edgeSwipe.onPointerUp"
+    @pointercancel="edgeSwipe.onPointerCancel"
+  >
     <VaultSidebar />
 
     <main class="flex min-w-0 flex-1 flex-col">

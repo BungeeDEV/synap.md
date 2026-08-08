@@ -144,6 +144,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <li v-for="entry in favoriteEntries" :key="entry.path">
           <button
             type="button"
+            data-no-edge-swipe
             class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
             :class="tabs.activePath === entry.path ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary'"
             @click="openFavorite(entry)"
