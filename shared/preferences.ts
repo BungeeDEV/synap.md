@@ -15,6 +15,10 @@ export interface EditorPreferences {
   // synced (debounced) so it's the same across devices/browsers - see
   // vaultTree.ts.
   expandedFolders: string[]
+  // Vault-relative folder path -> FOLDER_COLOR_OPTIONS key (app/utils/folderColors.ts).
+  // Only holds explicit user overrides - a folder with no entry here still
+  // gets a color, just the deterministic hash-based default.
+  folderColors: Record<string, string>
 }
 
 export const DEFAULT_PREFERENCES: EditorPreferences = {
@@ -26,5 +30,6 @@ export const DEFAULT_PREFERENCES: EditorPreferences = {
     templateName: null
   },
   favorites: [],
-  expandedFolders: []
+  expandedFolders: [],
+  folderColors: {}
 }

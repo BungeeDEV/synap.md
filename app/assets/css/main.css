@@ -41,6 +41,20 @@
   }
 
   /*
+   * VaultTree.vue's rows implement their own long-press (context menu) and
+   * horizontal swipe (quick actions) via pointer events - iOS Safari's
+   * native long-press callout (the Copy/Look Up/Share popup) would
+   * otherwise still appear alongside it, since it's controlled by
+   * `-webkit-touch-callout`, a separate concept from `user-select` (already
+   * `select-none` app-wide) with no Tailwind utility. Same sanctioned
+   * exception as the two blocks above - a platform behavior Tailwind
+   * classes can't express, not a design decision.
+   */
+  .no-touch-callout {
+    -webkit-touch-callout: none;
+  }
+
+  /*
    * Tiptap's Placeholder extension (empty-editor hint text, NoteEditor.vue)
    * needs this exact recipe - browsers have no way to style a contenteditable
    * element's "placeholder" other than a real ::before + content: attr(...),

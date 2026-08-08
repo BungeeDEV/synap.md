@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { AlertTriangle, Check, Cloud } from 'lucide-vue-next'
+import { countChars, countWords } from '~/utils/textStats'
 
 const props = defineProps<{ content: string, saving: boolean, conflict: boolean }>()
 
-const wordCount = computed(() => {
-  const trimmed = props.content.trim()
-  return trimmed ? trimmed.split(/\s+/).length : 0
-})
-
-const charCount = computed(() => props.content.length)
+const wordCount = computed(() => countWords(props.content))
+const charCount = computed(() => countChars(props.content))
 
 const statusLabel = computed(() => {
   if (props.conflict) return 'Konflikt'

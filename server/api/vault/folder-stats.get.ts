@@ -1,6 +1,3 @@
-import { readFile, stat } from 'node:fs/promises'
-import matter from 'gray-matter'
-
 export default defineEventHandler(async (event) => {
   const { path: relativePath } = getQuery(event)
 
@@ -18,13 +15,11 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const [raw, stats] = await Promise.all([readFile(absolutePath, 'utf-8'), stat(absolutePath)])
-    const { data: frontmatter, content } = matter(raw)
-    return { content, frontmatter, raw, mtime: stats.mtime.toISOString(), createdAt: stats.birthtime.toISOString() }
+    return await walkFolderStats(absolutePath)
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw createError({ statusCode: 404, statusMessage: 'File not found' })
+      throw createError({ statusCode: 404, statusMessage: 'Folder not found' })
     }
-    throw createError({ statusCode: 500, statusMessage: 'Failed to read file' })
+    throw createError({ statusCode: 500, statusMessage: 'Failed to compute folder stats' })
   }
 })

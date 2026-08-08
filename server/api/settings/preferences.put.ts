@@ -12,12 +12,18 @@ interface PreferencesPutBody {
   dailyNotes?: DailyNotesPutBody
   favorites?: unknown
   expandedFolders?: unknown
+  folderColors?: unknown
 }
 
 const VIEW_MODES = ['editor', 'reader']
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  return Object.values(value).every((entry) => typeof entry === 'string')
 }
 
 export default defineEventHandler(async (event) => {
@@ -49,6 +55,9 @@ export default defineEventHandler(async (event) => {
   if (body?.expandedFolders !== undefined && !isStringArray(body.expandedFolders)) {
     throw createError({ statusCode: 400, statusMessage: '"expandedFolders" must be an array of strings' })
   }
+  if (body?.folderColors !== undefined && !isStringRecord(body.folderColors)) {
+    throw createError({ statusCode: 400, statusMessage: '"folderColors" must be an object of string values' })
+  }
 
   const db = getDb()
   const row = db.prepare('SELECT preferences_json FROM users WHERE id = ?').get(user.id) as { preferences_json: string } | undefined
@@ -67,7 +76,8 @@ export default defineEventHandler(async (event) => {
       }
     }),
     ...(body.favorites !== undefined && { favorites: body.favorites as string[] }),
-    ...(body.expandedFolders !== undefined && { expandedFolders: body.expandedFolders as string[] })
+    ...(body.expandedFolders !== undefined && { expandedFolders: body.expandedFolders as string[] }),
+    ...(body.folderColors !== undefined && { folderColors: body.folderColors as Record<string, string> })
   }
 
   db.prepare('UPDATE users SET preferences_json = ? WHERE id = ?').run(JSON.stringify(merged), user.id)

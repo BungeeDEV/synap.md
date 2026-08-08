@@ -20,10 +20,12 @@ export const useTabsStore = defineStore('tabs', () => {
 
   const activeTab = computed(() => tabs.value.find((tab) => tab.path === activePath.value) ?? null)
 
-  async function openTab(path: string): Promise<void> {
+  /** `activate: false` opens/loads a background tab (e.g. "Öffnen in neuem Tab" from the context menu) without switching focus away from the currently active one. */
+  async function openTab(path: string, options?: { activate?: boolean }): Promise<void> {
+    const activate = options?.activate ?? true
     const existing = tabs.value.find((tab) => tab.path === path)
     if (existing) {
-      activePath.value = path
+      if (activate) activePath.value = path
       return
     }
 
@@ -37,7 +39,7 @@ export const useTabsStore = defineStore('tabs', () => {
       lastKnownMtime: file.mtime,
       viewMode: usePreferencesStore().preferences.defaultViewMode
     })
-    activePath.value = path
+    if (activate) activePath.value = path
   }
 
   function closeTab(path: string): void {

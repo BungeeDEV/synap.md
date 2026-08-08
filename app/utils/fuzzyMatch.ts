@@ -21,6 +21,24 @@ export function flattenFiles(nodes: VaultTreeNode[]): FileEntry[] {
   return files
 }
 
+export interface TreeEntry {
+  path: string
+  title: string
+  type: 'file' | 'folder'
+}
+
+/** Same as flattenFiles, but keeps folders too - used where a favorited path might be either (VaultSidebar's Favoriten section). */
+export function flattenFilesAndFolders(nodes: VaultTreeNode[]): TreeEntry[] {
+  const entries: TreeEntry[] = []
+
+  for (const node of nodes) {
+    entries.push({ path: node.path, title: node.type === 'file' ? titleFromPath(node.name) : node.name, type: node.type })
+    if (node.type === 'folder' && node.children) entries.push(...flattenFilesAndFolders(node.children))
+  }
+
+  return entries
+}
+
 /**
  * Scores `text` against `query`: an exact substring match always outranks a
  * subsequence match (order-preserving but non-contiguous), a match at the

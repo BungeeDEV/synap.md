@@ -27,7 +27,7 @@ function flattenFolders(nodes: VaultTreeNode[], depth: number): FolderOption[] {
   return result
 }
 
-/** Flat, depth-annotated folder list for folder-picker UIs (MoveToDialog, ImportDialog), rooted with an explicit vault-root entry. */
+/** Flat, depth-annotated folder list for folder-picker UIs (ContextMenuMoveSubmenu, ImportDialog), rooted with an explicit vault-root entry. */
 export function folderOptionsOf(tree: VaultTreeNode[]): FolderOption[] {
   return [{ path: '', name: 'Vault-Wurzel', depth: 0 }, ...flattenFolders(tree, 1)]
 }

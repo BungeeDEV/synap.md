@@ -5,11 +5,23 @@ import { ZipArchive } from 'archiver'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
-  const vaultRoot = resolveVaultPath('.', config.vaultPath)
+  const rawPath = getQuery(event).path
+  const relativePath = typeof rawPath === 'string' ? rawPath : undefined
+
+  if (rawPath !== undefined && relativePath === undefined) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid path' })
+  }
+
+  let scopedRoot: string
+  try {
+    scopedRoot = resolveVaultPath(relativePath || '.', config.vaultPath)
+  } catch {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid path' })
+  }
 
   let entries: Dirent[]
   try {
-    entries = await readdir(vaultRoot, { withFileTypes: true })
+    entries = await readdir(scopedRoot, { withFileTypes: true })
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       throw createError({ statusCode: 404, statusMessage: 'Vault directory not found' })
@@ -18,8 +30,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const dateStamp = new Date().toISOString().slice(0, 10)
+  const exportName = relativePath ? relativePath.split('/').pop() : 'vault'
   setHeader(event, 'Content-Type', 'application/zip')
-  setHeader(event, 'Content-Disposition', `attachment; filename="vault-export-${dateStamp}.zip"`)
+  setHeader(event, 'Content-Disposition', `attachment; filename="${exportName}-export-${dateStamp}.zip"`)
 
   const archive = new ZipArchive({ zlib: { level: 9 } })
 
@@ -28,7 +41,7 @@ export default defineEventHandler(async (event) => {
     // see decisions.md on the vault directory being the source of truth.
     if (entry.name.startsWith('.') || entry.name === TRASH_DIR) continue
 
-    const absPath = join(vaultRoot, entry.name)
+    const absPath = join(scopedRoot, entry.name)
     if (entry.isDirectory()) {
       archive.directory(absPath, entry.name)
     } else if (entry.isFile()) {

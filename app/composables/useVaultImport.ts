@@ -44,7 +44,7 @@ export function isLargeImportFile(size: number): boolean {
  * All import state/orchestration in one place, so the three entry points
  * (folder context menu, toolbar overflow, external drag&drop - all in
  * VaultTree.vue) and the two UI surfaces (ImportDialog.vue, mounted next to
- * MoveToDialog/ConfirmDialog in VaultTree.vue; ImportProgressPanel.vue,
+ * ConfirmDialog/DetailsPopover in VaultTree.vue; ImportProgressPanel.vue,
  * mounted globally in app.vue since an import must keep showing progress
  * even if the user navigates away from the tree) share one implementation
  * instead of three copies of upload/conflict/reveal logic.

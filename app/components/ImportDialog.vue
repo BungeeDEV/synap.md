@@ -25,9 +25,9 @@ watch(dialog, (state) => {
 const folderOptions = computed(() => folderOptionsOf(vaultTree.tree))
 
 // Native <select><option> can't take Tailwind indent classes like the
-// MoveToDialog folder list does, so depth is faked with leading full-width
-// spaces instead - written as an escape sequence, not a literal character,
-// so eslint's no-irregular-whitespace rule doesn't flag it in the source.
+// ContextMenuMoveSubmenu folder list does, so depth is faked with leading
+// full-width spaces instead - written as an escape sequence, not a literal
+// character, so eslint's no-irregular-whitespace rule doesn't flag it in the source.
 const FULL_WIDTH_SPACE = String.fromCharCode(0x3000)
 
 function folderOptionLabel(option: { name: string, depth: number }): string {

@@ -1,12 +1,29 @@
 <script setup lang="ts">
-import { Archive, ArrowUpDown, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, File, FilePlus, Folder, FolderOpen, FolderPlus, LayoutTemplate, MoreHorizontal, Move, Pencil, Star, Trash2, Upload } from 'lucide-vue-next'
+import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
+import { titleFromPath } from '~/stores/tabs'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
 import { validateRawName } from '#shared/validateFileName'
 import { isValidMoveTarget, parentFolderOf } from '~/utils/vaultMove'
+import { FOLDER_COLOR_OPTIONS, folderColorTextClass } from '~/utils/folderColors'
+import { printHtmlDocument } from '~/utils/printHtmlDocument'
+import type { ContextMenuGroup } from '~/utils/contextMenuTypes'
+import { vibrateShort } from '~/utils/haptics'
+import {
+  LONG_PRESS_MS,
+  REVEAL_PX,
+  exceedsMoveCancel,
+  lockedDirection,
+  resolveSwipeOutcome,
+  revealSideOf,
+  type SwipeState
+} from '~/utils/rowGestures'
 
 const { isFavorite, toggleFavorite } = useFavorites()
+const { colorKeyOf, setFolderColor } = useFolderColors()
 const { openImportDialog, recentlyImported } = useVaultImport()
+const { isMobile } = useIsMobile()
+const toast = useToast()
 
 const props = withDefaults(defineProps<{ nodes?: VaultTreeNode[] | null, parentPath?: string }>(), { nodes: null, parentPath: '' })
 
@@ -15,7 +32,6 @@ const vaultTree = useVaultTreeStore()
 const tabs = useTabsStore()
 const vaultSort = useVaultSort()
 const mobileNav = useMobileNavStore()
-const toast = useToast()
 
 interface RenameResponse {
   path: string
@@ -41,11 +57,14 @@ const displayNodes = computed(() => {
 const sortTitle = computed(() => `Sortierung: ${VAULT_SORT_LABELS[vaultSort.mode.value]}`)
 
 // Shared across every recursive VaultTree instance via useState - a plain
-// ref here would be local per-instance, so a right-click on a node rendered
-// by a nested (non-root) instance would never reach the root's menu overlay.
-const contextMenu = useState<{ node: VaultTreeNode, x: number, y: number } | null>('vaultTreeContextMenu', () => null)
+// ref here would be local per-instance, so a right-click (or, on touch, a
+// long-press) on a node rendered by a nested (non-root) instance would
+// never reach the root's menu overlay. `initialSubmenu` lets a swipe-
+// revealed action (e.g. a folder's "Verschieben nach…") open the menu
+// straight into that submenu instead of the top-level group list.
+const contextMenu = useState<{ node: VaultTreeNode, x: number, y: number, initialSubmenu?: string } | null>('vaultTreeContextMenu', () => null)
 const pendingDelete = useState<VaultTreeNode | null>('vaultTreePendingDelete', () => null)
-const moveDialogTarget = useState<VaultTreeNode | null>('vaultTreeMoveDialogTarget', () => null)
+const detailsTarget = useState<VaultTreeNode | null>('vaultTreeDetailsTarget', () => null)
 
 export interface TreeEditState {
   kind: 'create-file' | 'create-folder' | 'rename'
@@ -73,17 +92,12 @@ function isExpanded(node: VaultTreeNode): boolean {
   return vaultTree.isExpanded(node.path)
 }
 
-// Small fixed palette (Outline-style colored collection icons) instead of a
-// new accent hue - these are Tailwind's built-in default colors, not
-// arbitrary values, so STYLEGUIDE.md's "named tokens only" rule still holds.
 // Hashed by path (not name) so same-named folders in different parents don't
-// collide, and a folder keeps its color across sibling reordering/sorting.
-const FOLDER_ICON_COLORS = ['text-orange-400', 'text-emerald-400', 'text-sky-400', 'text-violet-400', 'text-amber-400', 'text-rose-400']
-
+// collide, and a folder keeps its color across sibling reordering/sorting -
+// unless the user picked an explicit override via "Farbe ändern"
+// (useFolderColors), which then wins. See utils/folderColors.ts.
 function folderIconColor(path: string): string {
-  let hash = 0
-  for (let i = 0; i < path.length; i++) hash = (hash * 31 + path.charCodeAt(i)) | 0
-  return FOLDER_ICON_COLORS[Math.abs(hash) % FOLDER_ICON_COLORS.length]!
+  return folderColorTextClass(path, colorKeyOf(path))
 }
 
 function nodeIcon(node: VaultTreeNode): typeof File | typeof Folder | typeof FolderOpen {
@@ -92,6 +106,21 @@ function nodeIcon(node: VaultTreeNode): typeof File | typeof Folder | typeof Fol
 }
 
 function onNodeClick(node: VaultTreeNode): void {
+  // A long-press already opened the context menu - the browser still fires
+  // a plain `click` right after, which must not also navigate into the note.
+  if (suppressNextRowClick) {
+    suppressNextRowClick = false
+    return
+  }
+
+  // A tap while a swipe action is revealed closes the reveal instead of
+  // navigating - same convention as Gmail/Apple Mail's swipe rows.
+  const swipe = rowSwipeState[node.path]
+  if (swipe?.revealed) {
+    rowSwipeState[node.path] = { offsetX: 0, revealed: null }
+    return
+  }
+
   if (node.type === 'folder') {
     vaultTree.toggleExpand(node.path)
     vaultTree.selectFolder(node.path)
@@ -110,6 +139,150 @@ function onContextMenu(event: MouseEvent, node: VaultTreeNode): void {
 
 function closeContextMenu(): void {
   contextMenu.value = null
+}
+
+// --- Touch: long-press (opens the context menu) + horizontal swipe (quick
+// actions) on the same row. Both start from pointerdown and are told apart
+// by how the finger moves - see app/utils/rowGestures.ts for the pure
+// threshold/outcome logic. Desktop mouse input never enters this path
+// (every handler bails immediately on `pointerType === 'mouse'`), so it's
+// naturally inert on mouse-only builds (incl. a future Tauri desktop app).
+
+const rowSwipeState = reactive<Record<string, SwipeState>>({})
+
+interface ActiveRowGesture {
+  path: string
+  startX: number
+  startY: number
+  startTime: number
+  direction: 'horizontal' | 'vertical' | null
+  longPressTimer: ReturnType<typeof setTimeout> | null
+}
+
+let activeRowGesture: ActiveRowGesture | null = null
+// Set right when a long-press fires, consumed by the very next onNodeClick -
+// the browser still dispatches a normal `click` after pointerup even though
+// nothing here called preventDefault at press time (there's no live event
+// to prevent 500ms later inside the setTimeout callback), so this is what
+// stops that click from also navigating into the note.
+let suppressNextRowClick = false
+
+function resetRowSwipe(path: string): void {
+  rowSwipeState[path] = { offsetX: 0, revealed: null }
+}
+
+function clampSwipeOffset(dx: number): number {
+  const max = REVEAL_PX * 1.6
+  return Math.max(-max, Math.min(max, dx))
+}
+
+function fireLongPress(node: VaultTreeNode, x: number, y: number): void {
+  if (!activeRowGesture || activeRowGesture.path !== node.path || activeRowGesture.direction === 'vertical') return
+  activeRowGesture.longPressTimer = null
+  suppressNextRowClick = true
+  vibrateShort()
+  closeTemplateMenu()
+  contextMenu.value = { node, x, y }
+}
+
+function runSwipeFlingAction(node: VaultTreeNode, side: 'left' | 'right' | null): void {
+  if (side === 'right') {
+    void toggleFavorite(node.path)
+  } else if (side === 'left' && node.type === 'file') {
+    void archiveNode(node)
+  }
+  // Folders' swipe-left action ("Verschieben nach…") needs a destination -
+  // never fling-executed, only revealed (see onRowPointerUp below).
+}
+
+function onRowPointerDown(event: PointerEvent, node: VaultTreeNode): void {
+  if (event.pointerType === 'mouse') return
+  if (activeRowGesture?.longPressTimer) clearTimeout(activeRowGesture.longPressTimer)
+
+  activeRowGesture = {
+    path: node.path,
+    startX: event.clientX,
+    startY: event.clientY,
+    startTime: Date.now(),
+    direction: null,
+    longPressTimer: setTimeout(() => fireLongPress(node, event.clientX, event.clientY), LONG_PRESS_MS)
+  }
+}
+
+// Only reactive piece of gesture tracking - drives whether the row's
+// transform gets a CSS transition (snap animation once released) or not
+// (must track the finger 1:1 with zero lag while actively dragging).
+// `activeRowGesture` itself is deliberately a plain, non-reactive variable
+// (it's internal bookkeeping the template never reads), so this is the one
+// bit that needs to be a ref.
+const draggingPath = ref<string | null>(null)
+
+function onRowPointerMove(event: PointerEvent, node: VaultTreeNode): void {
+  if (event.pointerType === 'mouse') return
+  const gesture = activeRowGesture
+  if (!gesture || gesture.path !== node.path) return
+
+  const dx = event.clientX - gesture.startX
+  const dy = event.clientY - gesture.startY
+
+  if (gesture.direction === null) {
+    if (exceedsMoveCancel(dx, dy) && gesture.longPressTimer) {
+      clearTimeout(gesture.longPressTimer)
+      gesture.longPressTimer = null
+    }
+    gesture.direction = lockedDirection(dx, dy)
+    if (gesture.direction === 'horizontal') draggingPath.value = node.path
+    if (gesture.direction === null) return
+  }
+
+  // Vertical: this is a scroll, not a swipe - don't preventDefault, let the
+  // browser handle it natively (this is the "must not fight scrolling" guard).
+  if (gesture.direction === 'vertical') return
+
+  event.preventDefault()
+  const offsetX = clampSwipeOffset(dx)
+  rowSwipeState[node.path] = { offsetX, revealed: revealSideOf(offsetX) }
+}
+
+function onRowPointerUp(event: PointerEvent, node: VaultTreeNode): void {
+  if (event.pointerType === 'mouse') return
+  const gesture = activeRowGesture
+  activeRowGesture = null
+  draggingPath.value = null
+  if (!gesture || gesture.path !== node.path) return
+  if (gesture.longPressTimer) clearTimeout(gesture.longPressTimer)
+
+  if (gesture.direction !== 'horizontal') return
+
+  const state = rowSwipeState[node.path] ?? { offsetX: 0, revealed: null }
+  const outcome = resolveSwipeOutcome(state.offsetX, Date.now() - gesture.startTime)
+  const side = revealSideOf(state.offsetX)
+
+  if (outcome === 'snap-back') {
+    resetRowSwipe(node.path)
+  } else if (outcome === 'reveal' || (outcome === 'fling' && side === 'left' && node.type === 'folder')) {
+    rowSwipeState[node.path] = { offsetX: side === 'left' ? -REVEAL_PX : REVEAL_PX, revealed: side }
+  } else {
+    resetRowSwipe(node.path)
+    runSwipeFlingAction(node, side)
+  }
+}
+
+function onRowPointerCancel(node: VaultTreeNode): void {
+  if (activeRowGesture?.longPressTimer) clearTimeout(activeRowGesture.longPressTimer)
+  activeRowGesture = null
+  draggingPath.value = null
+  resetRowSwipe(node.path)
+}
+
+function swipeOffsetOf(node: VaultTreeNode): number {
+  return rowSwipeState[node.path]?.offsetX ?? 0
+}
+
+/** Opens the context menu straight into the move submenu - used by a folder's swipe-revealed "Verschieben nach…" button, which has no room for a full menu. */
+function openMoveFromSwipe(node: VaultTreeNode, event: MouseEvent): void {
+  resetRowSwipe(node.path)
+  contextMenu.value = { node, x: event.clientX, y: event.clientY, initialSubmenu: 'move' }
 }
 
 const deleteConfirmMessage = computed(() => `"${pendingDelete.value?.name}" wirklich löschen?`)
@@ -142,17 +315,123 @@ async function archiveNode(node: VaultTreeNode): Promise<void> {
   }
 }
 
-function openMoveDialog(node: VaultTreeNode): void {
-  closeContextMenu()
-  moveDialogTarget.value = node
+async function selectMoveTarget(node: VaultTreeNode, targetFolderPath: string): Promise<void> {
+  await moveNode({ path: node.path, type: node.type }, targetFolderPath)
 }
 
-async function confirmMove(targetFolderPath: string): Promise<void> {
-  const node = moveDialogTarget.value
-  if (!node) return
-  const ok = await moveNode({ path: node.path, type: node.type }, targetFolderPath)
-  if (ok) moveDialogTarget.value = null
+// --- New context-menu actions ---
+
+async function openInNewTab(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  await tabs.openTab(node.path, { activate: false })
+  toast.show(`"${node.name}" in neuem Tab geöffnet`)
 }
+
+async function duplicateNode(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  try {
+    const response = await $fetch<{ path: string }>('/api/vault/duplicate', { method: 'POST', body: { path: node.path } })
+    await vaultTree.refresh()
+    await tabs.openTab(response.path)
+    toast.show(`"${node.name}" dupliziert`)
+  } catch (err) {
+    toast.show(errorMessageOf(err, 'Duplizieren fehlgeschlagen'), 'error')
+  }
+}
+
+async function copyInternalLink(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  await navigator.clipboard.writeText(`[[${titleFromPath(node.path)}]]`)
+  toast.show('Interner Link kopiert')
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function exportAsMarkdown(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  try {
+    const file = await $fetch<{ raw: string }>('/api/vault/file', { query: { path: node.path } })
+    triggerBlobDownload(new Blob([file.raw], { type: 'text/markdown' }), node.name)
+  } catch {
+    toast.show('Export fehlgeschlagen', 'error')
+  }
+}
+
+async function printNote(node: VaultTreeNode): Promise<void> {
+  closeContextMenu()
+  try {
+    const response = await $fetch<{ html: string }>('/api/vault/render', { query: { path: node.path } })
+    printHtmlDocument(titleFromPath(node.path), response.html)
+  } catch {
+    toast.show('Drucken fehlgeschlagen', 'error')
+  }
+}
+
+function openDetails(node: VaultTreeNode): void {
+  closeContextMenu()
+  detailsTarget.value = node
+}
+
+function exportFolderZip(node: VaultTreeNode): void {
+  closeContextMenu()
+  const link = document.createElement('a')
+  link.href = `/api/settings/export?path=${encodeURIComponent(node.path)}`
+  link.click()
+}
+
+// --- Declarative context-menu item groups (primary / organize / destructive) ---
+
+function fileMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
+  return [
+    [
+      { id: 'open-new-tab', label: 'Öffnen in neuem Tab', icon: ExternalLink, onSelect: () => openInNewTab(node) },
+      { id: 'rename', label: 'Umbenennen', icon: Pencil, onSelect: () => startRename(node) },
+      { id: 'favorite', label: isFavorite(node.path) ? 'Favorit entfernen' : 'Favorisieren', icon: Star, onSelect: () => toggleFavorite(node.path) }
+    ],
+    [
+      { id: 'duplicate', label: 'Duplizieren', icon: Copy, onSelect: () => duplicateNode(node) },
+      { id: 'move', label: 'Verschieben nach…', icon: Move, submenu: 'move' },
+      { id: 'copy-link', label: 'Internen Link kopieren', icon: Link2, onSelect: () => copyInternalLink(node) },
+      { id: 'export', label: 'Exportieren', icon: Download, submenu: 'export' },
+      { id: 'details', label: 'Details anzeigen', icon: Info, onSelect: () => openDetails(node) }
+    ],
+    [
+      { id: 'archive', label: 'Archivieren', icon: Archive, onSelect: () => archiveNode(node) },
+      { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
+    ]
+  ]
+}
+
+function folderMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
+  return [
+    [
+      { id: 'new-file', label: 'Neue Note hier', icon: FilePlus, onSelect: () => startCreate('create-file', node.path) },
+      { id: 'new-folder', label: 'Neuer Unterordner', icon: FolderPlus, onSelect: () => startCreate('create-folder', node.path) },
+      { id: 'import', label: 'Dateien importieren…', icon: Upload, onSelect: () => triggerImportPicker(node.path) },
+      { id: 'favorite', label: isFavorite(node.path) ? 'Favorit entfernen' : 'Favorisieren', icon: Star, onSelect: () => toggleFavorite(node.path) }
+    ],
+    [
+      { id: 'rename', label: 'Umbenennen', icon: Pencil, onSelect: () => startRename(node) },
+      { id: 'move', label: 'Verschieben nach…', icon: Move, submenu: 'move' },
+      { id: 'export-zip', label: 'Exportieren als ZIP', icon: Download, onSelect: () => exportFolderZip(node) },
+      { id: 'stats', label: 'Ordner-Statistik', icon: BarChart3, onSelect: () => openDetails(node) },
+      { id: 'color', label: 'Farbe ändern', icon: Palette, submenu: 'color' }
+    ]
+  ]
+}
+
+const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
+  const node = contextMenu.value?.node
+  if (!node) return []
+  return node.type === 'file' ? fileMenuGroups(node) : folderMenuGroups(node)
+})
 
 // --- Inline create/rename ---
 
@@ -683,81 +962,65 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
       <VaultTree v-else :nodes="displayNodes" parent-path="" />
     </div>
 
-    <div v-if="contextMenu" class="fixed inset-0 z-40" @click="closeContextMenu" @contextmenu.prevent="closeContextMenu" />
-    <Transition
-      enter-active-class="transition duration-150 ease-out"
-      leave-active-class="transition duration-100 ease-in"
-      enter-from-class="scale-95 opacity-0"
-      leave-to-class="scale-95 opacity-0"
+    <ContextMenu
+      :open="!!contextMenu"
+      :x="contextMenu?.x ?? 0"
+      :y="contextMenu?.y ?? 0"
+      :groups="contextMenuGroups"
+      :initial-submenu="contextMenu?.initialSubmenu"
+      @close="closeContextMenu"
     >
-      <div
-        v-if="contextMenu"
-        class="fixed z-50 min-w-40 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
-        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
-      >
-        <button
-          v-if="contextMenu.node.type === 'folder'"
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="startCreate('create-file', contextMenu.node.path)"
-        >
-          <FilePlus class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Neue Note hier
-        </button>
-        <button
-          v-if="contextMenu.node.type === 'folder'"
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="startCreate('create-folder', contextMenu.node.path)"
-        >
-          <FolderPlus class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Neuer Unterordner
-        </button>
-        <button
-          v-if="contextMenu.node.type === 'folder'"
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="triggerImportPicker(contextMenu.node.path)"
-        >
-          <Upload class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Dateien importieren…
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="startRename(contextMenu.node)"
-        >
-          <Pencil class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Umbenennen
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="openMoveDialog(contextMenu.node)"
-        >
-          <Move class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Verschieben nach…
-        </button>
-        <button
-          v-if="contextMenu.node.type === 'file'"
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-surface-2"
-          @click="archiveNode(contextMenu.node)"
-        >
-          <Archive class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-          Archivieren
-        </button>
-        <button
-          v-if="contextMenu.node.type === 'file'"
-          type="button"
-          class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-danger transition-colors duration-150 hover:bg-surface-2"
-          @click="requestDelete(contextMenu.node)"
-        >
-          <Trash2 class="h-5 w-5" stroke-width="1.5" />
-          Löschen
-        </button>
-      </div>
-    </Transition>
+      <template #move="{ close }">
+        <ContextMenuMoveSubmenu
+          v-if="contextMenu"
+          :node="contextMenu.node"
+          @select="(target) => { selectMoveTarget(contextMenu!.node, target); close() }"
+        />
+      </template>
+      <template #export="{ close }">
+        <div class="w-48 p-1">
+          <button
+            type="button"
+            class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary focus-visible:outline-none"
+            @click="contextMenu && exportAsMarkdown(contextMenu.node); close()"
+          >
+            <FileDown class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
+            Als Markdown
+          </button>
+          <button
+            type="button"
+            class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary focus-visible:outline-none"
+            @click="contextMenu && printNote(contextMenu.node); close()"
+          >
+            <Printer class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
+            Drucken / Als PDF
+          </button>
+        </div>
+      </template>
+      <template #color="{ close }">
+        <div class="w-44 p-2">
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="option in FOLDER_COLOR_OPTIONS"
+              :key="option.key"
+              type="button"
+              class="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
+              :title="option.key"
+              @click="contextMenu && setFolderColor(contextMenu.node.path, option.key); close()"
+            >
+              <span class="h-5 w-5 rounded-full" :class="option.bgClass" />
+            </button>
+          </div>
+          <button
+            type="button"
+            class="mt-1.5 w-full rounded-md px-2 py-1.5 text-left text-xs text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary focus-visible:outline-none"
+            @click="contextMenu && setFolderColor(contextMenu.node.path, null); close()"
+          >
+            Zurücksetzen
+          </button>
+        </div>
+      </template>
+    </ContextMenu>
 
     <ConfirmDialog
       v-if="pendingDelete"
@@ -768,11 +1031,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
       @cancel="pendingDelete = null"
     />
 
-    <MoveToDialog
-      v-if="moveDialogTarget"
-      :node="moveDialogTarget"
-      @confirm="confirmMove"
-      @cancel="moveDialogTarget = null"
+    <DetailsPopover
+      v-if="detailsTarget"
+      :node="detailsTarget"
+      @close="detailsTarget = null"
     />
 
     <ImportDialog />
@@ -827,55 +1089,101 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         />
       </div>
 
-      <div
-        v-else
-        role="button"
-        tabindex="0"
-        draggable="true"
-        class="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
-        :class="[
-          tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
-          isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
-          isDragging(node) ? 'opacity-50' : '',
-          isExternalDragOver(node) ? 'border border-dashed border-accent bg-surface-2' : '',
-          wasRecentlyImported(node) ? 'bg-accent/20' : ''
-        ]"
-        @click="onNodeClick(node)"
-        @keydown.enter.prevent="onNodeClick(node)"
-        @keydown.space.prevent="onNodeClick(node)"
-        @contextmenu="onContextMenu($event, node)"
-        @dragstart="onDragStart($event, node)"
-        @dragend="onDragEnd"
-        @dragover="onDragOver($event, node)"
-        @dragleave="onDragLeave($event, node)"
-        @drop="onDrop($event, node)"
-      >
-        <span class="flex shrink-0 items-center gap-0.5">
-          <ChevronRight
-            v-if="node.type === 'folder'"
-            class="h-4 w-4 text-content-tertiary transition-transform duration-150"
-            :class="isExpanded(node) ? 'rotate-90' : ''"
-            stroke-width="1.5"
-          />
-          <span v-else class="inline-block h-4 w-4" />
-          <component
-            :is="nodeIcon(node)"
-            class="h-5 w-5"
-            :class="node.type === 'folder' ? folderIconColor(node.path) : 'text-content-tertiary'"
-            stroke-width="1.5"
-          />
-        </span>
-        <span class="flex-1 truncate">{{ node.name }}</span>
-        <button
-          v-if="node.type === 'file'"
-          type="button"
-          class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
-          :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
-          :title="isFavorite(node.path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
-          @click.stop="toggleFavorite(node.path)"
+      <div v-else class="relative overflow-hidden rounded-md">
+        <!-- Swipe-right reveal: Favorisieren (both node types) -->
+        <div class="absolute inset-y-0 left-0 flex">
+          <button
+            type="button"
+            class="flex w-16 shrink-0 items-center justify-center bg-accent text-white"
+            @click="toggleFavorite(node.path); resetRowSwipe(node.path)"
+          >
+            <Star class="h-4 w-4" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
+          </button>
+        </div>
+
+        <!-- Swipe-left reveal: files get Archivieren+Löschen, folders get Verschieben nach… -->
+        <div class="absolute inset-y-0 right-0 flex">
+          <template v-if="node.type === 'file'">
+            <button
+              type="button"
+              class="flex w-16 shrink-0 items-center justify-center bg-success text-white"
+              @click="archiveNode(node); resetRowSwipe(node.path)"
+            >
+              <Archive class="h-4 w-4" stroke-width="1.5" />
+            </button>
+            <button
+              type="button"
+              class="flex w-16 shrink-0 items-center justify-center bg-danger text-white"
+              @click="requestDelete(node); resetRowSwipe(node.path)"
+            >
+              <Trash2 class="h-4 w-4" stroke-width="1.5" />
+            </button>
+          </template>
+          <button
+            v-else
+            type="button"
+            class="flex w-16 shrink-0 items-center justify-center bg-accent text-white"
+            @click="openMoveFromSwipe(node, $event)"
+          >
+            <Move class="h-4 w-4" stroke-width="1.5" />
+          </button>
+        </div>
+
+        <div
+          role="button"
+          tabindex="0"
+          :draggable="!isMobile"
+          class="no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 bg-base px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
+          :class="[
+            draggingPath === node.path ? '' : 'transition-transform duration-150 ease-out',
+            tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
+            isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
+            isDragging(node) ? 'opacity-50' : '',
+            isExternalDragOver(node) ? 'border border-dashed border-accent bg-surface-2' : '',
+            wasRecentlyImported(node) ? 'bg-accent/20' : ''
+          ]"
+          :style="{ transform: `translateX(${swipeOffsetOf(node)}px)` }"
+          @click="onNodeClick(node)"
+          @keydown.enter.prevent="onNodeClick(node)"
+          @keydown.space.prevent="onNodeClick(node)"
+          @contextmenu="onContextMenu($event, node)"
+          @dragstart="onDragStart($event, node)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver($event, node)"
+          @dragleave="onDragLeave($event, node)"
+          @drop="onDrop($event, node)"
+          @pointerdown="onRowPointerDown($event, node)"
+          @pointermove="onRowPointerMove($event, node)"
+          @pointerup="onRowPointerUp($event, node)"
+          @pointercancel="onRowPointerCancel(node)"
         >
-          <Star class="h-4 w-4" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
-        </button>
+          <span class="flex shrink-0 items-center gap-0.5">
+            <ChevronRight
+              v-if="node.type === 'folder'"
+              class="h-4 w-4 text-content-tertiary transition-transform duration-150"
+              :class="isExpanded(node) ? 'rotate-90' : ''"
+              stroke-width="1.5"
+            />
+            <span v-else class="inline-block h-4 w-4" />
+            <component
+              :is="nodeIcon(node)"
+              class="h-5 w-5"
+              :class="node.type === 'folder' ? folderIconColor(node.path) : 'text-content-tertiary'"
+              stroke-width="1.5"
+            />
+          </span>
+          <span class="flex-1 truncate">{{ node.name }}</span>
+          <button
+            v-if="node.type === 'file'"
+            type="button"
+            class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
+            :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
+            :title="isFavorite(node.path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+            @click.stop="toggleFavorite(node.path)"
+          >
+            <Star class="h-4 w-4" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
+          </button>
+        </div>
       </div>
 
       <Transition
