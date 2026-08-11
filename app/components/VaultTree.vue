@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from 'lucide-vue-next'
+import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Globe, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from 'lucide-vue-next'
 import type { VaultTreeNode } from '~/stores/vaultTree'
 import { titleFromPath } from '~/stores/tabs'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
@@ -25,6 +25,12 @@ const { colorKeyOf, setFolderColor } = useFolderColors()
 const { openImportDialog, recentlyImported } = useVaultImport()
 const { isMobile } = useIsMobile()
 const toast = useToast()
+const { openShareDialog } = useShareLink()
+
+function openExternalShare(node: VaultTreeNode) {
+  closeContextMenu()
+  openShareDialog(node.path)
+}
 
 const props = withDefaults(defineProps<{ nodes?: VaultTreeNode[] | null, parentPath?: string }>(), { nodes: null, parentPath: '' })
 
@@ -493,6 +499,7 @@ function fileMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
       { id: 'duplicate', label: 'Duplizieren', icon: Copy, onSelect: () => duplicateNode(node) },
       { id: 'move', label: 'Verschieben nach…', icon: Move, submenu: 'move' },
       { id: 'copy-link', label: 'Internen Link kopieren', icon: Link2, onSelect: () => copyInternalLink(node) },
+      { id: 'share', label: 'Externen Link teilen', icon: Globe, onSelect: () => openExternalShare(node) },
       { id: 'export', label: 'Exportieren', icon: Download, submenu: 'export' },
       { id: 'details', label: 'Details anzeigen', icon: Info, onSelect: () => openDetails(node) }
     ],
@@ -1135,6 +1142,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
     />
 
     <ImportDialog />
+    <ShareModal />
 
     <input
       ref="importFileInputRef"

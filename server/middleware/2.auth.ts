@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
     || path.startsWith('/api/trash/')
     || path.startsWith('/api/templates/')
     || path.startsWith('/api/archive/')
+    || path.startsWith('/api/share/')
     || path === '/api/auth/change-password'
     || path === '/api/auth/change-username'
 

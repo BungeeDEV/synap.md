@@ -175,7 +175,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <div v-else>
         <button
             type="button"
-            class="flex min-h-12 w-full items-center gap-2 px-4 py-3 text-left text-sm text-[#ECECEC] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none"
+            class="flex min-h-12 w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-900 transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none dark:text-gray-200"
             @click="activeSubmenuId = null"
         >
           <ChevronLeft

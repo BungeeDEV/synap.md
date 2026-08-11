@@ -19,7 +19,7 @@ const emit = defineEmits<{ select: [], hover: [] }>()
     :class="[
       size === 'comfortable' ? 'min-h-12 px-4 py-3 text-base' : 'px-3.5 py-2',
       item.disabled ? 'cursor-not-allowed opacity-50' : '',
-      item.danger ? 'text-danger' : 'text-[#ECECEC]',
+      item.danger ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-200',
       selected && !item.disabled ? 'bg-surface-2' : ''
     ]"
     @click="emit('select')"
