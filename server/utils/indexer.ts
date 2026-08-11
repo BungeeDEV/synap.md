@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, extname, join, relative, sep } from 'node:path'
 import type Database from 'better-sqlite3'
@@ -72,23 +73,29 @@ function upsertNote(
   title: string,
   frontmatter: Record<string, unknown>,
   mtimeMs: number,
-  indexedAt: number
+  indexedAt: number,
+  hash: string,
+  size: number
 ): number {
   const row = db.prepare(`
-    INSERT INTO notes (path, title, frontmatter_json, mtime, indexed_at)
-    VALUES (@path, @title, @frontmatterJson, @mtime, @indexedAt)
+    INSERT INTO notes (path, title, frontmatter_json, mtime, indexed_at, hash, size)
+    VALUES (@path, @title, @frontmatterJson, @mtime, @indexedAt, @hash, @size)
     ON CONFLICT(path) DO UPDATE SET
       title = excluded.title,
       frontmatter_json = excluded.frontmatter_json,
       mtime = excluded.mtime,
-      indexed_at = excluded.indexed_at
+      indexed_at = excluded.indexed_at,
+      hash = excluded.hash,
+      size = excluded.size
     RETURNING id
   `).get({
     path,
     title,
     frontmatterJson: JSON.stringify(frontmatter),
     mtime: Math.trunc(mtimeMs),
-    indexedAt
+    indexedAt,
+    hash,
+    size
   }) as { id: number }
 
   return row.id
@@ -141,9 +148,10 @@ export async function indexNote(db: Database.Database, relativePath: string, vau
 
   const { plainText, tags, wikilinks } = extractContent(db, content)
   const indexedAt = Date.now()
+  const hash = createHash('sha256').update(raw).digest('hex')
 
   const apply = db.transaction(() => {
-    const noteId = upsertNote(db, relativePath, title, frontmatter, stats.mtimeMs, indexedAt)
+    const noteId = upsertNote(db, relativePath, title, frontmatter, stats.mtimeMs, indexedAt, hash, stats.size)
     syncTags(db, noteId, tags)
     syncLinks(db, noteId, wikilinks)
     syncFts(db, noteId, title, plainText)
