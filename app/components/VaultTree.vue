@@ -10,8 +10,9 @@ import { printHtmlDocument } from '~/utils/printHtmlDocument'
 import type { ContextMenuGroup } from '~/utils/contextMenuTypes'
 import { vibrateShort } from '~/utils/haptics'
 import {
+  ACTION_BUTTON_PX,
   LONG_PRESS_MS,
-  REVEAL_PX,
+  clampSwipeOffset,
   exceedsMoveCancel,
   lockedDirection,
   resolveSwipeOutcome,
@@ -66,6 +67,14 @@ const contextMenu = useState<{ node: VaultTreeNode, x: number, y: number, initia
 const pendingDelete = useState<VaultTreeNode | null>('vaultTreePendingDelete', () => null)
 const detailsTarget = useState<VaultTreeNode | null>('vaultTreeDetailsTarget', () => null)
 
+// Single source of truth for "which sidebar dropdown/menu is open" - shared
+// with VaultSidebar.vue's workspace menu via the same useState key. Only one
+// of these (plus the separate contextMenu above) can ever be open: every
+// open path below clears this, and every path that opens one of these three
+// clears contextMenu too. Without this, e.g. right-clicking a row while
+// "Weitere Aktionen" was open used to leave both visible at once.
+const activeTreeMenu = useState<'overflow' | 'template' | 'workspace' | null>('vaultActiveTreeMenu', () => null)
+
 export interface TreeEditState {
   kind: 'create-file' | 'create-folder' | 'rename'
   parentPath: string
@@ -85,7 +94,11 @@ export interface TreeEditState {
 const editState = useState<TreeEditState | null>('vaultTreeEditState', () => null)
 
 if (isRoot) {
-  onMounted(() => { void vaultTree.refresh() })
+  onMounted(() => {
+    void vaultTree.refresh()
+    document.addEventListener('pointerdown', onDocumentPointerDownCapture, { capture: true })
+  })
+  onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDownCapture, { capture: true }))
 }
 
 function isExpanded(node: VaultTreeNode): boolean {
@@ -115,9 +128,9 @@ function onNodeClick(node: VaultTreeNode): void {
 
   // A tap while a swipe action is revealed closes the reveal instead of
   // navigating - same convention as Gmail/Apple Mail's swipe rows.
-  const swipe = rowSwipeState[node.path]
+  const swipe = rowSwipeState.value[node.path]
   if (swipe?.revealed) {
-    rowSwipeState[node.path] = { offsetX: 0, revealed: null }
+    rowSwipeState.value[node.path] = { offsetX: 0, revealed: null }
     return
   }
 
@@ -133,22 +146,32 @@ function onNodeClick(node: VaultTreeNode): void {
 
 function onContextMenu(event: MouseEvent, node: VaultTreeNode): void {
   event.preventDefault()
-  closeTemplateMenu()
+  activeTreeMenu.value = null
   contextMenu.value = { node, x: event.clientX, y: event.clientY }
 }
 
 function closeContextMenu(): void {
   contextMenu.value = null
+  activeTreeMenu.value = null
 }
 
-// --- Touch: long-press (opens the context menu) + horizontal swipe (quick
-// actions) on the same row. Both start from pointerdown and are told apart
-// by how the finger moves - see app/utils/rowGestures.ts for the pure
-// threshold/outcome logic. Desktop mouse input never enters this path
-// (every handler bails immediately on `pointerType === 'mouse'`), so it's
-// naturally inert on mouse-only builds (incl. a future Tauri desktop app).
+// --- Long-press (opens the context menu, touch/pen only) + horizontal
+// swipe (quick actions, touch/pen/mouse) on the same row. Both start from
+// pointerdown and are told apart by how/how-long the pointer moves - see
+// app/utils/rowGestures.ts for the pure threshold/outcome logic.
+//
+// Mouse gets its own hold-to-arm gate (see swipeArmed/armMouseSwipe below):
+// a plain click must keep opening the note, only holding the mouse button
+// past LONG_PRESS_MS - the same duration and the same timer field the
+// touch long-press already uses, just with a different callback - arms
+// swipe tracking so a subsequent drag can reveal the action zones. Desktop
+// right-click still owns the context menu, untouched by any of this.
 
-const rowSwipeState = reactive<Record<string, SwipeState>>({})
+// Shared across every recursive VaultTree instance via useState (same
+// reasoning as contextMenu above) - needed so the document-level dismiss
+// listener below (registered once, root-only) can close a reveal left open
+// on a row rendered by any nested instance, not just its own.
+const rowSwipeState = useState<Record<string, SwipeState>>('vaultTreeRowSwipeState', () => ({}))
 
 interface ActiveRowGesture {
   path: string
@@ -157,6 +180,12 @@ interface ActiveRowGesture {
   startTime: number
   direction: 'horizontal' | 'vertical' | null
   longPressTimer: ReturnType<typeof setTimeout> | null
+  // Touch/pen: true from the start - the swipe already tracks the finger
+  // immediately, same as always. Mouse: false until armMouseSwipe() fires
+  // (see onRowPointerDown) - onRowPointerMove ignores all movement until
+  // then, so a plain quick click/release never touches rowSwipeState and
+  // falls through to the native `click` (open note) untouched.
+  swipeArmed: boolean
 }
 
 let activeRowGesture: ActiveRowGesture | null = null
@@ -168,12 +197,40 @@ let activeRowGesture: ActiveRowGesture | null = null
 let suppressNextRowClick = false
 
 function resetRowSwipe(path: string): void {
-  rowSwipeState[path] = { offsetX: 0, revealed: null }
+  rowSwipeState.value[path] = { offsetX: 0, revealed: null }
 }
 
-function clampSwipeOffset(dx: number): number {
-  const max = REVEAL_PX * 1.6
-  return Math.max(-max, Math.min(max, dx))
+// Dismisses every *other* revealed row - mirrors Gmail/Apple Mail: starting
+// a new interaction anywhere outside an open swipe row closes it, instead of
+// leaving it revealed (and visually sitting on top of its row) until that
+// exact row is tapped again. Registered as a capture-phase document listener
+// (root instance only, see onMounted below) so it fires before the target
+// row's own pointerdown/click handling.
+function closeOtherRowSwipes(exceptPath: string | null): void {
+  for (const [path, state] of Object.entries(rowSwipeState.value)) {
+    if (path !== exceptPath && state.revealed) rowSwipeState.value[path] = { offsetX: 0, revealed: null }
+  }
+}
+
+function onDocumentPointerDownCapture(event: PointerEvent): void {
+  const target = event.target as HTMLElement | null
+  const rowPath = target?.closest('[data-row-path]')?.getAttribute('data-row-path') ?? null
+  closeOtherRowSwipes(rowPath)
+}
+
+/**
+ * Pixel width of the zone being swiped open on `node` for the given side -
+ * the left zone (side 'right', see revealSideOf) is always the single
+ * Favorisieren button; the right zone (side 'left') is Archivieren+Löschen
+ * (2 buttons) for files or just Verschieben (1 button) for folders. Used to
+ * scale both the drag clamp and the reveal/fling thresholds so a
+ * two-button zone actually needs twice the drag distance of a one-button
+ * zone, instead of both snapping to (and clamping around) the same fixed
+ * width regardless of how many buttons are actually in it.
+ */
+function revealWidthFor(node: VaultTreeNode, side: 'left' | 'right' | null): number {
+  if (side === 'left' && node.type === 'file') return ACTION_BUTTON_PX * 2
+  return ACTION_BUTTON_PX
 }
 
 function fireLongPress(node: VaultTreeNode, x: number, y: number): void {
@@ -181,8 +238,20 @@ function fireLongPress(node: VaultTreeNode, x: number, y: number): void {
   activeRowGesture.longPressTimer = null
   suppressNextRowClick = true
   vibrateShort()
-  closeTemplateMenu()
+  activeTreeMenu.value = null
   contextMenu.value = { node, x, y }
+}
+
+// Desktop-mouse equivalent of fireLongPress above: fires from the exact
+// same LONG_PRESS_MS timer started in onRowPointerDown, just with a
+// different outcome - arms swipe tracking instead of opening the context
+// menu (right-click still owns the context menu on desktop). Below this
+// hold duration, onRowPointerMove ignores mouse movement entirely, so a
+// plain click/drag-release stays a plain click.
+function armMouseSwipe(node: VaultTreeNode): void {
+  if (!activeRowGesture || activeRowGesture.path !== node.path) return
+  activeRowGesture.longPressTimer = null
+  activeRowGesture.swipeArmed = true
 }
 
 function runSwipeFlingAction(node: VaultTreeNode, side: 'left' | 'right' | null): void {
@@ -196,16 +265,21 @@ function runSwipeFlingAction(node: VaultTreeNode, side: 'left' | 'right' | null)
 }
 
 function onRowPointerDown(event: PointerEvent, node: VaultTreeNode): void {
-  if (event.pointerType === 'mouse') return
+  if (event.pointerType !== 'touch' && event.pointerType !== 'pen' && event.pointerType !== 'mouse') return
   if (activeRowGesture?.longPressTimer) clearTimeout(activeRowGesture.longPressTimer)
 
+  const isMouse = event.pointerType === 'mouse'
   activeRowGesture = {
     path: node.path,
     startX: event.clientX,
     startY: event.clientY,
     startTime: Date.now(),
     direction: null,
-    longPressTimer: setTimeout(() => fireLongPress(node, event.clientX, event.clientY), LONG_PRESS_MS)
+    swipeArmed: !isMouse,
+    longPressTimer: setTimeout(
+      () => (isMouse ? armMouseSwipe(node) : fireLongPress(node, event.clientX, event.clientY)),
+      LONG_PRESS_MS
+    )
   }
 }
 
@@ -218,9 +292,12 @@ function onRowPointerDown(event: PointerEvent, node: VaultTreeNode): void {
 const draggingPath = ref<string | null>(null)
 
 function onRowPointerMove(event: PointerEvent, node: VaultTreeNode): void {
-  if (event.pointerType === 'mouse') return
   const gesture = activeRowGesture
   if (!gesture || gesture.path !== node.path) return
+  // Mouse, still within the hold threshold: ignore movement entirely so a
+  // plain click/drag-release never starts tracking a swipe (see
+  // armMouseSwipe). Touch/pen are always armed and reach this line as before.
+  if (!gesture.swipeArmed) return
 
   const dx = event.clientX - gesture.startX
   const dy = event.clientY - gesture.startY
@@ -240,12 +317,11 @@ function onRowPointerMove(event: PointerEvent, node: VaultTreeNode): void {
   if (gesture.direction === 'vertical') return
 
   event.preventDefault()
-  const offsetX = clampSwipeOffset(dx)
-  rowSwipeState[node.path] = { offsetX, revealed: revealSideOf(offsetX) }
+  const offsetX = clampSwipeOffset(dx, revealWidthFor(node, revealSideOf(dx)))
+  rowSwipeState.value[node.path] = { offsetX, revealed: revealSideOf(offsetX) }
 }
 
 function onRowPointerUp(event: PointerEvent, node: VaultTreeNode): void {
-  if (event.pointerType === 'mouse') return
   const gesture = activeRowGesture
   activeRowGesture = null
   draggingPath.value = null
@@ -254,14 +330,15 @@ function onRowPointerUp(event: PointerEvent, node: VaultTreeNode): void {
 
   if (gesture.direction !== 'horizontal') return
 
-  const state = rowSwipeState[node.path] ?? { offsetX: 0, revealed: null }
-  const outcome = resolveSwipeOutcome(state.offsetX, Date.now() - gesture.startTime)
+  const state = rowSwipeState.value[node.path] ?? { offsetX: 0, revealed: null }
   const side = revealSideOf(state.offsetX)
+  const revealWidth = revealWidthFor(node, side)
+  const outcome = resolveSwipeOutcome(state.offsetX, Date.now() - gesture.startTime, revealWidth)
 
   if (outcome === 'snap-back') {
     resetRowSwipe(node.path)
   } else if (outcome === 'reveal' || (outcome === 'fling' && side === 'left' && node.type === 'folder')) {
-    rowSwipeState[node.path] = { offsetX: side === 'left' ? -REVEAL_PX : REVEAL_PX, revealed: side }
+    rowSwipeState.value[node.path] = { offsetX: side === 'left' ? -revealWidth : revealWidth, revealed: side }
   } else {
     resetRowSwipe(node.path)
     runSwipeFlingAction(node, side)
@@ -276,7 +353,11 @@ function onRowPointerCancel(node: VaultTreeNode): void {
 }
 
 function swipeOffsetOf(node: VaultTreeNode): number {
-  return rowSwipeState[node.path]?.offsetX ?? 0
+  return rowSwipeState.value[node.path]?.offsetX ?? 0
+}
+
+function swipeRevealedOf(node: VaultTreeNode): 'left' | 'right' | null {
+  return rowSwipeState.value[node.path]?.revealed ?? null
 }
 
 /**
@@ -291,6 +372,7 @@ function swipeOffsetOf(node: VaultTreeNode): number {
 /** Opens the context menu straight into the move submenu - used by a folder's swipe-revealed "Verschieben nach…" button, which has no room for a full menu. */
 function openMoveFromSwipe(node: VaultTreeNode, event: MouseEvent): void {
   resetRowSwipe(node.path)
+  activeTreeMenu.value = null
   contextMenu.value = { node, x: event.clientX, y: event.clientY, initialSubmenu: 'move' }
 }
 
@@ -479,14 +561,12 @@ function collidesWithSibling(candidatePath: string, parentPath: string, excludeP
 
 function startCreate(kind: 'create-file' | 'create-folder', parentPath: string): void {
   closeContextMenu()
-  closeTemplateMenu()
   if (parentPath) vaultTree.expand(parentPath)
   editState.value = { kind, parentPath, value: 'Untitled', error: null }
 }
 
 function startRename(node: VaultTreeNode): void {
   closeContextMenu()
-  closeTemplateMenu()
   editState.value = { kind: 'rename', parentPath: parentFolderOf(node.path), node, value: baseNameOf(node), error: null }
 }
 
@@ -569,14 +649,16 @@ async function submitEdit(): Promise<void> {
 
 interface TemplateOption { name: string, path: string }
 
-const showTemplateMenu = ref(false)
 const templateOptions = ref<TemplateOption[]>([])
 const loadingTemplates = ref(false)
+const showTemplateMenu = computed(() => activeTreeMenu.value === 'template')
+const showOverflowMenu = computed(() => activeTreeMenu.value === 'overflow')
 
 async function toggleTemplateMenu(): Promise<void> {
-  closeContextMenu()
-  showTemplateMenu.value = !showTemplateMenu.value
-  if (!showTemplateMenu.value || templateOptions.value.length > 0) return
+  contextMenu.value = null
+  const opening = activeTreeMenu.value !== 'template'
+  activeTreeMenu.value = opening ? 'template' : null
+  if (!opening || templateOptions.value.length > 0) return
 
   loadingTemplates.value = true
   try {
@@ -587,29 +669,26 @@ async function toggleTemplateMenu(): Promise<void> {
 }
 
 function closeTemplateMenu(): void {
-  showTemplateMenu.value = false
+  if (activeTreeMenu.value === 'template') activeTreeMenu.value = null
 }
-
-const showOverflowMenu = ref(false)
 
 function toggleOverflowMenu(): void {
-  closeContextMenu()
-  closeTemplateMenu()
-  showOverflowMenu.value = !showOverflowMenu.value
+  contextMenu.value = null
+  activeTreeMenu.value = activeTreeMenu.value === 'overflow' ? null : 'overflow'
 }
 
+// Also dismisses the template menu - this backs the shared click-outside
+// catcher below, which covers both (`v-if="showOverflowMenu || showTemplateMenu"`).
 function closeOverflowMenu(): void {
-  showOverflowMenu.value = false
-  closeTemplateMenu()
+  activeTreeMenu.value = null
 }
 
 function openTemplateFromOverflow(): void {
-  showOverflowMenu.value = false
   void toggleTemplateMenu()
 }
 
 function pickTemplate(template: TemplateOption): void {
-  showTemplateMenu.value = false
+  closeTemplateMenu()
   const parentPath = vaultTree.selectedFolder
   if (parentPath) vaultTree.expand(parentPath)
   editState.value = { kind: 'create-file', parentPath, value: 'Untitled', error: null, templateName: template.name }
@@ -622,7 +701,6 @@ const importPickerTargetFolder = ref('')
 
 function triggerImportPicker(targetFolder: string): void {
   closeContextMenu()
-  showOverflowMenu.value = false
   importPickerTargetFolder.value = targetFolder
   importFileInputRef.value?.click()
 }
@@ -842,7 +920,14 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             <MoreHorizontal class="h-4 w-4" stroke-width="1.5" />
           </button>
 
-          <div v-if="showOverflowMenu || showTemplateMenu" class="fixed inset-0 z-40" @click="closeOverflowMenu" />
+          <!-- Teleported: this click-outside catcher would otherwise inherit
+               VaultSidebar's <aside> as its containing block (see
+               ContextMenu.vue's Teleport comment) and only cover the 320px
+               sidebar column, leaving clicks in the main content area unable
+               to dismiss this menu. -->
+          <Teleport to="body">
+            <div v-if="showOverflowMenu || showTemplateMenu" class="fixed inset-0 z-40" @click="closeOverflowMenu" />
+          </Teleport>
 
           <Transition
             enter-active-class="transition duration-150 ease-out"
@@ -857,7 +942,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
               <button
                 type="button"
                 class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
-                @click="showOverflowMenu = false; openDailyNote()"
+                @click="closeOverflowMenu(); openDailyNote()"
               >
                 <Calendar class="h-4 w-4 shrink-0" stroke-width="1.5" />
                 Tagesnotiz
@@ -881,7 +966,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
               <button
                 type="button"
                 class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-2"
-                @click="showOverflowMenu = false; vaultTree.toggleExpandAll()"
+                @click="closeOverflowMenu(); vaultTree.toggleExpandAll()"
               >
                 <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-4 w-4 shrink-0" stroke-width="1.5" />
                 <ChevronsUpDown v-else class="h-4 w-4 shrink-0" stroke-width="1.5" />
@@ -1098,31 +1183,44 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         />
       </div>
 
-      <div v-else class="relative overflow-hidden rounded-md">
+      <!-- contain-paint (not just overflow-hidden) - this row's inner content
+           is `transition-transform`ed on drag/swipe, and a plain
+           overflow-hidden + rounded-md ancestor next to a transformed/
+           animated descendant is a known Chromium compositing seam: the
+           rounded clip can let a sliver of the descendant paint past the
+           rounded corner into whatever sits below it (here: the next row's
+           action-zone strip bleeding a few px into the row underneath).
+           contain: paint is a hard guarantee - nothing in this box can ever
+           paint outside its border box, regardless of any transform/
+           compositing happening inside it. -->
+      <div v-else class="relative overflow-hidden rounded-md contain-paint" :data-row-path="node.path">
         <!-- Swipe-right reveal: Favorisieren (both node types) -->
-        <div class="absolute inset-y-0 left-0 flex">
+        <div v-show="swipeOffsetOf(node) > 0 || swipeRevealedOf(node) === 'right'" class="absolute inset-y-0 left-0 flex">
           <button
             type="button"
-            class="flex w-16 shrink-0 items-center justify-center bg-accent text-white"
+            class="flex w-16 shrink-0 items-center justify-center bg-accent-strong text-white"
             @click="toggleFavorite(node.path); resetRowSwipe(node.path)"
           >
             <Star class="h-4 w-4" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
           </button>
         </div>
 
-        <!-- Swipe-left reveal: files get Archivieren+Löschen, folders get Verschieben nach… -->
-        <div class="absolute inset-y-0 right-0 flex">
+        <!-- Swipe-left reveal: files get Archivieren+Löschen, folders get Verschieben nach…
+             divide-x/divide-base draws a 1px seam between Archivieren and Löschen so the two
+             fills read as distinct zones instead of one solid two-tone block (no-op for the
+             single-button folder case). -->
+        <div v-show="swipeOffsetOf(node) < 0 || swipeRevealedOf(node) === 'left'" class="absolute inset-y-0 right-0 flex divide-x divide-base">
           <template v-if="node.type === 'file'">
             <button
               type="button"
-              class="flex w-16 shrink-0 items-center justify-center bg-success text-white"
+              class="flex w-16 shrink-0 items-center justify-center bg-success-strong text-white"
               @click="archiveNode(node); resetRowSwipe(node.path)"
             >
               <Archive class="h-4 w-4" stroke-width="1.5" />
             </button>
             <button
               type="button"
-              class="flex w-16 shrink-0 items-center justify-center bg-danger text-white"
+              class="flex w-16 shrink-0 items-center justify-center bg-danger-strong text-white"
               @click="requestDelete(node); resetRowSwipe(node.path)"
             >
               <Trash2 class="h-4 w-4" stroke-width="1.5" />
@@ -1131,7 +1229,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           <button
             v-else
             type="button"
-            class="flex w-16 shrink-0 items-center justify-center bg-accent text-white"
+            class="flex w-16 shrink-0 items-center justify-center bg-accent-strong text-white"
             @click="openMoveFromSwipe(node, $event)"
           >
             <Move class="h-4 w-4" stroke-width="1.5" />

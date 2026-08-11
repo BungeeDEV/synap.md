@@ -10,11 +10,22 @@ export const LONG_PRESS_MS = 500
 export const MOVE_CANCEL_PX = 10
 /** Movement beyond this locks the gesture to horizontal (swipe) or vertical (scroll). */
 export const DIRECTION_LOCK_PX = 8
-/** Short-swipe reveal width - roughly one action button's worth of travel. */
-export const REVEAL_PX = 64
-/** Fast/far swipe distance that executes the default action immediately instead of just revealing it. */
-export const FLING_PX = 120
-/** A swipe past FLING_PX only counts as a fling if it happened within this long. */
+/** Width of a single swipe-action button - the base unit every reveal zone's width is built from (1x for a single-action zone, 2x for Archivieren+Löschen, etc). */
+export const ACTION_BUTTON_PX = 64
+/**
+ * A settled/dragged reveal can overshoot the zone's actual width by this
+ * factor - gives the row a bit of rubber-band travel past full-reveal, and
+ * (deliberately) guarantees the fling threshold (== the zone's full width)
+ * always sits inside the reachable drag range. Previously the overdrag cap
+ * was a fixed 1.6x of a fixed 64px reveal width (102.4px) while the fling
+ * threshold was a separate fixed 120px constant - for any zone wider than
+ * one button (e.g. the 128px Archivieren+Löschen zone) those two numbers
+ * had no relation to each other, and for the single-button zones 120 > 102.4
+ * meant fling could never actually be reached by a real drag. Deriving both
+ * from the same per-zone revealWidth removes the possibility of that drift.
+ */
+export const OVERDRAG_FACTOR = 1.2
+/** A fling must reach the zone's full width within this long to fire the default action immediately instead of just revealing it. */
 export const FLING_MS = 300
 
 export interface SwipeState {
@@ -38,11 +49,18 @@ export function revealSideOf(offsetX: number): 'left' | 'right' | null {
   return null
 }
 
+/** Clamps a raw drag delta to +/- revealWidth * OVERDRAG_FACTOR - the actual pixel width of the zone being swiped open, not a fixed constant, since that width differs per row (1 vs 2 action buttons). */
+export function clampSwipeOffset(dx: number, revealWidth: number): number {
+  const max = revealWidth * OVERDRAG_FACTOR
+  return Math.max(-max, Math.min(max, dx))
+}
+
 export type SwipeOutcome = 'snap-back' | 'reveal' | 'fling'
 
-export function resolveSwipeOutcome(offsetX: number, elapsedMs: number): SwipeOutcome {
+/** revealWidth is the actual pixel width of the zone being swiped open (see clampSwipeOffset) - reaching half of it commits to 'reveal', reaching all of it within FLING_MS commits to 'fling'. */
+export function resolveSwipeOutcome(offsetX: number, elapsedMs: number, revealWidth: number): SwipeOutcome {
   const distance = Math.abs(offsetX)
-  if (distance >= FLING_PX && elapsedMs <= FLING_MS) return 'fling'
-  if (distance >= REVEAL_PX) return 'reveal'
+  if (distance >= revealWidth && elapsedMs <= FLING_MS) return 'fling'
+  if (distance >= revealWidth / 2) return 'reveal'
   return 'snap-back'
 }

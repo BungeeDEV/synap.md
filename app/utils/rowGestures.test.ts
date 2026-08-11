@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ACTION_BUTTON_PX,
   DIRECTION_LOCK_PX,
   FLING_MS,
-  FLING_PX,
   MOVE_CANCEL_PX,
-  REVEAL_PX,
+  OVERDRAG_FACTOR,
+  clampSwipeOffset,
   exceedsMoveCancel,
   lockedDirection,
   resolveSwipeOutcome,
@@ -49,24 +50,59 @@ describe('revealSideOf', () => {
   })
 })
 
+describe('clampSwipeOffset', () => {
+  it('passes drags within the zone width through unchanged', () => {
+    expect(clampSwipeOffset(20, ACTION_BUTTON_PX)).toBe(20)
+  })
+
+  it('clamps to revealWidth * OVERDRAG_FACTOR in the positive direction', () => {
+    expect(clampSwipeOffset(1000, ACTION_BUTTON_PX)).toBe(ACTION_BUTTON_PX * OVERDRAG_FACTOR)
+  })
+
+  it('clamps to -(revealWidth * OVERDRAG_FACTOR) in the negative direction', () => {
+    expect(clampSwipeOffset(-1000, ACTION_BUTTON_PX)).toBe(-ACTION_BUTTON_PX * OVERDRAG_FACTOR)
+  })
+
+  it('scales the clamp with a wider zone (e.g. the two-button Archivieren+Löschen zone)', () => {
+    const doubleWidth = ACTION_BUTTON_PX * 2
+    expect(clampSwipeOffset(-1000, doubleWidth)).toBe(-doubleWidth * OVERDRAG_FACTOR)
+  })
+
+  it('regression guard: the clamp must never sit below the fling threshold (revealWidth) for any zone width', () => {
+    for (const revealWidth of [ACTION_BUTTON_PX, ACTION_BUTTON_PX * 2]) {
+      expect(clampSwipeOffset(revealWidth * 10, revealWidth)).toBeGreaterThanOrEqual(revealWidth)
+    }
+  })
+})
+
 describe('resolveSwipeOutcome', () => {
+  const SINGLE = ACTION_BUTTON_PX // Favorisieren / Verschieben zone
+  const DOUBLE = ACTION_BUTTON_PX * 2 // Archivieren+Löschen zone
+
   it('snaps back for a short, slow drag', () => {
-    expect(resolveSwipeOutcome(REVEAL_PX - 1, 1000)).toBe('snap-back')
+    expect(resolveSwipeOutcome(SINGLE / 2 - 1, 1000, SINGLE)).toBe('snap-back')
   })
 
-  it('reveals for a drag past REVEAL_PX that is too slow/short to fling', () => {
-    expect(resolveSwipeOutcome(REVEAL_PX, 1000)).toBe('reveal')
+  it('reveals once past half the zone width, if too slow/short to fling', () => {
+    expect(resolveSwipeOutcome(SINGLE / 2, 1000, SINGLE)).toBe('reveal')
   })
 
-  it('flings for a fast swipe past FLING_PX within FLING_MS', () => {
-    expect(resolveSwipeOutcome(FLING_PX, FLING_MS - 10)).toBe('fling')
+  it('flings for a fast swipe reaching the full, actually-reachable zone width within FLING_MS', () => {
+    // reachable in practice: clampSwipeOffset never limits offsetX below SINGLE for a SINGLE-wide zone
+    expect(resolveSwipeOutcome(SINGLE, FLING_MS - 10, SINGLE)).toBe('fling')
   })
 
-  it('only reveals (not flings) a swipe past FLING_PX that took too long', () => {
-    expect(resolveSwipeOutcome(FLING_PX, FLING_MS + 500)).toBe('reveal')
+  it('only reveals (not flings) a swipe reaching the full zone width that took too long', () => {
+    expect(resolveSwipeOutcome(SINGLE, FLING_MS + 500, SINGLE)).toBe('reveal')
   })
 
   it('treats negative offsets (swipe left) the same as positive (swipe right)', () => {
-    expect(resolveSwipeOutcome(-FLING_PX, FLING_MS - 10)).toBe('fling')
+    expect(resolveSwipeOutcome(-SINGLE, FLING_MS - 10, SINGLE)).toBe('fling')
+  })
+
+  it('scales the reveal/fling thresholds to a wider zone - halfway across DOUBLE is not yet a reveal of SINGLE', () => {
+    expect(resolveSwipeOutcome(-(SINGLE / 2), 1000, DOUBLE)).toBe('snap-back') // 32px < 128/2=64px
+    expect(resolveSwipeOutcome(-SINGLE, 1000, DOUBLE)).toBe('reveal') // 64px >= 128/2, < 128
+    expect(resolveSwipeOutcome(-DOUBLE, FLING_MS - 10, DOUBLE)).toBe('fling') // reaches the full 128px in time
   })
 })

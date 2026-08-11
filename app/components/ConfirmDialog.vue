@@ -22,6 +22,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>
+  <!-- Teleported to <body>: this is opened from VaultTree.vue, mounted inside
+       VaultSidebar's transformed <aside> - see ContextMenu.vue's Teleport
+       comment for why `fixed inset-0` would otherwise only cover the 320px
+       sidebar column instead of the real viewport. -->
+  <Teleport to="body">
   <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="opacity-0" leave-to-class="opacity-0">
     <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/40" @click="emit('cancel')">
       <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="scale-95 opacity-0" leave-to-class="scale-95 opacity-0">
@@ -53,4 +58,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </Transition>
     </div>
   </Transition>
+  </Teleport>
 </template>

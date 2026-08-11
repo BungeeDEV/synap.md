@@ -9,15 +9,23 @@ const tabs = useTabsStore()
 const { favorites } = useFavorites()
 const { open: openCommandPalette } = useCommandPalette()
 
-const showWorkspaceMenu = ref(false)
+// Shared with VaultTree.vue's overflow/template menus via the same useState
+// key, so at most one sidebar dropdown/menu is ever open at a time - see the
+// comment on VaultTree.vue's own `activeTreeMenu` declaration.
+const activeTreeMenu = useState<'overflow' | 'template' | 'workspace' | null>('vaultActiveTreeMenu', () => null)
+// VaultTree.vue's row/folder context menu - not opened from here, but must
+// be dismissed if the workspace menu opens while it's showing.
+const treeContextMenu = useState<unknown | null>('vaultTreeContextMenu', () => null)
+const showWorkspaceMenu = computed(() => activeTreeMenu.value === 'workspace')
 
 function toggleWorkspaceMenu(): void {
-  showWorkspaceMenu.value = !showWorkspaceMenu.value
+  treeContextMenu.value = null
+  activeTreeMenu.value = activeTreeMenu.value === 'workspace' ? null : 'workspace'
 }
 
 function selectPanel(panel: 'explorer' | 'outline'): void {
   sidebarPanel.setPanel(panel)
-  showWorkspaceMenu.value = false
+  activeTreeMenu.value = null
 }
 
 // Favorites store bare vault-relative paths (files or folders) - resolve
@@ -77,7 +85,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <ChevronDown class="h-3.5 w-3.5 shrink-0 text-content-tertiary" stroke-width="1.5" />
         </button>
 
-        <div v-if="showWorkspaceMenu" class="fixed inset-0 z-40" @click="showWorkspaceMenu = false" />
+        <!-- Teleported: without this, `fixed inset-0` resolves against this
+             component's own <aside> (its containing block, since it always
+             carries a transform - see ContextMenu.vue's Teleport comment)
+             and only covers the 320px sidebar column. -->
+        <Teleport to="body">
+          <div v-if="showWorkspaceMenu" class="fixed inset-0 z-40" @click="activeTreeMenu = null" />
+        </Teleport>
         <Transition
           enter-active-class="transition duration-150 ease-out"
           leave-active-class="transition duration-100 ease-in"

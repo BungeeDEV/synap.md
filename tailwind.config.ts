@@ -25,10 +25,17 @@ export default {
         },
         accent: {
           DEFAULT: colors.accent,
-          soft: colors.accentSoft
+          soft: colors.accentSoft,
+          strong: colors.accentStrong
         },
-        success: colors.success,
-        danger: colors.danger
+        success: {
+          DEFAULT: colors.success,
+          strong: colors.successStrong
+        },
+        danger: {
+          DEFAULT: colors.danger,
+          strong: colors.dangerStrong
+        }
       },
       fontFamily,
       boxShadow: {

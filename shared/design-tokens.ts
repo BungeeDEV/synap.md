@@ -10,7 +10,18 @@ export const colors = {
   accent: '#8B7FE0',
   accentSoft: 'rgba(139,127,224,0.5)',
   success: '#4ADE80',
-  danger: '#F87171'
+  danger: '#F87171',
+  // Darker/more saturated variants of accent/success/danger, for solid-fill
+  // UI elements that need a white icon/text on top (e.g. VaultTree.vue's
+  // swipe-action buttons) - the base tones above are calibrated as
+  // foreground accents on dark surfaces (text-accent/text-success/
+  // text-danger), not as background fills, and white-on-base contrast is
+  // only ~1.4-1.9:1. Each *Strong tone keeps the same hue and was picked to
+  // clear ~4.5:1 against white (accentStrong ~7:1, successStrong ~5:1,
+  // dangerStrong ~4.8:1).
+  accentStrong: '#4F3DD6',
+  successStrong: '#15803D',
+  dangerStrong: '#DC2626'
 } as const
 
 export const fontFamily = {
