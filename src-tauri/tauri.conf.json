@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "synap-desktop",
+  "productName": "synap.md",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.synap.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5175",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "synap-desktop",
+        "title": "synap.md",
         "width": 1000,
         "height": 700,
         "minWidth": 700,
