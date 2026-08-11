@@ -41,30 +41,30 @@ Stil nativer Desktop-Apps (Obsidian, Bear, iA Writer). Tiefe entsteht über
 
 ```css
 :root {
-  /* Flächen */
-  --color-base: #141414;        /* App-Hintergrund */
-  --color-surface-1: #1a1a1a;   /* Sidebar, Statusbar, Panels, Modals */
-  --color-surface-2: #232323;   /* Hover/Active/Selected Rows */
+   /* Flächen */
+   --color-base: #141414; /* App-Hintergrund */
+   --color-surface-1: #1a1a1a; /* Sidebar, Statusbar, Panels, Modals */
+   --color-surface-2: #232323; /* Hover/Active/Selected Rows */
 
-  /* Borders */
-  --color-border: rgba(255, 255, 255, 0.05);        /* Standard-Trennlinie */
-  --color-border-strong: rgba(255, 255, 255, 0.10);  /* Modal-/Panel-Rahmen */
+   /* Borders */
+   --color-border: rgba(255, 255, 255, 0.05); /* Standard-Trennlinie */
+   --color-border-strong: rgba(255, 255, 255, 0.10); /* Modal-/Panel-Rahmen */
 
-  /* Text */
-  --color-content-primary: #EDEDEC;   /* Haupttext, Überschriften */
-  --color-content-secondary: #a3a3a3; /* Fließtext gedämpft */
-  --color-content-tertiary: #737373;  /* Meta/Labels/Platzhalter */
+   /* Text */
+   --color-content-primary: #EDEDEC; /* Haupttext, Überschriften */
+   --color-content-secondary: #a3a3a3; /* Fließtext gedämpft */
+   --color-content-tertiary: #737373; /* Meta/Labels/Platzhalter */
 
-  /* Akzent (warmes Amber) */
-  --color-accent: #F5A623;
-  --color-accent-soft: rgba(245, 166, 35, 0.5);
-  --color-accent-strong: #D97706; /* solide Fläche + weißer Text/Icon, ~7:1 Kontrast */
+   /* Akzent (warmes Amber) */
+   --color-accent: #F5A623;
+   --color-accent-soft: rgba(245, 166, 35, 0.5);
+   --color-accent-strong: #D97706; /* solide Fläche + weißer Text/Icon, ~7:1 Kontrast */
 
-  /* Status */
-  --color-success: #4ADE80;
-  --color-success-strong: #15803D; /* solide Fläche, ~5:1 Kontrast */
-  --color-danger: #F87171;
-  --color-danger-strong: #DC2626;  /* solide Fläche, ~4.8:1 Kontrast */
+   /* Status */
+   --color-success: #4ADE80;
+   --color-success-strong: #15803D; /* solide Fläche, ~5:1 Kontrast */
+   --color-danger: #F87171;
+   --color-danger-strong: #DC2626; /* solide Fläche, ~4.8:1 Kontrast */
 }
 ```
 
