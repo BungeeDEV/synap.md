@@ -28,7 +28,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
            UI behind the sheet (e.g. a favorited note's star in
            DocumentHeader.vue) into a distracting colored bar. -->
       <div v-if="open"
-           class="fixed inset-0 z-50 bg-black/40"
+           class="fixed inset-0 z-[9998] bg-black/40"
            @click="emit('close')"/>
     </Transition>
 
@@ -41,7 +41,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       <div
           v-if="open"
           role="dialog"
-          class="fixed inset-x-0 bottom-0 z-50 flex max-h-dialog flex-col rounded-t-xl border-t border-border-strong bg-surface-1 pb-safe-b text-content-primary shadow-float"
+          class="fixed inset-x-0 bottom-0 z-[9999] flex max-h-dialog flex-col rounded-t-xl border-t border-border-strong bg-[#222222] pb-[env(safe-area-inset-bottom)] text-content-primary shadow-float"
           @click.stop
       >
         <div class="flex shrink-0 justify-center pt-2 pb-1">

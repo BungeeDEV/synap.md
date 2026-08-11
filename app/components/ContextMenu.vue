@@ -152,13 +152,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     sidebar column instead of the real screen. See decisions.md.
   -->
   <Teleport to="body">
-    <BottomSheet v-if="isMobile" :open="open"
-                 @close="emit('close')">
+    <BottomSheet
+        v-if="isMobile" :open="open"
+        @close="emit('close')">
       <div v-if="!activeSubmenuId">
-        <template v-for="(group, groupIndex) in groups"
-                  :key="groupIndex">
-          <div v-if="groupIndex > 0" role="separator"
-               class="my-1 border-t border-border"/>
+        <template
+            v-for="(group, groupIndex) in groups"
+            :key="groupIndex">
+          <div
+              v-if="groupIndex > 0" role="separator"
+              class="my-1 border-t border-border"/>
           <ContextMenuItem
               v-for="item in group"
               :key="item.id"
@@ -172,22 +175,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <div v-else>
         <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none"
+            class="flex min-h-12 w-full items-center gap-2 px-4 py-3 text-left text-sm text-[#ECECEC] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none"
             @click="activeSubmenuId = null"
         >
-          <ChevronLeft class="h-4 w-4 shrink-0"
-                       stroke-width="1.5"/>
+          <ChevronLeft
+              class="h-4 w-4 shrink-0"
+              stroke-width="1.5"/>
           Zurück
         </button>
-        <slot :name="activeSubmenuId ?? undefined"
-              :close="() => emit('close')"/>
+        <slot
+            :name="activeSubmenuId ?? undefined"
+            :close="() => emit('close')"/>
       </div>
     </BottomSheet>
 
     <template v-else>
-      <div v-if="open" class="fixed inset-0 z-40"
-           @click="emit('close')"
-           @contextmenu.prevent="emit('close')"/>
+      <div
+          v-if="open" class="fixed inset-0 z-9998"
+          @click="emit('close')"
+          @contextmenu.prevent="emit('close')"/>
       <Transition
           enter-active-class="transition duration-150 ease-out"
           leave-active-class="transition duration-100 ease-in"
@@ -200,15 +206,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             role="menu"
             tabindex="-1"
             :aria-activedescendant="selectedId ?? undefined"
-            class="fixed z-50 min-w-52 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float focus:outline-none"
+            class="fixed z-[9999] min-w-52 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float focus:outline-none"
             :style="style"
         >
-          <template v-for="(group, groupIndex) in groups"
-                    :key="groupIndex">
-            <div v-if="groupIndex > 0" role="separator"
-                 class="my-1 border-t border-border"/>
-            <div v-for="item in group" :key="item.id"
-                 class="relative">
+          <template
+              v-for="(group, groupIndex) in groups"
+              :key="groupIndex">
+            <div
+                v-if="groupIndex > 0" role="separator"
+                class="my-1 border-t border-border"/>
+            <div
+                v-for="item in group" :key="item.id"
+                class="relative">
               <ContextMenuItem
                   :item="item"
                   :selected="selectedId === item.id"
@@ -224,11 +233,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               >
                 <div
                     v-if="isSubmenuItem(item) && activeSubmenuId === item.id"
-                    class="absolute top-0 left-full z-50 ml-1 min-w-52 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
+                    class="absolute top-0 left-full z-[9999] ml-1 min-w-52 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
                     @click.stop
                 >
-                  <slot :name="submenuNameOf(item)"
-                        :close="() => emit('close')"/>
+                  <slot
+                      :name="submenuNameOf(item)"
+                      :close="() => emit('close')"/>
                 </div>
               </Transition>
             </div>

@@ -18,15 +18,15 @@ const emit = defineEmits<{ select: [], hover: [] }>()
     class="flex w-full cursor-pointer items-center gap-2.5 text-left transition-colors duration-150 focus-visible:outline-none"
     :class="[
       size === 'comfortable' ? 'min-h-12 px-4 py-3 text-base' : 'px-3.5 py-2',
-      item.disabled ? 'cursor-not-allowed opacity-40' : '',
-      item.danger ? 'text-danger' : '',
+      item.disabled ? 'cursor-not-allowed opacity-50' : '',
+      item.danger ? 'text-danger' : 'text-[#ECECEC]',
       selected && !item.disabled ? 'bg-surface-2' : ''
     ]"
     @click="emit('select')"
     @mouseenter="emit('hover')"
   >
-    <component :is="item.icon as Component" class="h-5 w-5 shrink-0" :class="item.danger ? '' : 'text-content-tertiary'" stroke-width="1.5" />
+    <component :is="item.icon as Component" class="h-5 w-5 shrink-0" stroke-width="1.5" />
     <span class="flex-1 truncate">{{ item.label }}</span>
-    <ChevronRight v-if="isSubmenuItem(item)" class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
+    <ChevronRight v-if="isSubmenuItem(item)" class="h-4 w-4 shrink-0" stroke-width="1.5" />
   </div>
 </template>
