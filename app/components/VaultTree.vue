@@ -110,7 +110,10 @@ function isExpanded(node: VaultTreeNode): boolean {
 // unless the user picked an explicit override via "Farbe ändern"
 // (useFolderColors), which then wins. See utils/folderColors.ts.
 function folderIconColor(path: string): string {
-  return folderColorTextClass(path, colorKeyOf(path))
+  // Only apply a color when the user has explicitly set one; default folders
+  // get a neutral icon so the sidebar stays visually quiet.
+  const override = colorKeyOf(path)
+  return override ? folderColorTextClass(path, override) : 'text-content-tertiary/70'
 }
 
 function nodeIcon(node: VaultTreeNode): typeof File | typeof Folder | typeof FolderOpen {
@@ -884,7 +887,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
     <div class="flex items-center gap-2 border-b border-border p-2">
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition duration-150 hover:bg-accent/90 active:scale-95 focus:outline-none focus:ring-1 focus:ring-accent/50"
+        class="flex items-center gap-1.5 rounded-md border border-white/[0.08] px-2.5 py-1.5 text-sm text-content-secondary transition duration-150 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-content-primary active:scale-95 focus:outline-none"
         title="Neue Notiz"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
@@ -1241,13 +1244,13 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           tabindex="0"
           :draggable="!isMobile"
           data-no-edge-swipe
-          class="no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 bg-base px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
+          class="group no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 bg-base px-2.5 py-1.5 text-left transition-colors duration-150 active:bg-white/[0.06]"
           :class="[
             draggingPath === node.path ? '' : 'transition-transform duration-150 ease-out',
-            tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary',
-            isDragOver(node) ? 'border border-accent/50 bg-surface-2' : '',
+            tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-accent/[0.12] font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.06] hover:text-content-primary',
+            isDragOver(node) ? 'ring-1 ring-inset ring-accent/40 bg-surface-2' : '',
             isDragging(node) ? 'opacity-50' : '',
-            isExternalDragOver(node) ? 'border border-dashed border-accent bg-surface-2' : '',
+            isExternalDragOver(node) ? 'ring-1 ring-inset ring-dashed ring-accent bg-surface-2' : '',
             wasRecentlyImported(node) ? 'bg-accent/20' : ''
           ]"
           :style="{ transform: `translateX(${swipeOffsetOf(node)}px)` }"
@@ -1268,15 +1271,15 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           <span class="flex shrink-0 items-center gap-0.5">
             <ChevronRight
               v-if="node.type === 'folder'"
-              class="h-4 w-4 text-content-tertiary transition-transform duration-150"
+              class="h-3.5 w-3.5 text-content-tertiary/60 transition-transform duration-150 group-hover:text-content-tertiary/80"
               :class="isExpanded(node) ? 'rotate-90' : ''"
-              stroke-width="1.5"
+              stroke-width="2"
             />
-            <span v-else class="inline-block h-4 w-4" />
+            <span v-else class="inline-block h-3.5 w-3.5" />
             <component
               :is="nodeIcon(node)"
-              class="h-5 w-5"
-              :class="node.type === 'folder' ? folderIconColor(node.path) : 'text-content-tertiary'"
+              class="h-4 w-4"
+              :class="node.type === 'folder' ? folderIconColor(node.path) : 'text-content-tertiary/60'"
               stroke-width="1.5"
             />
           </span>
@@ -1285,11 +1288,11 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             v-if="node.type === 'file' && swipeOffsetOf(node) === 0"
             type="button"
             class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
-            :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
+            :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary/50 opacity-0 group-hover:opacity-100 hover:text-accent focus:opacity-100'"
             :title="isFavorite(node.path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
             @click.stop="toggleFavorite(node.path)"
           >
-            <Star class="h-4 w-4" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
+            <Star class="h-3.5 w-3.5" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />
           </button>
         </div>
       </div>
@@ -1302,7 +1305,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         leave-from-class="grid-rows-expanded"
         leave-to-class="grid-rows-collapsed"
       >
-        <div v-if="node.type === 'folder' && isExpanded(node)" class="ml-3 border-l border-border pl-1">
+        <div v-if="node.type === 'folder' && isExpanded(node)" class="ml-3.5 border-l border-white/[0.05] pl-1">
           <div class="overflow-hidden">
             <VaultTree :nodes="node.children ?? []" :parent-path="node.path" />
           </div>

@@ -151,7 +151,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       v-if="sidebarPanel.activePanel === 'explorer' && favoriteEntries.length"
       class="shrink-0 touch-manipulation select-none border-b border-border p-1"
     >
-      <p class="px-2.5 pt-1.5 pb-1 text-xs font-medium tracking-wider text-content-tertiary uppercase">
+      <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-medium tracking-wider text-content-tertiary uppercase">
         Favoriten
       </p>
       <ul class="space-y-0.5 pb-1">
@@ -159,13 +159,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <button
             type="button"
             data-no-edge-swipe
-            class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 active:bg-white/[0.06]"
-            :class="tabs.activePath === entry.path ? 'bg-surface-2 font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.04] hover:text-content-primary'"
+            class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors duration-150 active:bg-white/[0.06]"
+            :class="tabs.activePath === entry.path ? 'bg-accent/[0.12] font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.06] hover:text-content-primary'"
             @click="openFavorite(entry)"
           >
-            <Folder v-if="entry.type === 'folder'" class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
-            <Star v-else class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" fill="currentColor" />
-            <span class="flex-1 truncate">{{ entry.title }}</span>
+            <Folder v-if="entry.type === 'folder'" class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
+            <Star v-else class="h-3.5 w-3.5 shrink-0 text-accent" stroke-width="1.5" fill="currentColor" />
+            <span class="flex-1 truncate text-sm">{{ entry.title }}</span>
           </button>
         </li>
       </ul>
@@ -182,35 +182,38 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       über die Settings-Tabs verwaltet - deshalb feste Links dorthin statt
       (nicht existierender) Baumknoten.
     -->
-    <div class="shrink-0 touch-manipulation select-none space-y-0.5 border-t border-border p-1">
+    <div class="shrink-0 touch-manipulation select-none border-t border-border p-1">
+      <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-medium tracking-wider text-content-tertiary uppercase">
+        Bibliothek
+      </p>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=templates')"
       >
-        <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        <LayoutTemplate class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
         Vorlagen
       </button>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=archive')"
       >
-        <Archive class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        <Archive class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
         Archiv
       </button>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-content-secondary transition duration-150 hover:bg-white/[0.04] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=trash')"
       >
-        <Trash2 class="h-4 w-4 shrink-0" stroke-width="1.5" />
+        <Trash2 class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
         Papierkorb
       </button>
     </div>
 
-    <div class="shrink-0 touch-manipulation select-none border-t border-border px-3 py-2 pb-safe-b text-sm text-content-tertiary">
-      {{ vaultTree.stats.files }} Dateien, {{ vaultTree.stats.folders }} Ordner
+    <div class="shrink-0 touch-manipulation select-none border-t border-border px-3 py-2 pb-safe-b text-xs text-content-tertiary/50">
+      {{ vaultTree.stats.files }} Dateien &middot; {{ vaultTree.stats.folders }} Ordner
     </div>
   </aside>
 </template>
