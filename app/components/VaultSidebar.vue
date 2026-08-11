@@ -71,18 +71,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       sidebarPanel.collapsed ? 'md:hidden' : ''
     ]"
   >
-    <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-border px-3 py-2 pt-safe-t">
+    <div class="flex shrink-0 touch-manipulation select-none items-center justify-between border-b border-white/[0.03] px-6 py-4">
       <div class="relative">
         <button
           type="button"
-          class="flex items-center gap-1.5 rounded-md py-1 pl-1 pr-2 transition-colors duration-150 hover:bg-white/[0.04] active:scale-95"
+          class="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition-colors duration-150 hover:bg-white/[0.04] active:scale-95"
           aria-haspopup="menu"
           :aria-expanded="showWorkspaceMenu"
           @click="toggleWorkspaceMenu"
         >
-          <img src="/icons/icon-192.png" alt="" class="h-6 w-6 shrink-0 rounded-md">
-          <span class="text-sm font-medium text-content-primary">synap</span>
-          <ChevronDown class="h-3.5 w-3.5 shrink-0 text-content-tertiary" stroke-width="1.5" />
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#F5A623] to-[#D97706] text-[13px] font-bold text-white shadow-sm m-0">S</div>
+          <span class="block text-lg font-semibold leading-none tracking-tight text-content-primary m-0">synap</span>
+          <ChevronDown class="h-4 w-4 shrink-0 text-content-tertiary m-0" stroke-width="1.5" />
         </button>
 
         <!-- Teleported: without this, `fixed inset-0` resolves against this
@@ -127,22 +127,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         </Transition>
       </div>
 
-      <div class="flex items-center gap-0.5">
+      <div class="flex items-center gap-4">
         <button
           type="button"
-          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-1.5"
+          class="flex h-9 w-9 items-center justify-center rounded-lg text-content-tertiary transition-colors duration-150 hover:bg-white/[0.08] hover:text-content-primary active:scale-95"
           title="Suche (⌘K)"
           @click="openCommandPalette()"
         >
-          <Search class="h-4 w-4" stroke-width="1.5" />
+          <Search class="h-5 w-5" stroke-width="1.5" />
         </button>
         <button
           type="button"
-          class="rounded-md p-3 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary active:scale-95 md:p-1.5"
+          class="flex h-9 w-9 items-center justify-center rounded-lg text-content-tertiary transition-colors duration-150 hover:bg-white/[0.08] hover:text-content-primary active:scale-95"
           title="Einstellungen"
           @click="navigateTo('/settings')"
         >
-          <Settings class="h-4 w-4" stroke-width="1.5" />
+          <Settings class="h-5 w-5" stroke-width="1.5" />
         </button>
       </div>
     </div>

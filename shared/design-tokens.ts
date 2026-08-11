@@ -7,8 +7,8 @@ export const colors = {
   contentPrimary: '#EDEDEC',
   contentSecondary: '#a3a3a3',
   contentTertiary: '#737373',
-  accent: '#8B7FE0',
-  accentSoft: 'rgba(139,127,224,0.5)',
+  accent: '#F5A623',
+  accentSoft: 'rgba(245, 166, 35, 0.5)',
   success: '#4ADE80',
   danger: '#F87171',
   // Darker/more saturated variants of accent/success/danger, for solid-fill
@@ -19,7 +19,7 @@ export const colors = {
   // only ~1.4-1.9:1. Each *Strong tone keeps the same hue and was picked to
   // clear ~4.5:1 against white (accentStrong ~7:1, successStrong ~5:1,
   // dangerStrong ~4.8:1).
-  accentStrong: '#4F3DD6',
+  accentStrong: '#D97706',
   successStrong: '#15803D',
   dangerStrong: '#DC2626'
 } as const

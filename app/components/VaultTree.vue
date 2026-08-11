@@ -891,10 +891,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
 
 <template>
   <div v-if="isRoot" class="flex h-full select-none flex-col text-base text-content-primary touch-manipulation">
-    <div class="flex items-center gap-2 border-b border-border p-2">
+    <div class="flex shrink-0 items-center justify-between border-b border-white/[0.03] px-6 py-4">
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-md border border-white/[0.08] px-2.5 py-1.5 text-sm text-content-secondary transition duration-150 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-content-primary active:scale-95 focus:outline-none"
+        class="flex items-center justify-center gap-1.5 rounded-xl bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors duration-150 hover:bg-accent/[0.15] active:scale-95 focus:outline-none"
         title="Neue Notiz"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
@@ -902,10 +902,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         Neue Notiz
       </button>
 
-      <div class="ml-auto flex items-center gap-0.5">
+      <div class="flex items-center gap-4">
         <button
           type="button"
-          class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+          class="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary transition-colors duration-150 hover:bg-white/[0.08] active:scale-95"
           title="Neuer Ordner"
           @click="startCreate('create-folder', vaultTree.selectedFolder)"
         >
@@ -913,7 +913,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         </button>
         <button
           type="button"
-          class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+          class="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary transition-colors duration-150 hover:bg-white/[0.08] active:scale-95"
           :title="sortTitle"
           @click="vaultSort.cycle()"
         >
@@ -923,7 +923,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         <div class="relative">
           <button
             type="button"
-            class="rounded-md p-2 text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary transition-colors duration-150 hover:bg-white/[0.08] active:scale-95"
             title="Weitere Aktionen"
             @click="toggleOverflowMenu"
           >
