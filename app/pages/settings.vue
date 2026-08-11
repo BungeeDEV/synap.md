@@ -51,7 +51,7 @@ function selectTab(id: string) {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary">
+  <div class="flex min-h-0 flex-1 overflow-hidden bg-base pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] text-content-primary">
     <aside
       class="w-full shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-base md:flex md:w-72"
       :class="showMobileNav ? 'flex' : 'hidden'"
@@ -84,10 +84,10 @@ function selectTab(id: string) {
     </aside>
 
     <main
-      class="min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 md:flex md:p-8"
+      class="min-h-0 flex-1 flex-col md:flex"
       :class="!showMobileNav ? 'flex' : 'hidden'"
     >
-      <div class="mb-4 flex h-11 shrink-0 items-center gap-2 border-b border-border pb-2 md:hidden">
+      <div class="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 md:hidden">
         <button
           type="button"
           class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
@@ -99,8 +99,10 @@ function selectTab(id: string) {
         <span class="text-content-primary">{{ activeTab.label }}</span>
       </div>
 
-      <div class="mx-auto w-full max-w-2xl">
-        <component :is="activeTab.component" />
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 md:p-8">
+        <div class="mx-auto w-full max-w-2xl">
+          <component :is="activeTab.component" />
+        </div>
       </div>
     </main>
   </div>
