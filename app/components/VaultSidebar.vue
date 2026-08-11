@@ -160,12 +160,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             type="button"
             data-no-edge-swipe
             class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors duration-150 active:bg-white/[0.06]"
-            :class="tabs.activePath === entry.path ? 'bg-accent/[0.12] font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.06] hover:text-content-primary'"
+            :class="tabs.activePath === entry.path ? 'bg-accent/[0.12] text-content-primary' : 'text-content-secondary hover:bg-[#252525] hover:text-content-primary'"
             @click="openFavorite(entry)"
           >
             <Folder v-if="entry.type === 'folder'" class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
             <Star v-else class="h-3.5 w-3.5 shrink-0 text-accent" stroke-width="1.5" fill="currentColor" />
-            <span class="flex-1 truncate text-sm">{{ entry.title }}</span>
+            <span class="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
+              <span v-if="tabs.activePath === entry.path" class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              <span class="truncate">{{ entry.title }}</span>
+            </span>
           </button>
         </li>
       </ul>
@@ -188,7 +191,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </p>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-[#252525] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=templates')"
       >
         <LayoutTemplate class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
@@ -196,7 +199,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </button>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-[#252525] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=archive')"
       >
         <Archive class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
@@ -204,7 +207,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       </button>
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-white/[0.06] hover:text-content-primary active:scale-95"
+        class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-content-secondary transition duration-150 hover:bg-[#252525] hover:text-content-primary active:scale-95"
         @click="navigateTo('/settings?tab=trash')"
       >
         <Trash2 class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />

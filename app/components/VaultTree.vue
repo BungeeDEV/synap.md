@@ -1148,7 +1148,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
 
   <ul v-else class="space-y-0.5">
     <li v-if="editState && editState.kind !== 'rename' && editState.parentPath === props.parentPath">
-      <div class="flex items-center gap-2 rounded-md px-2.5 py-2">
+      <div class="flex items-center gap-2 rounded-md px-2.5 py-1.5">
         <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
           <Folder v-if="editState.kind === 'create-folder'" class="h-5 w-5" stroke-width="1.5" />
           <File v-else class="h-5 w-5" stroke-width="1.5" />
@@ -1166,7 +1166,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
     <li v-for="node in displayNodes" :key="node.path">
       <div
         v-if="editState?.kind === 'rename' && editState.node?.path === node.path"
-        class="flex items-center gap-2 rounded-md px-2.5 py-2"
+        class="flex items-center gap-2 rounded-md px-2.5 py-1.5"
       >
         <span class="flex h-5 w-5 shrink-0 items-center justify-center text-content-tertiary">
           <ChevronRight
@@ -1244,10 +1244,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           tabindex="0"
           :draggable="!isMobile"
           data-no-edge-swipe
-          class="group no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 bg-base px-2.5 py-1.5 text-left transition-colors duration-150 active:bg-white/[0.06]"
+          class="group no-touch-callout relative z-10 flex w-full cursor-pointer touch-pan-y items-center gap-2 px-2.5 py-1.5 text-left transition-colors duration-150 active:bg-white/[0.06]"
           :class="[
             draggingPath === node.path ? '' : 'transition-transform duration-150 ease-out',
-            tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-accent/[0.12] font-medium text-content-primary' : 'text-content-secondary hover:bg-white/[0.06] hover:text-content-primary',
+            tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path) ? 'bg-accent/[0.12] text-content-primary' : 'text-content-secondary hover:bg-[#252525] hover:text-content-primary',
             isDragOver(node) ? 'ring-1 ring-inset ring-accent/40 bg-surface-2' : '',
             isDragging(node) ? 'opacity-50' : '',
             isExternalDragOver(node) ? 'ring-1 ring-inset ring-dashed ring-accent bg-surface-2' : '',
@@ -1283,7 +1283,13 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
               stroke-width="1.5"
             />
           </span>
-          <span class="flex-1 truncate">{{ node.name }}</span>
+          <span class="flex min-w-0 flex-1 items-center gap-1.5">
+            <span
+              v-if="tabs.activePath === node.path || (node.type === 'folder' && vaultTree.selectedFolder === node.path)"
+              class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+            />
+            <span class="truncate">{{ node.name }}</span>
+          </span>
           <button
             v-if="node.type === 'file' && swipeOffsetOf(node) === 0"
             type="button"

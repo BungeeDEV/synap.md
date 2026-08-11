@@ -75,13 +75,13 @@ async function savePassword(): Promise<void> {
       <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
         Benutzername
       </h2>
-      <form class="flex max-w-sm flex-col gap-2" @submit.prevent="saveUsername">
+      <form class="flex flex-col gap-4 p-4 md:max-w-sm md:gap-2 md:p-0" @submit.prevent="saveUsername">
         <label class="flex flex-col gap-1 text-sm text-content-secondary">
           Username
           <input
             v-model="newUsername"
             type="text"
-            class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
         <p v-if="usernameError" class="text-sm text-danger">
@@ -90,7 +90,7 @@ async function savePassword(): Promise<void> {
         <button
           type="submit"
           :disabled="usernameSaving"
-          class="self-start rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="min-h-12 w-full rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:self-start"
         >
           Speichern
         </button>
@@ -101,14 +101,14 @@ async function savePassword(): Promise<void> {
       <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
         Passwort ändern
       </h2>
-      <form class="flex max-w-sm flex-col gap-2" @submit.prevent="savePassword">
+      <form class="flex flex-col gap-4 p-4 md:max-w-sm md:gap-2 md:p-0" @submit.prevent="savePassword">
         <label class="flex flex-col gap-1 text-sm text-content-secondary">
           Aktuelles Passwort
           <input
             v-model="currentPassword"
             type="password"
             autocomplete="current-password"
-            class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
         <p v-if="currentPasswordError" class="text-sm text-danger">
@@ -121,7 +121,7 @@ async function savePassword(): Promise<void> {
             v-model="newPassword"
             type="password"
             autocomplete="new-password"
-            class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
         <p v-if="newPasswordError" class="text-sm text-danger">
@@ -134,14 +134,14 @@ async function savePassword(): Promise<void> {
             v-model="repeatPassword"
             type="password"
             autocomplete="new-password"
-            class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
 
         <button
           type="submit"
           :disabled="passwordSaving"
-          class="self-start rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="min-h-12 w-full rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:self-start"
         >
           Passwort ändern
         </button>

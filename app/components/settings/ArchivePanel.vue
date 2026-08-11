@@ -94,7 +94,7 @@ async function confirmDeleteToTrash(): Promise<void> {
           <button
             type="button"
             title="Wiederherstellen"
-            class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary"
+            class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary md:min-h-0 md:min-w-0 md:p-2.5"
             @click="restore(entry)"
           >
             <ArchiveRestore class="h-5 w-5" stroke-width="1.5" />
@@ -102,7 +102,7 @@ async function confirmDeleteToTrash(): Promise<void> {
           <button
             type="button"
             title="In den Papierkorb verschieben"
-            class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
+            class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger md:min-h-0 md:min-w-0 md:p-2.5"
             @click="pendingDelete = entry"
           >
             <Trash2 class="h-5 w-5" stroke-width="1.5" />

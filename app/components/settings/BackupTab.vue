@@ -33,7 +33,7 @@ async function exportVault(): Promise<void> {
     <button
       type="button"
       :disabled="exporting"
-      class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+      class="flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:justify-start"
       @click="exportVault"
     >
       <Download class="h-5 w-5" stroke-width="1.5" />

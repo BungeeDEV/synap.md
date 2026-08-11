@@ -41,11 +41,21 @@ const initialTabId = typeof requestedTabId === 'string' && tabs.some((tab) => ta
 
 const activeTabId = ref(initialTabId)
 const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value) ?? tabs[0]!)
+
+const showMobileNav = ref(!requestedTabId || !tabs.some(tab => tab.id === requestedTabId))
+
+function selectTab(id: string) {
+  activeTabId.value = id
+  showMobileNav.value = false
+}
 </script>
 
 <template>
   <div class="flex min-h-0 flex-1 overflow-hidden bg-base text-content-primary">
-    <aside class="flex w-72 shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-base">
+    <aside
+      class="w-full shrink-0 touch-manipulation select-none flex-col border-r border-border bg-surface-1 text-base md:flex md:w-72"
+      :class="showMobileNav ? 'flex' : 'hidden'"
+    >
       <div class="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
         <button
           type="button"
@@ -65,7 +75,7 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
           type="button"
           class="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
           :class="tab.id === activeTabId ? 'bg-surface-2 rounded-md text-content-primary' : 'rounded-md text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]'"
-          @click="activeTabId = tab.id"
+          @click="selectTab(tab.id)"
         >
           <component :is="tab.icon" class="h-5 w-5 shrink-0" stroke-width="1.5" />
           {{ tab.label }}
@@ -73,8 +83,23 @@ const activeTab = computed(() => tabs.find((tab) => tab.id === activeTabId.value
       </nav>
     </aside>
 
-    <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-8">
-      <div class="mx-auto max-w-2xl">
+    <main
+      class="min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 md:flex md:p-8"
+      :class="!showMobileNav ? 'flex' : 'hidden'"
+    >
+      <div class="mb-4 flex h-11 shrink-0 items-center gap-2 border-b border-border pb-2 md:hidden">
+        <button
+          type="button"
+          class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
+          title="Zurück zur Übersicht"
+          @click="showMobileNav = true"
+        >
+          <ArrowLeft class="h-5 w-5" stroke-width="1.5" />
+        </button>
+        <span class="text-content-primary">{{ activeTab.label }}</span>
+      </div>
+
+      <div class="mx-auto w-full max-w-2xl">
         <component :is="activeTab.component" />
       </div>
     </main>
