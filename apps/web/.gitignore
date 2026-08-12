@@ -1,0 +1,35 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# SQLite databases (dev/local vault index - never committed)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Symlink to the user's global Claude Code config (~/.claude) - local-machine
+# only, never project content
+.claude
+
+# Local env files
+.env
+.env.*
+!.env.example

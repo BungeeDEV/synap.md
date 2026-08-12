@@ -1,0 +1,146 @@
+@import "tailwindcss";
+@config "../../../tailwind.config.ts";
+
+/*
+ * App-shell mobile behavior (viewport/scroll architecture + native-app
+ * feel). This is the one sanctioned exception to STYLEGUIDE.md's
+ * Tailwind-only rule (see section 1): html/body aren't targetable with a
+ * utility class in a component template, so their reset lives here as a
+ * regular @layer base block, not a new style source. `bg-base` is applied
+ * via @apply rather than a hardcoded hex so it can never drift from the
+ * `base` token in tailwind.config.ts.
+ */
+@layer base {
+  html,
+  body {
+    height: 100%;
+    /* html/body are the fixed frame, not a scroll container - actual
+       scrolling happens only inside individual panels (sidebar, editor,
+       command palette, ...). This is what stops the whole page from
+       rubber-banding/bouncing on iOS/Android and eliminates the white
+       edges that bounce exposes. */
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    @apply bg-base;
+  }
+
+  /*
+   * App-wide keyboard focus ring. Applied once here instead of a
+   * `focus-visible:ring-1 focus-visible:ring-accent/50` utility pair on
+   * every one of the app's ~60+ buttons/rows/links - a handful of
+   * form-heavy components (auth pages, settings forms, ConfirmDialog,
+   * MoveToDialog) already had their own explicit `focus:` classes, but most
+   * icon-only sidebar/toolbar/menu buttons had no focus indicator at all.
+   * `:focus-visible` (not `:focus`) so mouse/touch clicks don't show a ring,
+   * only keyboard/other non-pointer focus - matches STYLEGUIDE.md's "Fokus-
+   * States immer über accent/50-Ring" rule, just centralized.
+   */
+  :focus-visible {
+    @apply outline-none ring-1 ring-accent/50;
+  }
+
+  /*
+   * VaultTree.vue's rows implement their own long-press (context menu) and
+   * horizontal swipe (quick actions) via pointer events - iOS Safari's
+   * native long-press callout (the Copy/Look Up/Share popup) would
+   * otherwise still appear alongside it, since it's controlled by
+   * `-webkit-touch-callout`, a separate concept from `user-select` (already
+   * `select-none` app-wide) with no Tailwind utility. Same sanctioned
+   * exception as the two blocks above - a platform behavior Tailwind
+   * classes can't express, not a design decision.
+   */
+  .no-touch-callout {
+    -webkit-touch-callout: none;
+  }
+
+  /*
+   * Tiptap's Placeholder extension (empty-editor hint text, NoteEditor.vue)
+   * needs this exact recipe - browsers have no way to style a contenteditable
+   * element's "placeholder" other than a real ::before + content: attr(...),
+   * and Tailwind has no utility for that. Same sanctioned exception as the
+   * block above and as CodeMirror's old EditorView.theme() was for the
+   * previous editor (see components.md) - a ProseMirror-internal structural
+   * rule Tailwind classes genuinely can't express, not a design decision.
+   */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    @apply text-content-tertiary;
+  }
+
+  /*
+   * Global custom scrollbar (WebKit + Firefox) - replaces the native
+   * light-on-dark scrollbar everywhere (sidebar, editor, dialogs, ...) with
+   * one rule set instead of a per-component class, since every scrollable
+   * panel should look the same. Scoped to `pointer: fine` only, so touch
+   * devices keep their own minimal native indicator untouched rather than
+   * getting this desktop treatment forced onto them.
+   *
+   * Idle state is track/thumb-transparent (Linear/Notion/VS Code-style
+   * "quiet until needed"), revealed on `:hover` *or* `:focus-within` rather
+   * than a JS scroll listener - mouse-wheel scrolling always requires the
+   * cursor to be over the element (`:hover` already true), and keyboard
+   * scrolling requires a focused descendant (`:focus-within` already true),
+   * so this covers "visible while scrolling" for both input modes without
+   * extra JS. Track/thumb keep their layout box at 0 opacity/transparent,
+   * so the thumb fading in never reflows content - no `scrollbar-gutter`
+   * needed on top of that.
+   */
+  @media (pointer: fine) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+
+    *:hover,
+    *:focus-within {
+      /* Mirrors border.strong in shared/design-tokens.ts - scrollbar-color
+         isn't a Tailwind-generated property, so it can't be @apply'd. */
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      @apply bg-transparent;
+      border-radius: 9999px;
+      transition: background-color 150ms ease-out;
+    }
+
+    *:hover::-webkit-scrollbar-thumb,
+    *:focus-within::-webkit-scrollbar-thumb {
+      @apply bg-border-strong;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-content-tertiary/50;
+    }
+  }
+}
+
+/*
+ * Respects prefers-reduced-motion by collapsing every transition/animation
+ * to effectively instant, app-wide - added once here rather than a
+ * `motion-reduce:` variant on every transition utility across the app.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  *::-webkit-scrollbar-thumb {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
