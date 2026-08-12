@@ -118,8 +118,8 @@ fn scan_local_md_files(vault_root: &Path) -> Vec<String> {
             for entry in entries.flatten() {
                 let path = entry.path();
                 let name = entry.file_name().to_string_lossy().to_string();
-                // Skip hidden directories (.synap, .git, etc.)
-                if name.starts_with('.') {
+                // Skip hidden directories (.synap, .git, etc.) and large build/dependency directories
+                if name.starts_with('.') || name == "node_modules" || name == "target" || name == "dist" {
                     continue;
                 }
                 if path.is_dir() {
@@ -450,6 +450,27 @@ async fn stop_background_sync(state: State<'_, AppState>) -> Result<(), String> 
     Ok(())
 }
 
+#[tauri::command]
+async fn open_sticky(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
+    use tauri::{WebviewWindowBuilder, WebviewUrl};
+
+    let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis();
+    let label = format!("sticky-{}", timestamp);
+    let safe_path = path.replace("&", "%26").replace("#", "%23").replace("?", "%3F");
+    let url = WebviewUrl::App(format!("/?sticky=true&file={}", safe_path).into());
+    
+    match WebviewWindowBuilder::new(&app_handle, label, url)
+        .title(format!("Sticky: {}", path))
+        .inner_size(350.0, 450.0)
+        .always_on_top(true)
+        .decorations(false)
+        .build()
+    {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string())
+    }
+}
+
 trait OptionalExt<T> {
     fn optional(self) -> Result<Option<T>, rusqlite::Error>;
 }
@@ -589,7 +610,8 @@ pub fn run() {
             stop_background_sync,
             pull_file,
             push_file,
-            wipe_sync_db
+            wipe_sync_db,
+            open_sticky
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

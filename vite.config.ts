@@ -10,6 +10,12 @@ export default defineConfig({
   server: {
     port: 5175,
     strictPort: true,
+    watch: {
+      ignored: ['**/src-tauri/**']
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@tauri-apps/api', '@tauri-apps/plugin-dialog', '@tauri-apps/plugin-fs', '@tauri-apps/plugin-store']
   },
   clearScreen: false,
 });

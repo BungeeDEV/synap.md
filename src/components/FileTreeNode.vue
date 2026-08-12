@@ -17,6 +17,14 @@ function handleClick(node: TreeNode) {
     emit('select', node.path);
   }
 }
+
+function onContextMenu(event: MouseEvent, node: TreeNode) {
+  appState.contextMenu = {
+    node,
+    x: event.clientX,
+    y: event.clientY
+  };
+}
 </script>
 
 <template>
@@ -24,6 +32,7 @@ function handleClick(node: TreeNode) {
     <div v-for="node in nodes" :key="node.path" class="w-full">
       <div 
         @click="handleClick(node)"
+        @contextmenu.prevent="onContextMenu($event, node)"
         :class="['sidebar-row group text-[15px] py-1.5 px-2 select-none', !node.isDir && appState.activeFile === node.path ? 'active' : '']"
         :style="{ paddingLeft: '8px' }"
       >

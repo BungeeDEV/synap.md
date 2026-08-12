@@ -14,6 +14,13 @@ export interface TreeNode {
   children: TreeNode[];
 }
 
+export interface ContextMenuState {
+  node: TreeNode;
+  x: number;
+  y: number;
+  initialSubmenu?: string;
+}
+
 export const appState = reactive({
   vaultPath: null as string | null,
   localFiles: [] as FileItem[],
@@ -40,6 +47,7 @@ export const appState = reactive({
   isSettingsOpen: false,
   isSidebarOpen: true,
   isSearchOpen: false,
+  contextMenu: null as ContextMenuState | null,
 });
 
 export function resetAppState() {
@@ -52,6 +60,7 @@ export function resetAppState() {
   appState.isReaderMode = false;
   appState.isSidebarOpen = true;
   appState.isSearchOpen = false;
+  appState.contextMenu = null;
   appState.defaultView = 'editor';
   appState.editorFontSize = 16;
   appState.editorFontFamily = 'sans';
