@@ -1,5 +1,5 @@
-import type { VaultTreeNode } from '~/stores/vaultTree'
-import { titleFromPath } from '~/stores/tabs'
+import type { VaultTreeNode } from '@synap/store'
+import { titleFromPath } from '@synap/store'
 
 export interface FileEntry {
   path: string

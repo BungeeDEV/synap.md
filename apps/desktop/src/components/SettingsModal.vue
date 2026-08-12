@@ -12,8 +12,15 @@ const emit = defineEmits<{
 
 const activeTab = ref('allgemein');
 
-function manualSync() {
-  emit('sync');
+async function toggleAutostart() {
+  try {
+    const { enable, disable } = await import('@tauri-apps/plugin-autostart');
+    if (appState.isAutostartEnabled) {
+      await enable();
+    } else {
+      await disable();
+    }
+  } catch (e) { console.error("Autostart toggle failed", e); }
 }
 </script>
 
@@ -83,6 +90,21 @@ function manualSync() {
                     Vault wechseln...
                   </button>
                 </div>
+                
+                <div class="pt-2 pb-2 flex items-center justify-between border-b border-divider">
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      v-model="appState.isAutostartEnabled" 
+                      @change="toggleAutostart"
+                      class="toggle-switch shrink-0"
+                    />
+                    <div>
+                      <div class="text-[13px] text-content-primary font-medium">Beim Systemstart öffnen</div>
+                      <div class="text-xs text-content-tertiary">Startet synap im Hintergrund, wenn der Computer hochfährt.</div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -132,7 +154,7 @@ function manualSync() {
                 
                 <div class="pt-3 flex items-center justify-between">
                   <p class="text-xs text-content-tertiary">{{ appState.statusMsg || 'Bereit.' }}</p>
-                  <button @click="manualSync" class="btn-primary shrink-0">
+                  <button @click="emit('sync')" class="btn-primary shrink-0">
                     Verbinden & Sync
                   </button>
                 </div>

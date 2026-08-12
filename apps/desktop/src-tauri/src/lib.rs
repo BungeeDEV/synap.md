@@ -1,3 +1,4 @@
+use notify::Watcher;
 use reqwest::Client;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -6,7 +7,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
-use notify::Watcher;
 
 struct AppState {
     client: Client,
@@ -45,7 +45,11 @@ fn compute_hash(path: &Path) -> std::io::Result<String> {
 }
 
 #[tauri::command]
-fn init_db(app_handle: tauri::AppHandle, vault_path: String, state: State<'_, AppState>) -> Result<(), String> {
+fn init_db(
+    app_handle: tauri::AppHandle,
+    vault_path: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let path = PathBuf::from(&vault_path);
     if !path.exists() {
         return Err("Vault path does not exist".to_string());
@@ -53,7 +57,8 @@ fn init_db(app_handle: tauri::AppHandle, vault_path: String, state: State<'_, Ap
 
     let db_dir = path.join(".synap");
     if !db_dir.exists() {
-        std::fs::create_dir_all(&db_dir).map_err(|e| format!("Failed to create .synap dir: {}", e))?;
+        std::fs::create_dir_all(&db_dir)
+            .map_err(|e| format!("Failed to create .synap dir: {}", e))?;
     }
 
     let db_path = db_dir.join("sync.db");
@@ -77,21 +82,27 @@ fn init_db(app_handle: tauri::AppHandle, vault_path: String, state: State<'_, Ap
 
     let (tx, rx) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(tx).map_err(|e| e.to_string())?;
-    watcher.watch(&path, notify::RecursiveMode::Recursive).map_err(|e| e.to_string())?;
-    
+    watcher
+        .watch(&path, notify::RecursiveMode::Recursive)
+        .map_err(|e| e.to_string())?;
+
     // Background thread for local file changes (notify)
     let app_clone = app_handle.clone();
     std::thread::spawn(move || {
         for res in rx {
             if let Ok(event) = res {
-                if matches!(event.kind, notify::EventKind::Modify(notify::event::ModifyKind::Data(_)) | notify::EventKind::Create(_)) {
+                if matches!(
+                    event.kind,
+                    notify::EventKind::Modify(notify::event::ModifyKind::Data(_))
+                        | notify::EventKind::Create(_)
+                ) {
                     // Notify triggers multiple events. Debounce slightly
                     std::thread::sleep(std::time::Duration::from_millis(500));
-                    
+
                     let state = app_clone.state::<AppState>();
                     let url = state.server_url.lock().unwrap().clone();
                     let token = state.token.lock().unwrap().clone();
-                    
+
                     if let (Some(u), Some(t)) = (url, token) {
                         // Simply trigger a full sync when local files change!
                         let app_clone_async = app_clone.clone();
@@ -119,7 +130,11 @@ fn scan_local_md_files(vault_root: &Path) -> Vec<String> {
                 let path = entry.path();
                 let name = entry.file_name().to_string_lossy().to_string();
                 // Skip hidden directories (.synap, .git, etc.) and large build/dependency directories
-                if name.starts_with('.') || name == "node_modules" || name == "target" || name == "dist" {
+                if name.starts_with('.')
+                    || name == "node_modules"
+                    || name == "target"
+                    || name == "dist"
+                {
                     continue;
                 }
                 if path.is_dir() {
@@ -141,7 +156,12 @@ fn scan_local_md_files(vault_root: &Path) -> Vec<String> {
 
 #[tauri::command]
 fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String> {
-    let vault_path = state.vault_path.lock().unwrap().clone().ok_or("No vault path set")?;
+    let vault_path = state
+        .vault_path
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("No vault path set")?;
     let vault_root = PathBuf::from(&vault_path);
     let db_guard = state.db.lock().unwrap();
     let conn = db_guard.as_ref().ok_or("DB not initialized")?;
@@ -165,11 +185,15 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         let abs_path = vault_root.join(rel_path);
         let current_hash = compute_hash(&abs_path).unwrap_or_default();
         // Check if hash differs from what's in DB
-        let db_hash: Option<String> = conn.query_row(
-            "SELECT local_hash FROM sync_state WHERE path = ?",
-            params![rel_path],
-            |row| row.get(0),
-        ).optional().unwrap_or(None).unwrap_or(None);
+        let db_hash: Option<String> = conn
+            .query_row(
+                "SELECT local_hash FROM sync_state WHERE path = ?",
+                params![rel_path],
+                |row| row.get(0),
+            )
+            .optional()
+            .unwrap_or(None)
+            .unwrap_or(None);
 
         if let Some(ref stored_hash) = db_hash {
             if stored_hash != &current_hash {
@@ -182,8 +206,11 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     }
 
     // 4. Mark files that are in DB but no longer on disk
-    let mut stmt = conn.prepare("SELECT path FROM sync_state").map_err(|e| e.to_string())?;
-    let db_paths: Vec<String> = stmt.query_map([], |row| row.get(0))
+    let mut stmt = conn
+        .prepare("SELECT path FROM sync_state")
+        .map_err(|e| e.to_string())?;
+    let db_paths: Vec<String> = stmt
+        .query_map([], |row| row.get(0))
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();
@@ -222,19 +249,36 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
 // SYNC ENGINE
 // =======================
 
-pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str) -> Result<(), String> {
+pub async fn perform_sync(
+    app_handle: &tauri::AppHandle,
+    url: &str,
+    token: &str,
+) -> Result<(), String> {
     let state = app_handle.state::<AppState>();
-    let vault_path = state.vault_path.lock().unwrap().clone().ok_or("No vault path")?;
+    let vault_path = state
+        .vault_path
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("No vault path")?;
     let vault_root = PathBuf::from(&vault_path);
 
     // 1. Fetch Manifest
     let manifest_url = format!("{}/api/vault/manifest", url.trim_end_matches('/'));
-    let res = state.client.get(&manifest_url).header("Authorization", format!("Bearer {}", token)).send().await.map_err(|e| format!("Network Error: {}", e))?;
+    let res = state
+        .client
+        .get(&manifest_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+        .map_err(|e| format!("Network Error: {}", e))?;
     let text = res.text().await.unwrap_or_default();
-    
+
     let remote_files = match serde_json::from_str::<ManifestResponse>(&text) {
         Ok(wrapper) => wrapper.files,
-        Err(_) => serde_json::from_str::<Vec<ManifestItem>>(&text).map_err(|_| "Invalid Manifest")?,
+        Err(_) => {
+            serde_json::from_str::<Vec<ManifestItem>>(&text).map_err(|_| "Invalid Manifest")?
+        }
     };
 
     // 2. Scan remote files and pull missing/changed ones
@@ -250,15 +294,24 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
                 "SELECT local_hash FROM sync_state WHERE path = ?",
                 params![&rel_path],
                 |row| row.get(0),
-            ).optional().unwrap_or(None).unwrap_or(None)
+            )
+            .optional()
+            .unwrap_or(None)
+            .unwrap_or(None)
         };
 
         if local_hash.is_none() || local_hash.unwrap() != remote_hash {
             // Need to Pull
             let pull_url = format!("{}/api/vault/sync/pull", url.trim_end_matches('/'));
             let payload = serde_json::json!({ "paths": vec![&rel_path] });
-            let pull_res = state.client.post(&pull_url).header("Authorization", format!("Bearer {}", token)).json(&payload).send().await;
-            
+            let pull_res = state
+                .client
+                .post(&pull_url)
+                .header("Authorization", format!("Bearer {}", token))
+                .json(&payload)
+                .send()
+                .await;
+
             if let Ok(pull_res) = pull_res {
                 if pull_res.status().is_success() {
                     let p_text = pull_res.text().await.unwrap_or_default();
@@ -269,7 +322,7 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
                                 let _ = fs::create_dir_all(parent);
                             }
                             let _ = fs::write(&abs_path, item.content);
-                            
+
                             // Update DB
                             let new_hash = compute_hash(&abs_path).unwrap_or_default();
                             let db_guard = state.db.lock().unwrap();
@@ -285,15 +338,18 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
             }
         }
     }
-    
+
     // 3. Push local-only or modified files to the server
     let local_files = scan_local_md_files(&vault_root);
     let _remote_paths: std::collections::HashSet<String> = {
         // Re-fetch manifest paths to know what's on the server
         let manifest_url2 = format!("{}/api/vault/manifest", url.trim_end_matches('/'));
-        let res2 = state.client.get(&manifest_url2)
+        let res2 = state
+            .client
+            .get(&manifest_url2)
             .header("Authorization", format!("Bearer {}", token))
-            .send().await;
+            .send()
+            .await;
         if let Ok(res2) = res2 {
             let text2 = res2.text().await.unwrap_or_default();
             let items: Vec<ManifestItem> = match serde_json::from_str::<ManifestResponse>(&text2) {
@@ -318,13 +374,17 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
                 "SELECT status, remote_hash FROM sync_state WHERE path = ?",
                 params![rel_path],
                 |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
-            ).optional().unwrap_or(None)
+            )
+            .optional()
+            .unwrap_or(None)
         };
 
         let should_push = match &db_status {
             None => true, // Not in DB at all
             Some((status, remote_hash)) => {
-                status == "local" || status == "modified" || status == "PendingUpload"
+                status == "local"
+                    || status == "modified"
+                    || status == "PendingUpload"
                     || remote_hash.as_deref() != Some(&local_hash)
             }
         };
@@ -336,10 +396,13 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
                 let payload = serde_json::json!({
                     "files": [{ "path": rel_path, "content": content }]
                 });
-                let push_res = state.client.post(&push_url)
+                let push_res = state
+                    .client
+                    .post(&push_url)
                     .header("Authorization", format!("Bearer {}", token))
                     .json(&payload)
-                    .send().await;
+                    .send()
+                    .await;
 
                 if let Ok(push_res) = push_res {
                     if push_res.status().is_success() {
@@ -360,11 +423,7 @@ pub async fn perform_sync(app_handle: &tauri::AppHandle, url: &str, token: &str)
 }
 
 #[tauri::command]
-async fn sync_now(
-    app_handle: tauri::AppHandle,
-    url: String,
-    token: String,
-) -> Result<(), String> {
+async fn sync_now(app_handle: tauri::AppHandle, url: String, token: String) -> Result<(), String> {
     perform_sync(&app_handle, &url, &token).await
 }
 
@@ -389,13 +448,13 @@ async fn start_background_sync(
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
         loop {
             interval.tick().await;
-            
+
             let is_active = {
                 let state = app_clone.state::<AppState>();
                 let id = *state.sync_loop_id.lock().unwrap();
                 id == current_id
             };
-            
+
             if !is_active {
                 break;
             }
@@ -414,10 +473,10 @@ async fn wipe_sync_db(state: State<'_, AppState>) -> Result<(), String> {
         let guard = state.vault_path.lock().unwrap();
         guard.clone()
     };
-    
+
     if let Some(path_str) = vault_path {
         let db_path = PathBuf::from(&path_str).join(".synap").join("sync.db");
-        
+
         // 1. Close DB connection
         {
             let mut db_guard = state.db.lock().unwrap();
@@ -429,15 +488,15 @@ async fn wipe_sync_db(state: State<'_, AppState>) -> Result<(), String> {
             fs::remove_file(&db_path).map_err(|e| format!("Failed to delete DB: {}", e))?;
         }
     }
-    
+
     // Clear state
     *state.vault_path.lock().unwrap() = None;
     *state.server_url.lock().unwrap() = None;
     *state.token.lock().unwrap() = None;
-    
+
     // Stop watcher if exists
     *state.watcher.lock().unwrap() = None;
-    
+
     // Kill any background sync loops
     *state.sync_loop_id.lock().unwrap() += 1;
 
@@ -452,13 +511,19 @@ async fn stop_background_sync(state: State<'_, AppState>) -> Result<(), String> 
 
 #[tauri::command]
 async fn open_sticky(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
-    use tauri::{WebviewWindowBuilder, WebviewUrl};
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
 
-    let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis();
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
     let label = format!("sticky-{}", timestamp);
-    let safe_path = path.replace("&", "%26").replace("#", "%23").replace("?", "%3F");
+    let safe_path = path
+        .replace("&", "%26")
+        .replace("#", "%23")
+        .replace("?", "%3F");
     let url = WebviewUrl::App(format!("/?sticky=true&file={}", safe_path).into());
-    
+
     match WebviewWindowBuilder::new(&app_handle, label, url)
         .title(format!("Sticky: {}", path))
         .inner_size(350.0, 450.0)
@@ -467,7 +532,7 @@ async fn open_sticky(app_handle: tauri::AppHandle, path: String) -> Result<(), S
         .build()
     {
         Ok(_) => Ok(()),
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -496,10 +561,15 @@ pub struct PullResponseWrapper {
 }
 
 #[tauri::command]
-async fn pull_file(_url: String, _token: String, path: String, state: State<'_, AppState>) -> Result<String, String> {
+async fn pull_file(
+    _url: String,
+    _token: String,
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
     let vault_path = state.vault_path.lock().unwrap().clone().unwrap_or_default();
     let abs_path = PathBuf::from(vault_path).join(&path);
-    
+
     // Read from local disk first in Phase 1
     if abs_path.exists() {
         if let Ok(content) = fs::read_to_string(&abs_path) {
@@ -517,16 +587,23 @@ struct PushResponse {
 }
 
 #[tauri::command]
-async fn push_file(url: String, token: String, path: String, content: String, state: State<'_, AppState>) -> Result<(), String> {
+async fn push_file(
+    app_handle: tauri::AppHandle,
+    url: String,
+    token: String,
+    path: String,
+    content: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     let vault_path = state.vault_path.lock().unwrap().clone().unwrap_or_default();
     let abs_path = PathBuf::from(vault_path).join(&path);
-    
+
     // Save to local disk
     if let Some(parent) = abs_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
     fs::write(&abs_path, &content).map_err(|e| format!("Disk error: {}", e))?;
-    
+
     // Update local DB to PendingUpload
     let new_hash = compute_hash(&abs_path).unwrap_or_default();
     {
@@ -539,9 +616,6 @@ async fn push_file(url: String, token: String, path: String, content: String, st
         }
     }
 
-
-    
-
     let push_url = format!("{}/api/vault/sync/push", url.trim_end_matches('/'));
     let payload = serde_json::json!({
         "files": [
@@ -552,19 +626,30 @@ async fn push_file(url: String, token: String, path: String, content: String, st
         ]
     });
 
+    let res = state
+        .client
+        .post(&push_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
 
-
-    let res = state.client.post(&push_url).header("Authorization", format!("Bearer {}", token)).json(&payload).send().await.map_err(|e| e.to_string())?;
-    
     let status = res.status();
     let text = res.text().await.unwrap_or_default();
-    
+
     if status.is_success() {
         if let Ok(parsed) = serde_json::from_str::<PushResponse>(&text) {
             if !parsed.errors.is_empty() {
                 return Err(format!("Server Error: {:?}", parsed.errors));
             }
             if !parsed.conflicts.is_empty() {
+                use tauri_plugin_notification::NotificationExt;
+                let _ = app_handle.notification()
+                    .builder()
+                    .title("Sync-Konflikt erkannt")
+                    .body(&format!("Es gab {} Konflikt(e) beim Synchronisieren.", parsed.conflicts.len()))
+                    .show();
                 return Err(format!("Server Conflict: {:?}", parsed.conflicts));
             }
             if parsed.successes.is_empty() {
@@ -579,7 +664,10 @@ async fn push_file(url: String, token: String, path: String, content: String, st
 
         let db_guard = state.db.lock().unwrap();
         if let Some(conn) = db_guard.as_ref() {
-            let _ = conn.execute("UPDATE sync_state SET status = 'Synced', remote_hash = ? WHERE path = ?", params![new_hash, path]);
+            let _ = conn.execute(
+                "UPDATE sync_state SET status = 'Synced', remote_hash = ? WHERE path = ?",
+                params![new_hash, path],
+            );
         }
         Ok(())
     } else {
@@ -587,9 +675,31 @@ async fn push_file(url: String, token: String, path: String, content: String, st
     }
 }
 
+#[tauri::command]
+fn set_secure_token(token: String) -> Result<(), String> {
+    let entry = keyring::Entry::new("synap_desktop", "auth_token").map_err(|e| e.to_string())?;
+    entry.set_password(&token).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn get_secure_token() -> Result<String, String> {
+    let entry = keyring::Entry::new("synap_desktop", "auth_token").map_err(|e| e.to_string())?;
+    entry.get_password().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_secure_token() -> Result<(), String> {
+    let entry = keyring::Entry::new("synap_desktop", "auth_token").map_err(|e| e.to_string())?;
+    let _ = entry.delete_credential();
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -611,9 +721,56 @@ pub fn run() {
             pull_file,
             push_file,
             wipe_sync_db,
-            open_sticky
+            open_sticky,
+            set_secure_token,
+            get_secure_token,
+            delete_secure_token
         ])
         .setup(|app| {
+            use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState};
+            use tauri::menu::{Menu, MenuItem};
+
+            let show_i = MenuItem::with_id(app, "show", "Anzeigen", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            
+            let icon = app.default_window_icon().cloned().unwrap();
+            let _tray = TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&tray_menu)
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { button, button_state, .. } = event {
+                        if button == MouseButton::Left && button_state == MouseButtonState::Up {
+                            if let Some(window) = tray.app_handle().get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Run in background when closing window
+            if let Some(window) = app.get_webview_window("main") {
+                let window_clone = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        let _ = window_clone.hide();
+                        api.prevent_close();
+                    }
+                });
+            }
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()

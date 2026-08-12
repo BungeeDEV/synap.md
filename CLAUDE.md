@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-@apps/web/.claude/styles/web/synap-md.md
-@apps/web/.claude/knowledge/web/synap-md/decisions.md
-@apps/web/.claude/knowledge/web/synap-md/components.md
+@.claude/styles/web/synap-md.md
+@.claude/knowledge/web/synap-md/decisions.md
+@.claude/knowledge/web/synap-md/components.md
 
 ## What this is
 
@@ -17,11 +17,11 @@ SQLite), no external services.
 ## Commands
 
 ```bash
-pnpm dev            # start dev server (Nuxt)
-pnpm build           # production build
-pnpm test            # vitest run (all *.test.ts, one-shot, no watch)
-pnpm test -- <path>   # run a single test file, e.g. pnpm test -- apps/web/server/utils/vault-path.test.ts
-pnpm exec eslint .   # lint (no dedicated `lint` script exists)
+pnpm dev             # start dev servers (Web + Desktop) via turborepo
+pnpm build           # production build for all packages and apps
+pnpm test            # vitest run workspace-wide
+pnpm lint            # lint workspace-wide
+pnpm --filter synap-md run dev  # dev server only for Web App
 ```
 
 There is no dedicated `vitest.config.ts` — Vitest runs with defaults, no
@@ -35,11 +35,16 @@ pointed at local folders (copy `.env.example`).
 
 ## Architecture
 
-**srcDir split**: Nuxt's `srcDir` is `apps/web/app/` (client: pages, components,
-composables, stores, editor helpers), separate from `apps/web/server/` (Nitro:
-routes, middleware, plugins, utils) at the project root. `apps/web/shared/` holds
-code imported by both sides (types, formatters, design tokens) — see the
-style guide for the auto-import implications of this layout.
+**Monorepo Workspace**: This is a Turborepo/pnpm workspace containing:
+- `apps/web`: Nuxt 3 web application (synap.md)
+- `apps/desktop`: Tauri 2 + Vite/Vue desktop application
+- `packages/store`: Shared Pinia stores and API interfaces
+- `packages/editor-core`: Shared TipTap/CodeMirror editor functionality
+- `packages/ui-vue`: Shared Vue components
+- `packages/design-tokens`: Shared CSS/Tailwind design tokens
+- `packages/config-tailwind`: Shared Tailwind configs
+
+**srcDir split (Web)**: Nuxt's `srcDir` is `apps/web/app/` (client: pages), separate from `apps/web/server/` (Nitro). Design tokens and components are sourced from `packages/`.
 
 **Request flow for vault operations**: every `apps/web/server/api/vault/*` route
 takes a client-supplied relative path, resolves it through

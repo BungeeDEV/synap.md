@@ -15,6 +15,9 @@
     "@floating-ui/dom": "^1.8.0",
     "@nuxt/eslint": "1.16.0",
     "@pinia/nuxt": "^1.0.0",
+    "@synap/config-tailwind": "workspace:*",
+    "@synap/store": "workspace:*",
+    "@synap/ui-vue": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.2",
     "@tiptap/core": "^3.29.2",
@@ -58,5 +61,9 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.10",
     "vue-tsc": "^3.3.7"
+  },
+  "dependenciesMeta": {
+    "@synap/store": { "injected": true },
+    "@synap/ui-vue": { "injected": true }
   }
 }

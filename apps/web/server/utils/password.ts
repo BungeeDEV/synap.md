@@ -1,5 +1,5 @@
-// Deliberately shadows nuxt-auth-utils' own auto-imported hashPassword/
-// verifyPassword (backed by @adonisjs/hash) with a direct node:crypto scrypt
+// Deliberately shadows nuxt-auth-utils' own auto-imported hashUserPassword/
+// verifyUserPassword (backed by @adonisjs/hash) with a direct node:crypto scrypt
 // implementation - no extra native dependency, and no indirection through a
 // third-party hashing abstraction. Nuxt logs a "duplicated import" warning
 // for this at build time; that's expected, it's confirming this file wins.
@@ -24,14 +24,14 @@ const SCRYPT_R = 8
 const SCRYPT_P = 1
 const KEY_LENGTH = 64
 
-export async function hashPassword(password: string): Promise<string> {
+export async function hashUserPassword(password: string): Promise<string> {
   const salt = randomBytes(16)
   const derivedKey = await scrypt(password, salt, KEY_LENGTH, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P })
 
   return `scrypt:${SCRYPT_N}:${SCRYPT_R}:${SCRYPT_P}:${salt.toString('hex')}:${derivedKey.toString('hex')}`
 }
 
-export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+export async function verifyUserPassword(password: string, storedHash: string): Promise<boolean> {
   const parts = storedHash.split(':')
   if (parts.length !== 6 || parts[0] !== 'scrypt') return false
 
@@ -54,13 +54,13 @@ let dummyHash: Promise<string> | null = null
 
 /**
  * A precomputed, valid-format hash for an unguessable dummy password. Login
- * runs verifyPassword() against this when the username doesn't exist, so an
+ * runs verifyUserPassword() against this when the username doesn't exist, so an
  * unknown-username request takes the same scrypt-computation time as a
  * wrong-password one instead of returning early and leaking timing info.
  */
 export function getDummyHash(): Promise<string> {
   if (!dummyHash) {
-    dummyHash = hashPassword('dummy-password-for-constant-time-login-checks')
+    dummyHash = hashUserPassword('dummy-password-for-constant-time-login-checks')
   }
   return dummyHash
 }

@@ -4,33 +4,14 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import type { Transaction } from '@tiptap/pm/state'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
-import type { SuggestionKeyDownProps, SuggestionProps } from '@tiptap/suggestion'
+import type { SuggestionKeyDownProps, SuggestionProps, SuggestionOptions } from '@tiptap/suggestion'
 import Suggestion from '@tiptap/suggestion'
-import { VueRenderer } from '@tiptap/vue-3'
 import type { MarkdownNodeSpec } from 'tiptap-markdown'
-import WikilinkSuggestionList from '~/components/WikilinkSuggestionList.vue'
-import type { FileEntry } from '~/utils/fuzzyMatch'
-import { flattenFiles, fuzzyMatchFiles } from '~/utils/fuzzyMatch'
+import type { FileEntry } from './fuzzyMatch'
 
 export interface WikilinkOptions {
-  onNavigate: (path: string) => void
-}
-
-interface WikilinkSuggestionListRef {
-  onKeyDown: (props: SuggestionKeyDownProps) => boolean
-}
-
-/**
- * Same title-match resolution `NoteReader.vue`'s server-side render pipeline
- * does via `resolveWikilinkTargetPath` (see decisions.md), just client-side
- * and title-only (no path-suffix fallback) - good enough for "click a link
- * that's already visible in the open vault tree". Duplicate titles resolve
- * to whichever file the tree lists first, same known ambiguity as today.
- */
-function resolveWikilinkPath(target: string): string | null {
-  const vaultTree = useVaultTreeStore()
-  const match = flattenFiles(vaultTree.tree).find((file) => file.title.toLowerCase() === target.toLowerCase())
-  return match?.path ?? null
+  onNavigate: (target: string) => void
+  suggestion: Omit<SuggestionOptions<FileEntry>, 'editor'>
 }
 
 const WIKILINK_TEXT_PATTERN = /\[\[([^[\]]+)\]\]/g
@@ -78,7 +59,10 @@ export const Wikilink = Node.create<WikilinkOptions>({
   selectable: true,
 
   addOptions() {
-    return { onNavigate: () => {} }
+    return { 
+      onNavigate: () => {},
+      suggestion: {} as Omit<SuggestionOptions<FileEntry>, 'editor'>
+    }
   },
 
   addAttributes() {
@@ -125,8 +109,7 @@ export const Wikilink = Node.create<WikilinkOptions>({
         props: {
           handleClickOn: (_view: EditorView, _pos: number, node: ProseMirrorNode) => {
             if (node.type.name !== 'wikilink') return false
-            const path = resolveWikilinkPath(node.attrs.target as string)
-            if (path) options.onNavigate(path)
+            options.onNavigate(node.attrs.target as string)
             return true
           }
         },
@@ -148,47 +131,8 @@ export const Wikilink = Node.create<WikilinkOptions>({
       }),
       Suggestion({
         editor: this.editor,
-        // Explicit, unique per Suggestion instance - see slashSuggestion.ts's
-        // matching comment. Both default to the same internal 'suggestion'
-        // key otherwise, and ProseMirror throws "Adding different instances
-        // of a keyed plugin" the moment both are registered on one editor.
-        pluginKey: new PluginKey('wikilinkSuggestion'),
-        char: '[[',
-        allowedPrefixes: null,
-        items: ({ query }: { query: string }) => fuzzyMatchFiles(query, flattenFiles(useVaultTreeStore().tree), 8),
-        render: () => {
-          let component: VueRenderer
-          let unmount: (() => void) | undefined
-
-          return {
-            onStart: (props: SuggestionProps<FileEntry, FileEntry>) => {
-              component = new VueRenderer(WikilinkSuggestionList, {
-                props: {
-                  items: props.items,
-                  onSelect: (file: FileEntry) => props.command(file)
-                },
-                editor: props.editor
-              })
-              unmount = props.mount(component.element as HTMLElement)
-            },
-            onUpdate: (props: SuggestionProps<FileEntry, FileEntry>) => {
-              component.updateProps({ items: props.items })
-            },
-            onKeyDown: (props: SuggestionKeyDownProps) => {
-              if (props.event.key === 'Escape') {
-                unmount?.()
-                component.destroy()
-                return true
-              }
-              return (component.ref as WikilinkSuggestionListRef | null)?.onKeyDown(props) ?? false
-            },
-            onExit: () => {
-              unmount?.()
-              component.destroy()
-            }
-          }
-        },
-        command: ({ editor, range, props: file }: { editor: Editor, range: Range, props: FileEntry }) => {
+        ...this.options.suggestion,
+        command: ({ editor, range, props: file }) => {
           editor.chain().focus().insertContentAt(range, { type: 'wikilink', attrs: { target: file.title } }).run()
         }
       })

@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
   let pwdHash = null
   if (password) {
-    pwdHash = await hashPassword(password)
+    pwdHash = await hashUserPassword(password)
   }
 
   const existing = db.prepare('SELECT password_hash FROM share_links WHERE note_id = ?').get(note.id) as { password_hash: string | null } | undefined

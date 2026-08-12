@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const secret = randomBytes(32).toString('base64url')
   const rawToken = `synap_v1_${id}_${secret}`
-  const tokenHash = await hashPassword(secret)
+  const tokenHash = await hashUserPassword(secret)
   
   db.prepare('UPDATE api_tokens SET token_hash = ? WHERE id = ?').run(tokenHash, id)
   

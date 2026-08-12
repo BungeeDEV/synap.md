@@ -5,10 +5,10 @@ import Placeholder from '@tiptap/extension-placeholder'
 import StarterKit from '@tiptap/starter-kit'
 import type { MarkdownStorage } from 'tiptap-markdown'
 import { Markdown } from 'tiptap-markdown'
-import { ResolvedImage } from '~/editor/tiptap/resolvedImage'
-import { SlashCommandExtension } from '~/editor/tiptap/slashSuggestion'
-import { UploadPlaceholder } from '~/editor/tiptap/uploadPlaceholder'
-import { Wikilink } from '~/editor/tiptap/wikilinkExtension'
+import { ResolvedImage } from './resolvedImage'
+import { SlashCommandExtension } from './slashSuggestion'
+import { UploadPlaceholder } from './uploadPlaceholder'
+import { Wikilink } from './wikilinkExtension'
 
 // tiptap-markdown's own types don't merge `editor.storage.markdown` into
 // core's Storage interface - added here once, centrally, rather than an
@@ -20,8 +20,15 @@ declare module '@tiptap/core' {
   }
 }
 
+import type { SuggestionOptions } from '@tiptap/suggestion'
+import type { SlashCommand, SlashCommandOptions } from './slashCommands'
+import type { FileEntry } from './fuzzyMatch'
+
 export interface EditorExtensionsOptions {
   onWikilinkNavigate: (path: string) => void
+  slashCommandOptions: SlashCommandOptions
+  slashSuggestion?: Omit<SuggestionOptions<SlashCommand>, 'editor'>
+  wikilinkSuggestion?: Omit<SuggestionOptions<FileEntry>, 'editor'>
 }
 
 /**
@@ -54,7 +61,13 @@ export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExte
     TaskItem.configure({ nested: true }),
     ResolvedImage.configure({ inline: false }),
     UploadPlaceholder,
-    Wikilink.configure({ onNavigate: options.onWikilinkNavigate }),
-    SlashCommandExtension
+    Wikilink.configure({ 
+      onNavigate: options.onWikilinkNavigate,
+      suggestion: options.wikilinkSuggestion || {}
+    }),
+    SlashCommandExtension.configure({
+      slashCommandOptions: options.slashCommandOptions,
+      suggestion: options.slashSuggestion || {}
+    })
   ]
 }

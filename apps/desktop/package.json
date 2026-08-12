@@ -16,13 +16,20 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "@synap/config-tailwind": "workspace:*"
   },
   "dependencies": {
+    "@synap/editor-core": "workspace:*",
+    "@synap/store": "workspace:*",
+    "@synap/ui-vue": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-autostart": "~2",
     "@tauri-apps/plugin-dialog": "~2.7.2",
     "@tauri-apps/plugin-fs": "~2.5.1",
+    "@tauri-apps/plugin-notification": "~2",
     "@tauri-apps/plugin-store": "~2.4.4",
+    "@tauri-apps/plugin-stronghold": "~2",
     "@tiptap/core": "^3.29.2",
     "@tiptap/extension-placeholder": "^3.29.2",
     "@tiptap/extension-task-item": "^3.29.2",
@@ -30,7 +37,12 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/vue-3": "^3.29.2",
     "lucide-vue-next": "^1.0.0",
+    "pinia": "^4.0.2",
     "tiptap-markdown": "^0.9.0",
     "vue": "^3.5.41"
+  },
+  "dependenciesMeta": {
+    "@synap/store": { "injected": true },
+    "@synap/ui-vue": { "injected": true }
   }
 }

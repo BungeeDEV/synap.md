@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   // Hash before the DB check/insert so no `await` sits between them - the
   // check-then-insert below runs as one synchronous, uninterruptible tick,
   // which is what actually makes the re-check race-proof (see below).
-  const passwordHash = await hashPassword(body.password)
+  const passwordHash = await hashUserPassword(body.password)
 
   const db = getDb()
 

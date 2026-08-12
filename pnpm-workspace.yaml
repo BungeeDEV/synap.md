@@ -5,3 +5,20 @@ allowBuilds:
   better-sqlite3: true
   esbuild: true
   unrs-resolver: true
+# vue and pinia both declare `typescript` as an optional peer dependency
+# (used for defineComponent/type-inference tooling, not a real runtime
+# dependency). Workspace projects intentionally pin different typescript
+# versions (apps/web needs <6.1.0 for @typescript-eslint, apps/desktop uses
+# ~6.0.2, root/packages use ^7.0.2) - without this override, pnpm resolves
+# that optional peer per-project and creates a SEPARATE physical vue/pinia
+# instance for each typescript version found nearby. Since Pinia keeps its
+# "active pinia" as a module-level singleton, @synap/store (no typescript
+# devDependency of its own, so it picked up the root's version) ended up on
+# a different pinia instance than the one @pinia/nuxt installs the plugin
+# into inside apps/web, causing "getActivePinia() was called but there was
+# no active Pinia" at runtime. Pinning this specific optional-peer edge
+# collapses vue/pinia back to one shared instance workspace-wide, without
+# touching any project's real typescript devDependency version.
+overrides:
+  vue>typescript: 7.0.2
+  pinia>typescript: 7.0.2

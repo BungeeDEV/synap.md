@@ -1,3 +1,6 @@
+import { ref } from 'vue'
+import { defineStore } from 'pinia'
+
 export const useMobileNavStore = defineStore('mobileNav', () => {
   const isDrawerOpen = ref(false)
 

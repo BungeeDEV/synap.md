@@ -17,6 +17,8 @@ function isMac(): boolean {
 }
 
 export function useGlobalHotkeys(): void {
+  if (import.meta.server) return
+  
   const { loggedIn } = useUserSession()
   const { toggle: toggleCommandPalette, open: openCommandPalette } = useCommandPalette()
   const { triggerNewNote } = useNoteCreation()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { X } from 'lucide-vue-next'
-import type { VaultTreeNode } from '~/stores/vaultTree'
+import type { VaultTreeNode } from '@synap/store'
 import { formatDate } from '#shared/formatDate'
 import { formatBytes } from '~/utils/formatBytes'
 import { countChars, countWords } from '~/utils/textStats'

@@ -8,8 +8,12 @@ import { createNoteFromTemplate, listTemplates, renderTemplate, TemplateNotFound
 function createTestDb(): Database.Database {
   const db = new Database(':memory:')
   db.pragma('foreign_keys = ON')
-  const schema = readFileSync(join(__dirname, '../database/migrations/001_init.sql'), 'utf-8')
-  db.exec(schema)
+  const migrationsDir = join(__dirname, '../database/migrations')
+  const { readdirSync } = require('node:fs')
+  const files = readdirSync(migrationsDir).filter((f: string) => f.endsWith('.sql')).sort()
+  for (const file of files) {
+    db.exec(readFileSync(join(migrationsDir, file), 'utf-8'))
+  }
   return db
 }
 

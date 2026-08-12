@@ -2,6 +2,7 @@
 import type { Editor } from '@tiptap/core'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import { Bold, Code, Italic, Strikethrough } from 'lucide-vue-next'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps<{ editor: Editor }>()
 

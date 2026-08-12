@@ -20,12 +20,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Nicht angemeldet' })
   }
 
-  const valid = await verifyPassword(body.currentPassword, row.password_hash)
+  const valid = await verifyUserPassword(body.currentPassword, row.password_hash)
   if (!valid) {
     throw createError({ statusCode: 401, statusMessage: 'Aktuelles Passwort ist falsch' })
   }
 
-  const newHash = await hashPassword(body.newPassword)
+  const newHash = await hashUserPassword(body.newPassword)
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id)
 
   return { changed: true }

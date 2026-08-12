@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   // Always run a full scrypt verification, even for an unknown username
   // (against a fixed dummy hash), so response timing can't be used to
   // enumerate valid usernames.
-  const valid = await verifyPassword(body.password, user?.password_hash ?? await getDummyHash())
+  const valid = await verifyUserPassword(body.password, user?.password_hash ?? await getDummyHash())
 
   if (!user || !valid) {
     throw createError({ statusCode: 401, statusMessage: 'Zugangsdaten ungültig' })

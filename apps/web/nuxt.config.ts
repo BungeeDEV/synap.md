@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as { version: string }
@@ -12,6 +13,26 @@ export default defineNuxtConfig({
   modules: ['@nuxt/eslint', 'nuxt-auth-utils', '@pinia/nuxt', '@vite-pwa/nuxt'],
 
   css: ['~/assets/css/main.css'],
+
+  // The Pinia stores used to live under app/stores/, where @pinia/nuxt
+  // auto-imports by directory convention. They moved into the @synap/store
+  // package, so that convention no longer applies - this preset restores
+  // auto-import for the 5 store hooks so the ~23 call sites don't each need
+  // an explicit import.
+  imports: {
+    presets: [
+      {
+        from: '@synap/store',
+        imports: [
+          'usePreferencesStore',
+          'useTabsStore',
+          'useVaultTreeStore',
+          'useMobileNavStore',
+          'useSidebarPanelStore'
+        ]
+      }
+    ]
+  },
 
   app: {
     head: {
@@ -135,12 +156,30 @@ export default defineNuxtConfig({
   // Bundles the raw .sql migration files into the Nitro server output so
   // the migration runner can read them via useStorage('assets:migrations')
   // in production too, not just in dev where the source tree is on disk.
+  //
+  // @synap/store is `dependenciesMeta.injected` (apps/web/package.json) so
+  // it gets its own physical copy built against apps/web's own pinia/vue
+  // instance instead of a plain symlink - see decisions.md ("Pinia
+  // singleton across the store/pinia peer-context split") for why that's
+  // necessary. The tradeoff: an injected package is a real copy physically
+  // inside node_modules, which Nitro's rollup pipeline treats as a
+  // pre-built external and won't run through its TS transform (it works
+  // for a plain symlinked workspace package only because that resolves
+  // outside node_modules via realpath). server/utils/preferences.ts only
+  // needs the small, pinia/vue-free preferences_types.ts (not the Pinia
+  // store definitions), so this alias repoints that one subpath straight at
+  // the real source tree instead of the injected node_modules copy -
+  // avoids the parse failure without needing Nitro to transpile node_modules
+  // at all.
   nitro: {
     // dir is relative to nitro's srcDir, which Nuxt already sets to
     // <rootDir>/server - so this is server/database/migrations, not
     // server/server/database/migrations.
     serverAssets: [
       { baseName: 'migrations', dir: './database/migrations' }
-    ]
+    ],
+    alias: {
+      '@synap/store/preferences_types': fileURLToPath(new URL('../../packages/store/src/preferences_types.ts', import.meta.url))
+    }
   }
 })

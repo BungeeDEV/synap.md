@@ -1,4 +1,4 @@
-import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '#shared/preferences'
+import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '@synap/store/preferences_types'
 
 const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['editor', 'reader']
 

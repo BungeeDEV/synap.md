@@ -1,4 +1,7 @@
-export type SidebarPanel = 'explorer' | 'outline'
+import { ref } from 'vue'
+import { defineStore } from 'pinia'
+
+export type SidebarPanel = 'explorer' | 'search' | 'trash' | 'outline'
 
 export const useSidebarPanelStore = defineStore('sidebarPanel', () => {
   const activePanel = ref<SidebarPanel>('explorer')

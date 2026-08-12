@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -8,11 +8,11 @@ import { buildTrashedPath, cleanupExpiredTrash } from './trash'
 function createTestDb(): Database.Database {
   const db = new Database(':memory:')
   db.pragma('foreign_keys = ON')
-  const schema = [
-    readFileSync(join(__dirname, '../database/migrations/001_init.sql'), 'utf-8'),
-    readFileSync(join(__dirname, '../database/migrations/002_settings_trash.sql'), 'utf-8')
-  ].join('\n')
-  db.exec(schema)
+  const migrationsDir = join(__dirname, '../database/migrations')
+  const files = readdirSync(migrationsDir).filter((f: string) => f.endsWith('.sql')).sort()
+  for (const file of files) {
+    db.exec(readFileSync(join(migrationsDir, file), 'utf-8'))
+  }
   return db
 }
 

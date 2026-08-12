@@ -1,3 +1,8 @@
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+import { useSynapApi } from '../api'
+import { usePreferencesStore } from './preferences'
+
 export type ViewMode = 'editor' | 'reader'
 
 export interface TabState {
@@ -29,7 +34,7 @@ export const useTabsStore = defineStore('tabs', () => {
       return
     }
 
-    const file = await $fetch<{ content: string, mtime: string }>('/api/vault/file', { query: { path } })
+    const file = await useSynapApi().fetchFile(path)
 
     tabs.value.push({
       path,
@@ -99,7 +104,7 @@ export const useTabsStore = defineStore('tabs', () => {
   async function reconcileExternalContent(paths: string[]): Promise<void> {
     for (const path of paths) {
       if (!tabs.value.some((tab) => tab.path === path)) continue
-      const file = await $fetch<{ content: string, mtime: string }>('/api/vault/file', { query: { path } })
+      const file = await useSynapApi().fetchFile(path)
       loadExternalVersion(path, file.content, file.mtime)
     }
   }

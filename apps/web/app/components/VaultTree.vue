@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Globe, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from 'lucide-vue-next'
-import type { VaultTreeNode } from '~/stores/vaultTree'
-import { titleFromPath } from '~/stores/tabs'
+import type { VaultTreeNode } from '@synap/store'
+import { titleFromPath } from '@synap/store'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'
 import { validateRawName } from '#shared/validateFileName'
 import { isValidMoveTarget, parentFolderOf } from '~/utils/vaultMove'
@@ -1045,7 +1045,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         {{ vaultTree.error }}
       </p>
 
-      <div v-else-if="displayNodes.length === 0" class="flex flex-col items-center gap-2 px-4 py-12 text-center">
+      <div v-else-if="displayNodes.length === 0 && !editState" class="flex flex-col items-center gap-2 px-4 py-12 text-center">
         <FolderPlus class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
         <p class="text-base text-content-tertiary">
           Dein Vault ist noch leer

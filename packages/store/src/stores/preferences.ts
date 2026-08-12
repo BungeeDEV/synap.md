@@ -1,4 +1,7 @@
-import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '#shared/preferences'
+import { ref } from 'vue'
+import { defineStore } from 'pinia'
+import { useSynapApi } from '../api'
+import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '../preferences_types'
 
 // Mirrors preferences.put.ts's body shape: every top-level field is
 // independently optional, and dailyNotes' own fields are independently
@@ -22,7 +25,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     // instead of throwing an unhandled rejection; callers just keep the
     // defaults and can retry via another loggedIn transition.
     try {
-      preferences.value = await $fetch<EditorPreferences>('/api/settings/preferences')
+      preferences.value = await useSynapApi().fetchPreferences()
       loaded.value = true
     } catch (err) {
       console.error('preferences.ts: failed to load preferences', err)
@@ -30,7 +33,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
 
   async function update(patch: PreferencesPatch): Promise<void> {
-    preferences.value = await $fetch<EditorPreferences>('/api/settings/preferences', { method: 'PUT', body: patch })
+    preferences.value = await useSynapApi().updatePreferences(patch)
   }
 
   return { preferences, loaded, load, update }

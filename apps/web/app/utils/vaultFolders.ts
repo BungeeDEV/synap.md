@@ -1,4 +1,4 @@
-import type { VaultTreeNode } from '~/stores/vaultTree'
+import type { VaultTreeNode } from '@synap/store'
 
 export interface FolderOption { path: string, name: string, depth: number }
 

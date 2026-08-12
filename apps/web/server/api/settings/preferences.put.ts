@@ -1,4 +1,4 @@
-import type { EditorPreferences } from '#shared/preferences'
+import type { EditorPreferences } from '@synap/store/preferences_types'
 
 interface DailyNotesPutBody {
   folder?: unknown

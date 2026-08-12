@@ -21,7 +21,7 @@ tauri-build = { version = "2.6.3", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.3", features = [] }
+tauri = { version = "2.11.3", features = ["tray-icon"] }
 tauri-plugin-log = "2"
 reqwest = { version = "0.13.3", features = ["json"] }
 tauri-plugin-dialog = "2"
@@ -32,3 +32,9 @@ notify = "8.2.0"
 sha2 = "0.10.9"
 hex = "0.4.3"
 tokio = { version = "1.53.1", features = ["time", "rt-multi-thread"] }
+tauri-plugin-notification = "2"
+tauri-plugin-stronghold = "2"
+keyring = "3.6.3"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"

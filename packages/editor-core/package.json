@@ -1,0 +1,31 @@
+{
+  "name": "@synap/editor-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "echo No tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "@tiptap/core": "^3.30.0",
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-placeholder": "^3.30.0",
+    "@tiptap/extension-task-item": "^3.30.0",
+    "@tiptap/extension-task-list": "^3.30.0",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/starter-kit": "^3.30.0",
+    "@tiptap/suggestion": "^3.29.2",
+    "tiptap-markdown": "^0.9.0"
+  },
+  "devDependencies": {
+    "prosemirror-markdown": "^1.13.5",
+    "typescript": "^7.0.2"
+  }
+}

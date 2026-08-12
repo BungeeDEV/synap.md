@@ -1,0 +1,23 @@
+node_modules
+.idea
+.vscode
+*.log
+dist
+
+# Cargo workspace build output (root Cargo.toml -> apps/desktop/src-tauri) -
+# lands at the workspace root, not inside src-tauri/, so src-tauri/.gitignore's
+# own /target/ entry doesn't reach it
+/target
+
+# Turborepo local cache
+.turbo
+
+# Symlink to the user's global Claude Code config (~/.claude) - local-machine
+# only, never project content
+.claude
+
+# Local env files (per-app .gitignore already covers this too, kept here as
+# a repo-root safety net)
+.env
+.env.*
+!.env.example

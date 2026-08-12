@@ -22,7 +22,12 @@ onMounted(async () => {
     const store = await load('store.json', { autoSave: false });
     const storedPath = await store.get<string>('vaultPath');
     const storedUrl = await store.get<string>('serverUrl');
-    const storedToken = await store.get<string>('token');
+    const storedToken = await invoke<string>('get_secure_token').catch(() => null);
+
+    try {
+        const { isEnabled } = await import('@tauri-apps/plugin-autostart');
+        appState.isAutostartEnabled = await isEnabled();
+    } catch(e) { console.error("Autostart error", e); }
 
     if (storedUrl) appState.serverUrl = storedUrl;
     if (storedToken) appState.token = storedToken;
@@ -112,6 +117,25 @@ onMounted(async () => {
             // Watcher on editorFontSize will automatically save it to store
         }
     }, { passive: false });
+
+    // Native Drag & Drop for .md files
+    listen('tauri://drag-drop', async (event: any) => {
+        if (!appState.vaultPath) return;
+        const paths = event.payload.paths;
+        if (Array.isArray(paths)) {
+            for (const p of paths) {
+                if (p.endsWith('.md')) {
+                    const name = p.split(/[/\\]/).pop();
+                    if (name) {
+                        try {
+                            await copyFile(p, `${appState.vaultPath}/${name}`);
+                        } catch (e) { console.error('Drag drop import failed', e); }
+                    }
+                }
+            }
+            await refreshLocalFiles();
+        }
+    });
 });
 
 async function createNewNote(targetPath?: string) {
@@ -175,7 +199,7 @@ async function manualSync() {
     try {
         const store = await load('store.json', { autoSave: false });
         await store.set('serverUrl', appState.serverUrl);
-        await store.set('token', appState.token);
+        await invoke('set_secure_token', { token: appState.token });
         await store.save();
 
         if (appState.isAutoSyncEnabled) {
@@ -223,6 +247,8 @@ async function resetApp() {
         const store = await load('store.json', { autoSave: false });
         await store.clear();
         await store.save();
+        
+        await invoke('delete_secure_token').catch(() => {});
         
         // Clear global state
         resetAppState();

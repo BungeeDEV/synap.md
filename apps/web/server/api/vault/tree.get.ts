@@ -1,4 +1,4 @@
-import { readdir, stat } from 'node:fs/promises'
+import { readdir, stat, mkdir } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 
 interface TreeNode {
@@ -41,6 +41,14 @@ async function buildTree(absDir: string, vaultRoot: string): Promise<TreeNode[]>
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const vaultRoot = resolveVaultPath('.', config.vaultPath)
+
+  try {
+    await stat(vaultRoot)
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      await mkdir(vaultRoot, { recursive: true })
+    }
+  }
 
   try {
     return await buildTree(vaultRoot, vaultRoot)

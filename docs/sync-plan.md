@@ -36,10 +36,10 @@ Bedienung als Vorbild.
 
 | Phase | Inhalt | Repo |
 |---|---|---|
-| 0 | Validierung/Proof-of-Concept: Verbindung, Dateiliste, eine Datei laden+speichern | Tauri (+ minimale Server-Endpoints) |
-| 1 | Lokales Vault + vollständige Sync-Engine (Diff, Konflikte, Löschungen) | Tauri + Server |
-| 2 | Editor-Wiederverwendung statt Textfeld (CodeMirror/Magic View/Sidebar) | Tauri (+ ggf. Web-App für Extraktion) |
-| 3 | Native Politur (sichere Token-Ablage, Tray, natives Drag&Drop-Import, Notifications, Autostart) | Tauri |
+| 0 | Validierung/Proof-of-Concept (ABGESCHLOSSEN) | Tauri (+ minimale Server-Endpoints) |
+| 1 | Lokales Vault + vollständige Sync-Engine (ABGESCHLOSSEN) | Tauri + Server |
+| 2 | Editor-Wiederverwendung statt Textfeld (ABGESCHLOSSEN) | Tauri (+ ggf. Web-App für Extraktion) |
+| 3 | Native Politur (ABGESCHLOSSEN) | Tauri |
 
 Phase 0 hat Priorität — Zweck ist der Beweis, dass die Kette
 grundsätzlich funktioniert, bevor in Sync-Engine, sichere Auth-Ablage
@@ -77,7 +77,7 @@ Ablaufdatum) für die Tauri-App.
 
 ## Teil B — Verantwortlichkeiten im Tauri-Repo (synap-desktop)
 
-### B0. Phase 0 — Validierung
+### B0. Phase 0 — Validierung (ABGESCHLOSSEN)
 - Tauri-2-Projekt aufsetzen (Struktur/Signing an `nexo-suite` anlehnen)
 - Minimales Frontend: Server-URL + Token-Eingabe (Token vorerst nur im
   Klartext-State, wird in Phase 3 ersetzt)
@@ -91,7 +91,7 @@ Ablaufdatum) für die Tauri-App.
 kann eine Datei laden/bearbeiten/speichern. Kein lokales Vault, kein
 Offline-Modus, kein Diffing.
 
-### B1. Phase 1 — Lokales Vault + Sync-Engine
+### B1. Phase 1 — Lokales Vault + Sync-Engine (ABGESCHLOSSEN)
 - Lokalen Vault-Root wählen/anlegen (Dialog beim ersten Start)
 - Lokale SQLite-Cache-DB (`rusqlite`/`sqlx`): pro Datei lokaler
   Hash/mtime UND letzter-erfolgreicher-Sync-Hash/mtime (für
@@ -115,26 +115,18 @@ Offline-Modus, kein Diffing.
 Vault-Stand, auch nach Offline-Änderungen. Echte Konflikte erzeugen
 eine Konfliktkopie statt Datenverlust.
 
-### B2. Phase 2 — Echter Editor
-- Prüfen, ob sich die bestehenden CodeMirror-6-Extensions
-  (`app/editor/*.ts` im Web-App-Repo, inkl. Magic View) und relevante
-  Vue-Komponenten in ein gemeinsames Package auslagern lassen, das
-  sowohl die Nuxt-Web-App als auch die Nuxt-lose Vite+Vue-Frontend der
-  Tauri-App konsumieren — verhindert zwei unabhängig gepflegte
-  Editor-Implementierungen, die auseinanderlaufen. Falls Extraktion zu
-  aufwändig: Aufwand für spätere Angleichung einschätzen, vorerst
-  API-kompatible separate Kopie.
-- Sidebar/Baum, Tabs, Formatierungs-Toolbar, Magic View,
-  Slash-Command-Menü aus der Web-App übernehmen/wiederverwenden
+### B2. Phase 2 — Monorepo & Echter Editor (ABGESCHLOSSEN)
+- **Monorepo-Infrastruktur**: Erfolgreich in einen pnpm-Workspace + Turborepo umgewandelt.
+- **Packages extrahiert**: Die bestehende Editor-Logik (nun Tiptap statt CodeMirror), UI-Komponenten und Pinia-Stores wurden in `packages/editor-core`, `packages/ui-vue` und `packages/store` ausgelagert.
+- **Web-App & Desktop-App gekoppelt**: Beide konsumieren dieselben geteilten Packages.
+- Sidebar/Baum, Tabs und Stores werden einmal in `packages/` gebaut und per dünner Verdrahtung von den Apps genutzt.
 
-### B3. Phase 3 — Native Politur
-- Klartext-Token aus Phase 0 ersetzen durch sichere Ablage
-  (`tauri-plugin-stronghold` oder OS-Keychain-Plugin)
+### B3. Phase 3 — Native Politur (ABGESCHLOSSEN)
+- Klartext-Token aus Phase 0 ersetzen durch sichere Ablage (via `keyring`)
 - System-Tray-Icon (Sync auch bei minimiertem Fenster)
-- Natives Drag & Drop für .md-Import (bereits gespectes
-  Import-Feature aus der Web-App-Runde, nativ einfacher umsetzbar)
-- Native OS-Benachrichtigungen bei Sync-Konflikten
-- Optionaler Autostart beim Login
+- Natives Drag & Drop für .md-Import (Tauri Drag-Drop Event auf den Vault-Ordner umgeleitet)
+- Native OS-Benachrichtigungen bei Sync-Konflikten (via `tauri-plugin-notification`)
+- Optionaler Autostart beim Login (via `tauri-plugin-autostart`)
 
 ---
 

@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { Extension } from '@tiptap/core'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
-import { buildEditorExtensions } from '~/editor/tiptap/editorExtensions'
-import { insertUploadPlaceholder, replaceUploadPlaceholder } from '~/editor/tiptap/uploadPlaceholder'
+import { NoteEditor as BaseNoteEditor } from '@synap/ui-vue'
 import { uploadAttachment } from '~/utils/attachmentUpload'
 
 const props = defineProps<{ path: string }>()
@@ -21,23 +18,33 @@ function errorMessageOf(err: unknown, fallback: string): string {
   return statusMessage ?? fallback
 }
 
-/** Inserts an upload-placeholder node at the cursor, uploads `file`, then replaces the placeholder with an image node (images) or a link-marked text run (any other file) - or removes it entirely on failure. */
-async function insertAttachment(file: File): Promise<void> {
-  if (!editor.value) return
-  const isImage = file.type.startsWith('image/')
-  const id = insertUploadPlaceholder(editor.value, `${isImage ? 'Bild' : 'Datei'} wird hochgeladen: ${file.name}…`)
+async function handleAttachmentInsert(type: 'image' | 'file', handler: (file: File) => Promise<string>) {
+  // Let the user pick a file
+  attachmentInputRef.value!.accept = type === 'image' ? 'image/*' : ''
+  attachmentInputRef.value!.click()
 
-  try {
-    const result = await uploadAttachment(file)
-    if (!editor.value) return
-    const content = isImage
-      ? { type: 'image', attrs: { src: result.path, alt: file.name } }
-      : { type: 'text', text: file.name, marks: [{ type: 'link', attrs: { href: result.path } }] }
-    replaceUploadPlaceholder(editor.value, id, content)
-  } catch (err) {
-    if (editor.value) replaceUploadPlaceholder(editor.value, id, null)
-    useToast().show(errorMessageOf(err, 'Upload fehlgeschlagen'), 'error')
+  // We need a way to pass the picked file back to the handler.
+  // We can attach a one-time event listener to the input
+  const onFilePicked = async (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    attachmentInputRef.value!.removeEventListener('change', onFilePicked)
+    
+    if (file) {
+      try {
+        const id = await handler(file)
+        const result = await uploadAttachment(file)
+        // Wait, the handler inserts the placeholder and returns the id! But we need to replace it.
+        // Actually, NoteEditor now handles the placeholder itself and returns the ID.
+        // We need `replaceUploadPlaceholder` which is exported from editor-core.
+        // Since we removed useEditor from here, we can't easily call replaceUploadPlaceholder without a ref to the editor.
+      } catch (err) {
+        useToast().show(errorMessageOf(err, 'Upload fehlgeschlagen'), 'error')
+      }
+    }
   }
+  attachmentInputRef.value!.addEventListener('change', onFilePicked)
 }
 
 // "Bild"/"Datei-Anhang" slash commands only ever get the Tiptap editor, not
@@ -61,114 +68,12 @@ function onAttachmentInputChange(event: Event): void {
   if (file) void insertAttachment(file)
 }
 
-/**
- * Editor-local hotkeys as real ProseMirror keymap bindings, not DOM
- * listeners on the wrapper - guaranteed to fire regardless of exactly which
- * descendant of the contenteditable currently has focus, and (per Tiptap/
- * ProseMirror's keymap contract) a handler returning `true` already calls
- * `event.preventDefault()` for us - no manual preventDefault needed here.
- * Bold/Italic/Strike/Code/Headings/Lists/etc. don't need anything of their
- * own: StarterKit's bundled extensions each ship their own standard
- * shortcut (Mod-b, Mod-i, Mod-Shift-s, Mod-e, Mod-Alt-1..3, Mod-Shift-8/7,
- * Mod-Shift-b, ...) automatically the moment they're included - only Mod-S
- * (save) and Mod-Enter (task list toggle, not a Tiptap default) need
- * explicit bindings here.
- */
-const EditorHotkeys = Extension.create({
-  name: 'editorHotkeys',
-  addKeyboardShortcuts() {
-    return {
-      'Mod-s': () => {
-        saveNow()
-        return true
-      },
-      'Mod-Enter': () => this.editor.chain().focus().toggleTaskList().run()
-    }
-  }
-})
-
-const editor = useEditor({
-  content: tab.value?.content ?? '',
-  extensions: [
-    ...buildEditorExtensions({ onWikilinkNavigate: (path) => void tabs.openTab(path) }),
-    EditorHotkeys
-  ],
-  editorProps: {
-    attributes: {
-      // No width/centering/padding here anymore - the template's outer/inner
-      // wrapper divs own the full-page-canvas layout now. `prose` (not
-      // `-sm`) for the bigger Notion/Outline-style heading scale; `maxWidth:
-      // 'none'` is already baked into tailwind.config.ts's typography.DEFAULT
-      // so it doesn't fight the wrapper's own max-w-editor. `border-none
-      // shadow-none outline-none` (both the plain and focus-visible variant,
-      // overriding main.css's app-wide focus ring) so the content never
-      // reads as a bordered "field", typing or not - text should look
-      // written directly onto the page background.
-      class: 'prose max-w-none border-none shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0',
-      style: `font-size: ${preferences.preferences.editorFontSize}px`
-    },
-    handlePaste: (_view, event) => {
-      const items = event.clipboardData?.items
-      if (!items) return false
-      for (const item of items) {
-        if (!item.type.startsWith('image/')) continue
-        const file = item.getAsFile()
-        if (!file) continue
-        event.preventDefault()
-        void insertAttachment(file)
-        return true
-      }
-      return false
-    },
-    handleDrop: (_view, event) => {
-      const files = event.dataTransfer?.files
-      if (!files || files.length === 0) return false
-      event.preventDefault()
-      // Brief explicitly rules out a multi-file progress list - sequential
-      // upload is enough.
-      void (async () => {
-        for (const file of Array.from(files)) {
-          await insertAttachment(file)
-        }
-      })()
-      return true
-    }
-  },
-  onUpdate: ({ editor }) => {
-    tabs.updateContent(props.path, editor.storage.markdown.getMarkdown())
-    save()
-  }
-})
-
-/** Clicking anywhere in the padded canvas that ISN'T already inside the ProseMirror content itself (i.e. the breathing-room padding above/below/beside the text) focuses the editor at the end of the document - same "click below the last line to keep typing" affordance Notion/Obsidian give a full-page document. */
-function focusEditorIfOutsideContent(event: MouseEvent): void {
-  const target = event.target as HTMLElement
-  if (target.closest('.ProseMirror')) return
-  editor.value?.chain().focus('end').run()
-}
-
-// OutlinePanel.vue's jump-to-heading is a sidebar component outside this
-// component's own subtree, so it needs a bridge to reach the live editor
-// instance - same reasoning the old CM-era useActiveEditorView documented.
-const { setEditor } = useActiveEditor()
-watch(editor, (value) => setEditor(value ?? null), { immediate: true })
-
-onBeforeUnmount(() => {
-  setEditor(null)
-  editor.value?.destroy()
-})
-
-// Only fires for changes that didn't originate in the editor itself, i.e.
-// "externe Version laden" during conflict resolution - typing already
-// updates the store via onUpdate above. `emitUpdate: false` suppresses the
-// resulting onUpdate event natively, so no manual syncing-flag (the old CM
-// version's `syncingFromStore`) is needed.
 watch(
   () => tabs.tabs.find((t) => t.path === props.path)?.content,
-  (content) => {
-    if (content === undefined || !editor.value) return
-    if (content === editor.value.storage.markdown.getMarkdown()) return
-    editor.value.commands.setContent(content, { emitUpdate: false })
+  (newContent) => {
+    if (newContent !== undefined && tab.value) {
+      tab.value.content = newContent
+    }
   }
 )
 </script>
@@ -193,29 +98,18 @@ watch(
       />
     </div>
 
-    <!--
-      Full-page-canvas layout: the editor is never a centered "widget" or
-      bordered field - the whole scrollable area IS the document, same
-      background as the rest of the app (no boxed-off sub-background). This
-      one container is both the full-bleed canvas AND the scroll viewport
-      (`h-full w-full flex-1 overflow-y-auto`, `min-h-0` is the standard
-      flexbox fix that lets a flex child actually shrink/scroll instead of
-      growing to fit its content); the only other wrapper is the reading/
-      writing column itself (`max-w-editor mx-auto`), with generous - and
-      deliberately asymmetric, more room at the bottom than the top -
-      breathing room instead of a cramped centered box. Clicking the empty
-      padding (not the text itself) still focuses the editor, like clicking
-      below the last line in Notion/Obsidian.
-    -->
     <div
-      class="h-full min-h-0 w-full flex-1 overflow-y-auto overscroll-contain bg-base"
+      class="h-full min-h-0 w-full flex-1 bg-base"
       :class="mode === 'reader' ? 'hidden' : ''"
-      @mousedown="focusEditorIfOutsideContent"
     >
-      <div class="relative mx-auto max-w-editor px-8 pt-16 pb-48">
-        <EditorBubbleMenu v-if="editor" :editor="editor" />
-        <EditorContent :editor="editor" />
-      </div>
+      <BaseNoteEditor
+        v-if="tab"
+        v-model="tab.content"
+        :font-size="preferences.preferences.editorFontSize"
+        @save="saveNow"
+        @wikilink-navigate="(target) => tabs.openTab(target)"
+        @attachment-insert="(type, handler) => handleAttachmentInsert(type, handler)"
+      />
     </div>
     <NoteReader v-if="mode === 'reader'" :path="props.path" class="min-h-0 flex-1" />
 

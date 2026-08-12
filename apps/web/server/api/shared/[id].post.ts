@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (share.password_hash) {
-    const isValid = await verifyPassword(password, share.password_hash)
+    const isValid = await verifyUserPassword(password, share.password_hash)
     if (!isValid) {
       throw createError({ statusCode: 401, statusMessage: 'Incorrect password' })
     }

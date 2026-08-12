@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
       const db = getDb()
       const validToken = db.prepare('SELECT id, token_hash FROM api_tokens WHERE id = ?').get(id) as { id: number, token_hash: string } | undefined
       
-      if (validToken && await verifyPassword(secret, validToken.token_hash)) {
+      if (validToken && await verifyUserPassword(secret, validToken.token_hash)) {
         db.prepare('UPDATE api_tokens SET last_used_at = ? WHERE id = ?').run(new Date().toISOString(), validToken.id)
         
         const userRow = db.prepare('SELECT id, username, created_at FROM users LIMIT 1').get() as any

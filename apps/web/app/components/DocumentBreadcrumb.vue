@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronRight, Menu } from 'lucide-vue-next'
-import type { ViewMode } from '~/stores/tabs'
+import type { ViewMode } from '@synap/store'
 
 const props = defineProps<{ path: string, tocVisible: boolean, mode: ViewMode }>()
 const emit = defineEmits<{ 'toggle-toc': [], 'update:mode': [mode: ViewMode] }>()

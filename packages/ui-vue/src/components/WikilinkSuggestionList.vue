@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CornerDownLeft, FileText } from 'lucide-vue-next'
-import type { FileEntry } from '~/utils/fuzzyMatch'
+import type { FileEntry } from '@synap/editor-core'
+import { ref, watch } from 'vue'
 
 // Same VueRenderer-mounted popup pattern as SlashCommandMenu.vue - see
 // wikilinkExtension.ts's `render()` callbacks.

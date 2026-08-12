@@ -1,4 +1,4 @@
-import type { VaultTreeNode } from '~/stores/vaultTree'
+import type { VaultTreeNode } from '@synap/store'
 
 export type VaultSortMode = 'name-asc' | 'name-desc' | 'mtime-desc' | 'mtime-asc'
 

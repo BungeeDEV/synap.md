@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { ArrowDown, ArrowUp, CornerDownLeft } from 'lucide-vue-next'
-import type { SlashCommand, SlashCommandGroup } from '~/editor/slashCommands'
-import { SLASH_COMMAND_GROUP_LABELS } from '~/editor/slashCommands'
+import { 
+  ArrowDown, ArrowUp, CornerDownLeft,
+  Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Code, Link, AtSign, Image, Paperclip, Minus 
+} from 'lucide-vue-next'
+import type { SlashCommand, SlashCommandGroup } from '@synap/editor-core'
+import { SLASH_COMMAND_GROUP_LABELS } from '@synap/editor-core'
+import { ref, computed, watch } from 'vue'
+
+const IconMap: Record<string, any> = {
+  Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Code, Link, AtSign, Image, Paperclip, Minus
+}
 
 interface GroupedSection {
   group: SlashCommandGroup
@@ -80,7 +88,7 @@ defineExpose({ onKeyDown })
               @mouseenter="selectedIndex = index"
             >
               <component
-                :is="command.icon"
+                :is="IconMap[command.icon]"
                 class="h-5 w-5 shrink-0"
                 :class="index === selectedIndex ? 'text-white' : 'text-content-tertiary'"
                 stroke-width="1.5"

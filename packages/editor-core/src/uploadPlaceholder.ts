@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { Node } from '@tiptap/core'
+import type { MarkdownSerializerState } from 'prosemirror-markdown'
 import type { MarkdownNodeSpec } from 'tiptap-markdown'
 
 /**

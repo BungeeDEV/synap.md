@@ -2,7 +2,7 @@
 import { AlertTriangle, FileText, FileWarning, Upload } from 'lucide-vue-next'
 import type { ImportConflictAction } from '#shared/import'
 import { isMarkdownImportFilename } from '#shared/import'
-import type { VaultTreeNode } from '~/stores/vaultTree'
+import type { VaultTreeNode } from '@synap/store'
 import { formatBytes } from '~/utils/formatBytes'
 import { folderOptionsOf } from '~/utils/vaultFolders'
 

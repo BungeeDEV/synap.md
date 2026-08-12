@@ -1,0 +1,31 @@
+{
+  "name": "@synap/ui-vue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "echo No tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.41"
+  },
+  "dependencies": {
+    "@synap/editor-core": "workspace:^",
+    "@synap/store": "workspace:*",
+    "@tiptap/core": "^3.30.0",
+    "@tiptap/suggestion": "^3.29.2",
+    "@tiptap/vue-3": "^3.29.2",
+    "lucide-vue-next": "^1.0.0"
+  }
+}
+

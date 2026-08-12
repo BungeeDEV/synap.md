@@ -41,6 +41,7 @@ export const appState = reactive({
   // Settings & Sync State
   serverUrl: '',
   token: '',
+  isAutostartEnabled: false,
   isAutoSyncEnabled: true,
   statusMsg: 'Bereit',
   justSaved: false,

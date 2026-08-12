@@ -1,3 +1,8 @@
+import { ref, watch, computed } from 'vue'
+import { defineStore } from 'pinia'
+import { useSynapApi } from '../api'
+import { usePreferencesStore } from './preferences'
+
 export interface VaultTreeNode {
   name: string
   path: string
@@ -72,7 +77,7 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
     loading.value = true
     error.value = null
     try {
-      tree.value = await $fetch<VaultTreeNode[]>('/api/vault/tree')
+      tree.value = await useSynapApi().fetchTree()
     } catch {
       error.value = 'Vault-Struktur konnte nicht geladen werden'
     } finally {
