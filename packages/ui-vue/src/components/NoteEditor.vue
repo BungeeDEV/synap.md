@@ -4,7 +4,7 @@ import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { VueRenderer } from '@tiptap/vue-3'
 import type { SuggestionKeyDownProps, SuggestionProps } from '@tiptap/suggestion'
 import type { SlashCommand, FileEntry } from '@synap/editor-core'
-import { buildEditorExtensions, insertUploadPlaceholder } from '@synap/editor-core'
+import { buildEditorExtensions, insertUploadPlaceholder, replaceUploadPlaceholder } from '@synap/editor-core'
 import EditorBubbleMenu from './EditorBubbleMenu.vue'
 import SlashCommandMenu from './SlashCommandMenu.vue'
 import WikilinkSuggestionList from './WikilinkSuggestionList.vue'
@@ -129,6 +129,13 @@ function focusEditorIfOutsideContent(event: MouseEvent): void {
   if (target.closest('.ProseMirror')) return
   editor.value?.chain().focus('end').run()
 }
+
+/** Lets the parent resolve a pending upload placeholder (see `attachment-insert`'s handler) once the upload settles, without the parent needing its own reference into `@synap/editor-core`. */
+function replacePlaceholder(id: string, content: Record<string, unknown> | null): void {
+  if (editor.value) replaceUploadPlaceholder(editor.value, id, content)
+}
+
+defineExpose({ replacePlaceholder })
 </script>
 
 <template>

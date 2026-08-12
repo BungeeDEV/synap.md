@@ -8,20 +8,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-synap.md — a self-hosted, Obsidian-like Markdown notes app. The vault (a
-directory of `.md` files on disk) is the source of truth; SQLite
-(better-sqlite3) is only ever a rebuildable search/index cache, never the
-data owner. Single Docker container, single `/data` volume (vault +
-SQLite), no external services.
+synap.md — a self-hosted, Obsidian-like Markdown notes app, plus a Tauri
+desktop client that keeps a local copy of the vault and syncs it against
+the server. For the server (`apps/web`), the vault (a directory of `.md`
+files on disk) is the source of truth; SQLite (better-sqlite3) is only ever
+a rebuildable search/index cache, never the data owner. Server deploys as a
+single Docker container with a single `/data` volume (vault + SQLite), no
+external services. `docs/sync-plan.md` is the shared design doc (German)
+for the web↔desktop sync architecture — read it before touching sync-related
+code in either app; it records architecture decisions as already-settled,
+not open questions.
 
 ## Commands
 
 ```bash
-pnpm dev             # start dev servers (Web + Desktop) via turborepo
+pnpm dev             # start dev servers for every workspace app (turborepo)
 pnpm build           # production build for all packages and apps
 pnpm test            # vitest run workspace-wide
 pnpm lint            # lint workspace-wide
-pnpm --filter synap-md run dev  # dev server only for Web App
+pnpm --filter synap-md run dev       # dev server only for the Web App
+pnpm --filter synap-desktop run dev  # Vite dev server only (frontend, no Tauri shell)
+pnpm --filter synap-desktop run tauri:dev  # full desktop app with hot reload (Rust + WebView)
 ```
 
 There is no dedicated `vitest.config.ts` — Vitest runs with defaults, no
@@ -29,9 +36,20 @@ Nuxt test environment wired in. Test files live next to the code they cover
 (`apps/web/server/utils/*.test.ts`), not in a separate `test/` tree, and only exist
 under `apps/web/server/utils/` today (`vault-path`, `password`, `indexer`, `trash`,
 `templates`). Prefer this convention for new server-side unit tests.
+`packages/*` have no real test suites (`"test": "echo No tests"`).
 
 Local dev without Docker needs `.env` with `NUXT_VAULT_PATH`/`NUXT_DATA_PATH`
 pointed at local folders (copy `.env.example`).
+
+Package manager is pinned via `packageManager: pnpm@9.12.0` in the root
+`package.json`. `pnpm-workspace.yaml` forces `vue>typescript` and
+`pinia>typescript` to `7.0.2` across the whole workspace even though
+`apps/web`/`apps/desktop` pin their own direct `typescript` devDependency to
+different versions (`^5.7` / `~6.0.2`) — this exists to stop pnpm from
+resolving that optional peer per-project and creating separate physical
+vue/pinia instances (which broke Pinia's singleton `getActivePinia()` at
+runtime). Don't "fix" this override without understanding why it's there —
+see the comment in `pnpm-workspace.yaml`.
 
 ## Architecture
 
@@ -39,7 +57,7 @@ pointed at local folders (copy `.env.example`).
 - `apps/web`: Nuxt 3 web application (synap.md)
 - `apps/desktop`: Tauri 2 + Vite/Vue desktop application
 - `packages/store`: Shared Pinia stores and API interfaces
-- `packages/editor-core`: Shared TipTap/CodeMirror editor functionality
+- `packages/editor-core`: Shared Tiptap 3 extensions/logic (slash commands, wikilink autocomplete, upload placeholders, fuzzy search) — consumed by `packages/ui-vue`'s editor component, not directly by the apps
 - `packages/ui-vue`: Shared Vue components
 - `packages/design-tokens`: Shared CSS/Tailwind design tokens
 - `packages/config-tailwind`: Shared Tailwind configs
@@ -77,12 +95,21 @@ the vault tree, `resolve-wikilink-target.ts`) → `remark-rehype` →
 `rehype-sanitize` → `rehype-stringify`. This is shared by the live-preview
 render endpoint and note reading.
 
-**Editor**: CodeMirror 6, one instance per open tab
-(`apps/web/app/components/NoteEditor.vue`, keyed by path so switching tabs remounts
-rather than mutates state). Editor-specific behavior (slash commands,
-wikilink autocomplete, live-preview decorations, smart list/quote
-continuation) lives in `apps/web/app/editor/*.ts` as CodeMirror extensions, not
-inline in the component.
+**Editor**: Tiptap 3, not CodeMirror — `apps/web/app/components/NoteEditor.vue`
+is a thin wrapper (autosave wiring, attachment upload, conflict UI) around
+`NoteEditor` from `@synap/ui-vue` (aliased `BaseNoteEditor`), keyed by path
+so switching tabs remounts rather than mutates state. The actual editor —
+extension list, slash commands, wikilink autocomplete/suggestion,
+upload-placeholder handling — lives in `packages/editor-core` and is shared
+byte-for-byte with `apps/desktop`; `packages/ui-vue`'s `NoteEditor.vue` owns
+the Tiptap instance itself plus its menu subcomponents
+(`EditorBubbleMenu`, `SlashCommandMenu`, `WikilinkSuggestionList`) and
+exposes a narrow `replacePlaceholder(id, content)` method (via
+`defineExpose`) so a parent can resolve an in-flight upload placeholder
+without reaching into editor-core itself. This replaced an earlier
+CodeMirror 6 + `apps/web/app/editor/*.ts` implementation — see decisions.md
+("Editor rewrite: CodeMirror 6 → shared Tiptap 3 via editor-core/ui-vue")
+before trusting any older entry that still describes CodeMirror.
 
 **State**: Pinia stores under `apps/web/app/stores/` — `vaultTree` (file tree),
 `tabs` (open tabs, dirty state, autosave conflict data), `preferences`
@@ -106,10 +133,33 @@ the full API surface, per-component notes, and the reasoning behind past
 architectural decisions (env var prefixing, SSR fetch gotchas, FTS5 schema,
 etc.) — check those before re-deriving something already documented there.
 
+**apps/desktop (Tauri 2 + Vue 3 + Rust)**: a native client that mirrors a
+vault locally and syncs it against an `apps/web` server instance — not a
+thin wrapper around the web app. Frontend (`apps/desktop/src/`) uses the
+same shared `@synap/store`/`@synap/editor-core`/`@synap/ui-vue` packages as
+the web app — including the exact same Tiptap-based `NoteEditor` component,
+not a separate editor implementation. Backend is a single Rust crate (`apps/desktop/src-tauri/`, crate name `app`,
+the sole member of the root `Cargo.toml` workspace) exposing Tauri commands
+(`src/lib.rs`): `init_db`, `get_local_files`, `sync_now`,
+`start_background_sync`, `push_file`, `pull_file`, `wipe_sync_db`. On
+opening a vault it creates `<vault>/.synap/sync.db` (`rusqlite`, bundled
+SQLite) tracking a per-file hash/status (`local`, `modified`, `Synced`,
+`PendingUpload`, `deleted`); syncing diffs this against the server's
+`/api/vault/manifest` and pushes/pulls through `/api/vault/sync/push` and
+`/api/vault/sync/pull`. A `notify`-based filesystem watcher triggers a
+re-sync on local changes; conflicts are last-write-wins with a conflict
+copy (Dropbox-style), no CRDT. See `docs/sync-plan.md` for the full
+rationale and `apps/desktop/README.md` for the frontend project layout.
+
 ## Styling
 
-Tailwind v4 only, enforced by `STYLEGUIDE.md`: no `<style>` blocks (not even
-`scoped`), no inline `style=`, no arbitrary-value classes
-(`bg-[#2a2a2a]`) outside `tailwind.config.ts`. Any new color/spacing/radius
-value goes into `tailwind.config.ts` `theme.extend` first as a named token,
-then gets consumed via the semantic class — never the reverse.
+Both apps use Tailwind v4 only: no `<style>` blocks (not even `scoped`), no
+inline `style=`, no arbitrary-value classes (`bg-[#2a2a2a]`) outside
+`tailwind.config.ts`. Any new color/spacing/radius value goes into
+`tailwind.config.ts` `theme.extend` first as a named token, then gets
+consumed via the semantic class — never the reverse. This is written down
+and enforced for `apps/web` in `apps/web/STYLEGUIDE.md`; `apps/desktop` has
+no styleguide of its own but follows the same "Quiet Dark Editor" visual
+language, ported 1:1 from the web app per
+`apps/desktop/DESIGN-SYSTEM-EXPORT.md` — treat that file as the desktop
+equivalent of the styleguide when touching its UI.

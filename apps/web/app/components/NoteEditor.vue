@@ -12,6 +12,7 @@ const tab = computed(() => tabs.tabs.find((t) => t.path === props.path))
 const mode = computed(() => tab.value?.viewMode ?? 'editor')
 
 const attachmentInputRef = ref<HTMLInputElement | null>(null)
+const editorRef = ref<{ replacePlaceholder: (id: string, content: Record<string, unknown> | null) => void } | null>(null)
 
 function errorMessageOf(err: unknown, fallback: string): string {
   const statusMessage = (err as { data?: { statusMessage?: string } })?.data?.statusMessage
@@ -30,42 +31,25 @@ async function handleAttachmentInsert(type: 'image' | 'file', handler: (file: Fi
     const file = input.files?.[0]
     input.value = ''
     attachmentInputRef.value!.removeEventListener('change', onFilePicked)
-    
+
     if (file) {
+      // handler() inserts the upload placeholder synchronously and returns
+      // its id; the placeholder is only resolved into real content (or
+      // dropped on failure) once the upload itself settles below.
+      const id = await handler(file)
       try {
-        const id = await handler(file)
         const result = await uploadAttachment(file)
-        // Wait, the handler inserts the placeholder and returns the id! But we need to replace it.
-        // Actually, NoteEditor now handles the placeholder itself and returns the ID.
-        // We need `replaceUploadPlaceholder` which is exported from editor-core.
-        // Since we removed useEditor from here, we can't easily call replaceUploadPlaceholder without a ref to the editor.
+        const content = type === 'image'
+          ? { type: 'image', attrs: { src: result.path, alt: file.name } }
+          : { type: 'text', text: file.name, marks: [{ type: 'link', attrs: { href: result.path } }] }
+        editorRef.value?.replacePlaceholder(id, content)
       } catch (err) {
+        editorRef.value?.replacePlaceholder(id, null)
         useToast().show(errorMessageOf(err, 'Upload fehlgeschlagen'), 'error')
       }
     }
   }
   attachmentInputRef.value!.addEventListener('change', onFilePicked)
-}
-
-// "Bild"/"Datei-Anhang" slash commands only ever get the Tiptap editor, not
-// access to insertAttachment() above - they set this shared request instead
-// (see useAttachmentInsert.ts), and this watcher opens the native file
-// picker. One-shot trigger, cleared right after opening the picker rather
-// than waiting for a change/cancel event.
-const attachmentInsertRequest = useAttachmentInsertRequest()
-
-watch(attachmentInsertRequest, (kind) => {
-  if (!kind || !attachmentInputRef.value) return
-  attachmentInputRef.value.accept = kind === 'image' ? 'image/*' : ''
-  attachmentInputRef.value.click()
-  attachmentInsertRequest.value = null
-})
-
-function onAttachmentInputChange(event: Event): void {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (file) void insertAttachment(file)
 }
 
 watch(
@@ -80,7 +64,7 @@ watch(
 
 <template>
   <div class="relative flex h-full min-h-0 flex-col">
-    <input ref="attachmentInputRef" type="file" class="hidden" @change="onAttachmentInputChange">
+    <input ref="attachmentInputRef" type="file" class="hidden">
 
     <!--
       No more full-width toolbar row (wasted vertical space, read as an extra
@@ -104,6 +88,7 @@ watch(
     >
       <BaseNoteEditor
         v-if="tab"
+        ref="editorRef"
         v-model="tab.content"
         :font-size="preferences.preferences.editorFontSize"
         @save="saveNow"
