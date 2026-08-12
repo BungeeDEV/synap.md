@@ -99,6 +99,19 @@ onMounted(async () => {
             }
         }
     });
+
+    // Ctrl + Scroll to zoom (change font size)
+    window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                appState.editorFontSize = Math.min(appState.editorFontSize + 1, 48);
+            } else if (e.deltaY > 0) {
+                appState.editorFontSize = Math.max(appState.editorFontSize - 1, 10);
+            }
+            // Watcher on editorFontSize will automatically save it to store
+        }
+    }, { passive: false });
 });
 
 async function createNewNote(targetPath?: string) {
