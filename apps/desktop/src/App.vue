@@ -11,6 +11,7 @@ import {
 } from 'lucide-vue-next';
 
 import { appState, rebuildFileTree, resetAppState } from './store';
+import { syncChannel, myWindowId, debounce, type SyncPayload } from './sync';
 import type { ContextMenuGroup } from './contextMenuTypes';
 import VaultSidebar from './components/VaultSidebar.vue';
 import EditorWorkspace from './components/EditorWorkspace.vue';
@@ -136,6 +137,19 @@ onMounted(async () => {
             await refreshLocalFiles();
         }
     });
+
+    // Listen for sync updates from other windows (e.g. Sticky Notes)
+    syncChannel.onmessage = (event: MessageEvent<SyncPayload>) => {
+        const payload = event.data;
+        if (payload.senderId === myWindowId) return;
+
+        // Only update if it's the currently open file
+        if (payload.file === appState.activeFile && payload.content !== appState.activeContent) {
+            // Update the content without triggering the save/broadcast loop
+            appState.lastLoadedContent = payload.content;
+            appState.activeContent = payload.content;
+        }
+    };
 });
 
 async function createNewNote(targetPath?: string) {
@@ -278,11 +292,18 @@ async function loadFile(path: string) {
 }
 
 let saveTimeout: any = null;
+const broadcastUpdate = debounce((file: string, content: string) => {
+    syncChannel.postMessage({ file, content, senderId: myWindowId });
+}, 200);
+
 watch(() => appState.activeContent, async (newVal) => {
     if (!appState.activeFile || !appState.vaultPath) return;
     if (newVal === appState.lastLoadedContent) return; 
     
     appState.lastLoadedContent = newVal;
+    
+    // Broadcast immediately to other windows (debounced internally)
+    broadcastUpdate(appState.activeFile, newVal);
 
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {

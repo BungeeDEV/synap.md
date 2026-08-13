@@ -7,6 +7,7 @@ import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, Head
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { Extension } from '@tiptap/core';
 import { buildEditorExtensions } from '@synap/editor-core';
+import { syncChannel, myWindowId, debounce, type SyncPayload } from '../sync';
 
 const props = defineProps<{ file: string }>();
 
@@ -30,6 +31,12 @@ const EditorHotkeys = Extension.create({
   }
 });
 
+const broadcastUpdate = debounce((contentStr: string) => {
+  syncChannel.postMessage({ file: props.file, content: contentStr, senderId: myWindowId });
+}, 200);
+
+let isUpdatingFromSync = false;
+
 const editor = useEditor({
   content: '',
   extensions: [
@@ -47,7 +54,9 @@ const editor = useEditor({
     }
   },
   onUpdate: ({ editor }) => {
+    if (isUpdatingFromSync) return;
     content.value = editor.storage.markdown.getMarkdown();
+    broadcastUpdate(content.value);
     scheduleSave();
   }
 });
@@ -94,6 +103,22 @@ onMounted(() => {
             await store.save();
         }
     }, { passive: false });
+
+    // Listen for sync updates
+    syncChannel.onmessage = (event: MessageEvent<SyncPayload>) => {
+        const payload = event.data;
+        if (payload.senderId === myWindowId) return;
+
+        if (payload.file === props.file && payload.content !== content.value) {
+            isUpdatingFromSync = true;
+            content.value = payload.content;
+            if (editor.value) {
+                editor.value.commands.setContent(payload.content, { emitUpdate: false });
+            }
+            // Small delay to allow editor to settle before accepting local typing as new changes
+            setTimeout(() => { isUpdatingFromSync = false; }, 10);
+        }
+    };
 });
 
 async function saveContent() {
@@ -115,9 +140,12 @@ function scheduleSave() {
 }
 
 function focusEditorIfOutsideContent(event: MouseEvent) {
-  const target = event.target as HTMLElement;
-  if (target.closest('.ProseMirror') || target.closest('.toolbar') || target.closest('.titlebar')) return;
-  editor.value?.chain().focus('end').run();
+  // If the click landed directly on the wrapper (not on any child like the editor),
+  // kill it completely so we don't trigger a focus jump or scroll.
+  if (event.target === event.currentTarget) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 }
 
 async function closeWindow() {
@@ -146,7 +174,7 @@ async function startDrag() {
 </style>
 
 <template>
-  <div class="h-screen w-screen flex flex-col bg-base font-sans text-content-primary overflow-hidden" @mousedown="focusEditorIfOutsideContent">
+  <div class="h-screen w-screen flex flex-col bg-base font-sans text-content-primary overflow-hidden">
     <!-- Custom Title Bar -->
     <div data-tauri-drag-region @mousedown.self="startDrag" class="titlebar h-10 min-h-[40px] w-full flex items-center justify-between px-3 select-none cursor-move shadow-md z-10" style="background-color: var(--color-accent-DEFAULT); color: var(--color-base);">
       <span data-tauri-drag-region @mousedown.self="startDrag" class="text-sm font-semibold flex-1 truncate cursor-move" style="color: var(--color-base);">{{ props.file.split('/').pop() }}</span>

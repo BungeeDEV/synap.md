@@ -40,7 +40,7 @@ onBeforeUnmount(() => {
 
 <template>
   <BubbleMenu :editor="editor" :should-show="shouldShow" :options="{ placement: 'top', offset: 8 }">
-    <div class="flex items-center gap-0.5 rounded-lg border border-border-strong bg-surface-1 p-1 shadow-float">
+    <div class="bubble-menu flex items-center gap-0.5 rounded-lg border border-border-strong bg-surface-1 p-1 shadow-float" @mousedown.prevent.stop>
       <button
         v-for="button in buttons"
         :key="button.name"
@@ -48,7 +48,7 @@ onBeforeUnmount(() => {
         :title="button.label"
         class="rounded-md p-1.5 transition-colors duration-150"
         :class="isActive(button.name) ? 'bg-accent text-white' : 'text-content-secondary hover:bg-white/[0.04]'"
-        @click="button.action()"
+        @mousedown.prevent="button.action()"
       >
         <component :is="button.icon" class="h-4 w-4" stroke-width="1.75" />
       </button>

@@ -160,8 +160,11 @@ onBeforeUnmount(() => {
 
 function focusEditorIfOutsideContent(event: MouseEvent): void {
   const target = event.target as HTMLElement
-  if (target.closest('.ProseMirror')) return
-  editor.value?.chain().focus('end').run()
+  // Only act if user clicked the wrapper itself, not any element inside it
+  if (target !== event.currentTarget) return
+  // Prevent any native focus delegation or scroll jump
+  event.preventDefault()
+  event.stopPropagation()
 }
 
 /** Lets the parent resolve a pending upload placeholder (see `attachment-insert`'s handler) once the upload settles, without the parent needing its own reference into `@synap/editor-core`. */
@@ -175,9 +178,11 @@ defineExpose({ replacePlaceholder })
 <template>
   <div
     class="h-full min-h-0 w-full flex-1 overflow-y-auto overscroll-contain bg-base"
-    @mousedown="focusEditorIfOutsideContent"
   >
-    <div class="relative mx-auto max-w-editor px-8 pt-16 pb-48">
+    <div
+      class="relative mx-auto max-w-editor px-8 pt-16 pb-48"
+      @mousedown="focusEditorIfOutsideContent"
+    >
       <PropertiesPanel v-if="frontmatter" :frontmatter="frontmatter" />
       <EditorBubbleMenu v-if="editor" :editor="editor" />
       <EditorContent :editor="editor" />
