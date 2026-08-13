@@ -74,7 +74,7 @@ export default defineNuxtConfig({
         '@tiptap/pm/tables',
         '@floating-ui/dom',
         'tiptap-markdown',
-        'lucide-vue-next'
+        '@lucide/vue'
       ]
     },
     build: {

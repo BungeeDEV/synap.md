@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, PenLine } from 'lucide-vue-next'
+import { Eye, PenLine } from '@lucide/vue'
 import type { ViewMode } from '@synap/store'
 
 const modelValue = defineModel<ViewMode>({ required: true })

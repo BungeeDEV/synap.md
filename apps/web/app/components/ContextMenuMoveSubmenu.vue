@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Folder } from 'lucide-vue-next'
+import { Folder } from '@lucide/vue'
 import type { VaultTreeNode } from '@synap/store'
 import { folderIndentClass, folderOptionsOf } from '~/utils/vaultFolders'
 import { isValidMoveTarget } from '~/utils/vaultMove'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 const tabs = useTabsStore()
 const pendingClosePath = ref<string | null>(null)

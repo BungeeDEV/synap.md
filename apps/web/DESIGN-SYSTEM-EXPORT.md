@@ -237,7 +237,7 @@ Dezent, "unsichtbar bis gebraucht" (Notion/VS Code-Stil) — nur bei
 
 ## 8. Icons
 
-- Nur **Outline-Style**-Icons (Referenz-App nutzt `lucide-vue-next` / Lucide-Icon-Set — in Tauri z. B. `lucide-react` oder das native Lucide-SVG-Set verwenden)
+- Nur **Outline-Style**-Icons (Referenz-App nutzt `@lucide/vue` / Lucide-Icon-Set — in Tauri z. B. `lucide-react` oder das native Lucide-SVG-Set verwenden)
 - Strichstärke `1.5`–`1.75`
 - Keine gefüllten Icons, **außer** bei aktiven/selektierten Zuständen (z. B. aktiver View-Toggle, favorisierter Stern: `fill: currentColor`)
 - Standardgrößen `16px`/`20px`, keine krummen Pixel-Werte

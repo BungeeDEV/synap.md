@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { appState } from '../store';
-import { X, Server, Folder, Settings2, ShieldAlert, Keyboard } from 'lucide-vue-next';
+import { X, Server, Folder, Settings2, ShieldAlert, Keyboard } from '@lucide/vue';
 
 const emit = defineEmits<{
   (e: 'sync'): void,

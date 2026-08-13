@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { File, FileQuestion, SearchX } from 'lucide-vue-next'
+import { File, FileQuestion, SearchX } from '@lucide/vue'
 import { flattenFiles, fuzzyMatchFiles } from '~/utils/fuzzyMatch'
 
 interface ContentResult {

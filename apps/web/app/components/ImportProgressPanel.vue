@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleCheck, CircleX, ChevronDown, ChevronUp, Loader2, RotateCcw, SkipForward, X } from 'lucide-vue-next'
+import { CircleCheck, CircleX, ChevronDown, ChevronUp, Loader2, RotateCcw, SkipForward, X } from '@lucide/vue'
 
 const { progress, cancelRemaining, closeProgressPanel, toggleProgressCollapsed, retryImportFile } = useVaultImport()
 

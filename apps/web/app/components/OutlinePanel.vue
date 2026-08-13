@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, X } from 'lucide-vue-next'
+import { Search, X } from '@lucide/vue'
 import { extractHeadings, type Heading } from '~/utils/extractHeadings'
 
 const OUTLINE_DEBOUNCE_MS = 250

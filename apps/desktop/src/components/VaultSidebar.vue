@@ -5,7 +5,7 @@ import FileTreeNode from './FileTreeNode.vue';
 import { 
   Settings, Search, Plus, FolderPlus, ArrowUpDown, ChevronDown,
   LayoutTemplate, Archive, Trash2 
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const emit = defineEmits<{
   (e: 'select', path: string): void,

@@ -19,7 +19,7 @@ Native Desktop-Client für **[synap.md](.)** — ein Markdown-Vault-Editor im St
 | Frontend  | Vue 3, TypeScript, Vite, Tailwind CSS v4 |
 | Editor    | Tiptap (`@tiptap/vue-3`, `tiptap-markdown`) |
 | Backend   | Rust — `rusqlite` (lokale Sync-DB), `reqwest` (HTTP), `notify` (Filesystem-Watcher) |
-| Icons     | `lucide-vue-next` |
+| Icons     | `@lucide/vue` |
 
 ## Voraussetzungen
 

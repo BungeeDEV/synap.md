@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, FilePlus, FileText } from 'lucide-vue-next'
+import { ChevronRight, FilePlus, FileText } from '@lucide/vue'
 
 const { user, fetch: refreshSession } = useUserSession()
 const tabs = useTabsStore()

@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue';
 import { load } from '@tauri-apps/plugin-store';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
-import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, Heading1, Heading2, X } from 'lucide-vue-next';
+import { Bold, Italic, Strikethrough, List, ListOrdered, CheckSquare, Code, Heading1, Heading2, X } from '@lucide/vue';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { Extension } from '@tiptap/core';
 import { buildEditorExtensions } from '@synap/editor-core';

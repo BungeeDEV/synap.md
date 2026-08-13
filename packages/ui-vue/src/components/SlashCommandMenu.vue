@@ -2,7 +2,7 @@
 import { 
   ArrowDown, ArrowUp, CornerDownLeft,
   Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Code, Link, AtSign, Image, Paperclip, Minus 
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 import type { SlashCommand, SlashCommandGroup } from '@synap/editor-core'
 import { SLASH_COMMAND_GROUP_LABELS } from '@synap/editor-core'
 import { ref, computed, watch } from 'vue'

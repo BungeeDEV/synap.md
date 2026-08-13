@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FilePlus, Trash2 } from 'lucide-vue-next'
+import { FilePlus, Trash2 } from '@lucide/vue'
 import { formatDate } from '#shared/formatDate'
 import { validateRawName } from '#shared/validateFileName'
 

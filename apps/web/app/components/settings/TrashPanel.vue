@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RotateCcw, Trash2 } from 'lucide-vue-next'
+import { RotateCcw, Trash2 } from '@lucide/vue'
 
 interface TrashEntry {
   id: number

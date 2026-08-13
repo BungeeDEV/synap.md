@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, FileText, FileWarning, Upload } from 'lucide-vue-next'
+import { AlertTriangle, FileText, FileWarning, Upload } from '@lucide/vue'
 import type { ImportConflictAction } from '#shared/import'
 import { isMarkdownImportFilename } from '#shared/import'
 import type { VaultTreeNode } from '@synap/store'

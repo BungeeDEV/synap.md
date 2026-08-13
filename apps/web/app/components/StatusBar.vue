@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, Check, Cloud } from 'lucide-vue-next'
+import { AlertTriangle, Check, Cloud } from '@lucide/vue'
 import { countChars, countWords } from '~/utils/textStats'
 
 const props = defineProps<{ content: string, saving: boolean, conflict: boolean }>()

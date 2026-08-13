@@ -8,7 +8,7 @@ import { readTextFile, writeTextFile, remove, rename, mkdir, copyFile } from '@t
 import { 
   Folder, ExternalLink, Copy, FilePlus, FolderPlus, Download, 
   Trash2, Edit2, Star, Share, FolderOutput, Info, Palette, StickyNote
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 import { appState, rebuildFileTree, resetAppState } from './store';
 import { syncChannel, myWindowId, debounce, type SyncPayload } from './sync';

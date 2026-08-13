@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { appState } from '../store';
-import { Search, FileText, CornerDownLeft } from 'lucide-vue-next';
+import { Search, FileText, CornerDownLeft } from '@lucide/vue';
 
 const emit = defineEmits<{
   (e: 'select', path: string): void

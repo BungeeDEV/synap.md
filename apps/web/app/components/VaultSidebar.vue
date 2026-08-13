@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from 'lucide-vue-next'
+import { Archive, Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from '@lucide/vue'
 import { flattenFilesAndFolders } from '~/utils/fuzzyMatch'
 
 const sidebarPanel = useSidebarPanelStore()

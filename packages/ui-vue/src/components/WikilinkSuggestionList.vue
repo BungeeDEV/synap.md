@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CornerDownLeft, FileText } from 'lucide-vue-next'
+import { CornerDownLeft, FileText } from '@lucide/vue'
 import type { FileEntry } from '@synap/editor-core'
 import { ref, watch } from 'vue'
 

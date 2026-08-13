@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Menu } from 'lucide-vue-next'
+import { ChevronRight, Menu } from '@lucide/vue'
 import type { ViewMode } from '@synap/store'
 
 const props = defineProps<{ path: string, tocVisible: boolean, mode: ViewMode }>()

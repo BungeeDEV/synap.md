@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { appState } from '../store';
-import { ChevronRight, FileText, PencilLine, Eye, X } from 'lucide-vue-next';
+import { ChevronRight, FileText, PencilLine, Eye, X } from '@lucide/vue';
 import NoteEditor from './NoteEditor.vue';
 
 const props = defineProps<{

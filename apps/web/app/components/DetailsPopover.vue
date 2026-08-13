@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 import type { VaultTreeNode } from '@synap/store'
 import { formatDate } from '#shared/formatDate'
 import { formatBytes } from '~/utils/formatBytes'

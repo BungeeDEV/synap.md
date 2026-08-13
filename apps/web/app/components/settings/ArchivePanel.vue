@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-vue-next'
+import { Archive, ArchiveRestore, Trash2 } from '@lucide/vue'
 
 interface ArchiveEntry {
   id: number

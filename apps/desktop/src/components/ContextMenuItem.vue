@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ContextMenuItem } from '../contextMenuTypes';
 import { isSubmenuItem } from '../contextMenuTypes';
-import { ChevronRight } from 'lucide-vue-next';
+import { ChevronRight } from '@lucide/vue';
 
 const props = defineProps<{
   item: ContextMenuItem;

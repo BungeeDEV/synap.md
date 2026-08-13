@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User, Key } from 'lucide-vue-next'
+import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User, Key } from '@lucide/vue'
 import type { Component } from 'vue'
 import AboutTab from '~/components/settings/AboutTab.vue'
 import AccountTab from '~/components/settings/AccountTab.vue'

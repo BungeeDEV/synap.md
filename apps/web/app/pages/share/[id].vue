@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Lock, FileText, ArrowRight } from 'lucide-vue-next'
+import { Lock, FileText, ArrowRight } from '@lucide/vue'
 
 const route = useRoute()
 const shareId = route.params.id as string

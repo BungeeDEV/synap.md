@@ -331,7 +331,7 @@ zentriert
 
 ## 6. Icons
 
-- Ausschließlich `lucide-vue-next`, Outline-Style
+- Ausschließlich `@lucide/vue`, Outline-Style
 - Strichstärke 1.5-1.75, keine gefüllten Icons außer bei aktiven/selektierten
   Zuständen (z.B. aktiver View-Toggle)
 - Icon-Größen über Tailwinds Standard-Size-Klassen (`w-4 h-4`, `w-5 h-5`),
@@ -374,6 +374,6 @@ zentriert
       Token in die Config aufnehmen
 - [ ] Radien gegen Abschnitt 4 prüfen, Ausreißer korrigieren
 - [ ] Alle Drop-Shadows außerhalb von Modal/Command-Palette entfernen
-- [ ] Icon-Set komplett auf `lucide-vue-next` Outline vereinheitlichen
+- [ ] Icon-Set komplett auf `@lucide/vue` Outline vereinheitlichen
 - [ ] Fokus-Ringe app-weit auf `accent/50` vereinheitlichen
 - [ ] Grün/Rot nur an den in diesem Dokument definierten Stellen prüfen

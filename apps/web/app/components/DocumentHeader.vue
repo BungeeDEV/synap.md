@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Star } from 'lucide-vue-next'
+import { Star } from '@lucide/vue'
 import { formatRelativeTime } from '#shared/formatDate'
 
 const props = defineProps<{ path: string, title: string, mtime: string | null }>()

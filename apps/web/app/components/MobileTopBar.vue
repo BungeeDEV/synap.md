@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogOut, Menu, Search } from 'lucide-vue-next'
+import { LogOut, Menu, Search } from '@lucide/vue'
 
 const emit = defineEmits<{ logout: [], openCommandPalette: [] }>()
 

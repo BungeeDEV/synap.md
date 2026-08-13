@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, Trash2, Key, AlertCircle } from 'lucide-vue-next'
+import { Plus, Trash2, Key, AlertCircle } from '@lucide/vue'
 
 const { data, refresh } = await useFetch('/api/settings/token')
 const tokens = computed(() => data.value?.tokens ?? [])

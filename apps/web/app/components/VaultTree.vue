@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Globe, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from 'lucide-vue-next'
+import { Archive, ArrowUpDown, BarChart3, Calendar, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Download, ExternalLink, File, FileDown, FilePlus, Folder, FolderOpen, FolderPlus, Globe, Info, LayoutTemplate, Link2, MoreHorizontal, Move, Palette, Pencil, Printer, Star, Trash2, Upload } from '@lucide/vue'
 import type { VaultTreeNode } from '@synap/store'
 import { titleFromPath } from '@synap/store'
 import { sortVaultTree, VAULT_SORT_LABELS } from '~/utils/sortVaultTree'

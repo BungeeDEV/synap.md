@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link2, Copy, Trash2, Calendar, Eye, Lock, ShieldCheck } from 'lucide-vue-next'
+import { Link2, Copy, Trash2, Calendar, Eye, Lock, ShieldCheck } from '@lucide/vue'
 
 const { isOpen, targetPath, closeShareDialog } = useShareLink()
 const toast = useToast()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { appState, toggleFolder, TreeNode } from '../store';
-import { ChevronRight, ChevronDown, FileText } from 'lucide-vue-next';
+import { ChevronRight, ChevronDown, FileText } from '@lucide/vue';
 
 const props = defineProps<{
   nodes: TreeNode[];

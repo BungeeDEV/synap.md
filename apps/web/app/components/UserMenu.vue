@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogOut, Settings } from 'lucide-vue-next'
+import { LogOut, Settings } from '@lucide/vue'
 
 const props = defineProps<{ username?: string }>()
 const emit = defineEmits<{ logout: [] }>()
