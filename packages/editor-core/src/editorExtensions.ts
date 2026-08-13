@@ -24,6 +24,8 @@ import texmath from 'markdown-it-texmath'
 import { full as markdownItEmoji } from 'markdown-it-emoji'
 import katex from 'katex'
 import { Callout, DefinitionList, DefinitionTerm, DefinitionDescription } from './customNodes'
+import { TrailingNode } from './trailingNode'
+import { TableFixExtension } from './tableFix'
 
 // tiptap-markdown's own types don't merge `editor.storage.markdown` into
 // core's Storage interface - added here once, centrally, rather than an
@@ -134,6 +136,8 @@ export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExte
     DefinitionList,
     DefinitionTerm,
     DefinitionDescription,
+    TrailingNode,
+    TableFixExtension,
     SlashCommandExtension.configure({
       slashCommandOptions: options.slashCommandOptions,
       suggestion: options.slashSuggestion || {}
