@@ -21,7 +21,17 @@ export const colors = {
   // dangerStrong ~4.8:1).
   accentStrong: '#D97706',
   successStrong: '#15803D',
-  dangerStrong: '#DC2626'
+  dangerStrong: '#DC2626',
+  calloutNote: 'rgba(163, 163, 163, 0.1)',
+  calloutNoteBorder: 'rgba(163, 163, 163, 0.4)',
+  calloutTip: 'rgba(74, 222, 128, 0.1)',
+  calloutTipBorder: 'rgba(74, 222, 128, 0.4)',
+  calloutWarning: 'rgba(245, 166, 35, 0.1)',
+  calloutWarningBorder: 'rgba(245, 166, 35, 0.4)',
+  calloutDanger: 'rgba(248, 113, 113, 0.1)',
+  calloutDangerBorder: 'rgba(248, 113, 113, 0.4)',
+  calloutInfo: 'rgba(59, 130, 246, 0.1)',
+  calloutInfoBorder: 'rgba(59, 130, 246, 0.4)',
 } as const
 
 export const fontFamily = {

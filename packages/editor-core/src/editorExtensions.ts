@@ -9,6 +9,21 @@ import { ResolvedImage } from './resolvedImage'
 import { SlashCommandExtension } from './slashSuggestion'
 import { UploadPlaceholder } from './uploadPlaceholder'
 import { Wikilink } from './wikilinkExtension'
+import Subscript from '@tiptap/extension-subscript'
+import Superscript from '@tiptap/extension-superscript'
+import Highlight from '@tiptap/extension-highlight'
+import { MathInline, MathBlock, MathLiveExtension } from './mathLivePreview'
+import { EmojiInputRuleExtension } from './emojiInputRule'
+import Emoji, { gitHubEmojis } from '@tiptap/extension-emoji'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableCell } from '@tiptap/extension-table-cell'
+import markdownItMark from 'markdown-it-mark'
+import texmath from 'markdown-it-texmath'
+import { full as markdownItEmoji } from 'markdown-it-emoji'
+import katex from 'katex'
+import { Callout, DefinitionList, DefinitionTerm, DefinitionDescription } from './customNodes'
 
 // tiptap-markdown's own types don't merge `editor.storage.markdown` into
 // core's Storage interface - added here once, centrally, rather than an
@@ -51,6 +66,7 @@ export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExte
     }),
     Markdown.configure({
       html: false,
+      breaks: true,
       transformPastedText: true,
       transformCopiedText: true
     }),
@@ -65,6 +81,59 @@ export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExte
       onNavigate: options.onWikilinkNavigate,
       suggestion: options.wikilinkSuggestion || {}
     }),
+    Subscript,
+    Superscript,
+    Highlight.extend({
+      addStorage() {
+        return {
+          ...(this.parent?.() as any),
+          markdown: {
+            parse: {
+              setup(md: any) {
+                md.use(markdownItMark)
+              }
+            }
+          }
+        }
+      }
+    }).configure({
+      HTMLAttributes: { class: 'highlight' }
+    }),
+    MathInline,
+    MathBlock,
+    MathLiveExtension,
+    Emoji.extend({
+      addStorage() {
+        return {
+          ...(this.parent?.() as any),
+          markdown: {
+            serialize(state: any, node: any) {
+              state.write(node.attrs.name ? `:${node.attrs.name}:` : '')
+            },
+            parse: {
+              setup(md: any) {
+                md.use(markdownItEmoji)
+                md.renderer.rules.emoji = (tokens: any, idx: number) => {
+                  return `<span data-type="emoji" data-name="${tokens[idx].markup}"></span>`
+                }
+              }
+            }
+          }
+        }
+      }
+    }).configure({
+      emojis: gitHubEmojis,
+      enableEmoticons: false
+    }),
+    EmojiInputRuleExtension,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    Callout,
+    DefinitionList,
+    DefinitionTerm,
+    DefinitionDescription,
     SlashCommandExtension.configure({
       slashCommandOptions: options.slashCommandOptions,
       suggestion: options.slashSuggestion || {}

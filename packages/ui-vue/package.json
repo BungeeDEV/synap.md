@@ -25,7 +25,8 @@
     "@tiptap/core": "^3.30.0",
     "@tiptap/suggestion": "^3.29.2",
     "@tiptap/vue-3": "^3.29.2",
-    "lucide-vue-next": "^1.0.0"
+    "lucide-vue-next": "^1.0.0",
+    "prettier": "^3.9.6",
+    "yaml": "^2.9.0"
   }
 }
-

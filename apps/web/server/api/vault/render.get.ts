@@ -28,6 +28,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const { content } = matter(raw)
-  const html = await renderMarkdown(getDb(), content)
-  return { html }
+  const { html, frontmatter } = await renderMarkdown(getDb(), content)
+  return { html, frontmatter }
 })

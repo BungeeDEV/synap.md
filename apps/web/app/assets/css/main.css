@@ -126,6 +126,53 @@
       @apply bg-content-tertiary/50;
     }
   }
+
+  /*
+   * Markdown Task Lists
+   * Removes default bullets and aligns checkboxes
+   */
+  ul.contains-task-list, ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+  }
+  li.task-list-item, li[data-type="taskItem"] {
+    list-style-type: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  li.task-list-item::marker, li[data-type="taskItem"]::marker {
+    content: none;
+    display: none;
+  }
+  li.task-list-item > input[type="checkbox"], li[data-type="taskItem"] input[type="checkbox"] {
+    margin-top: 0.35rem;
+  }
+  li[data-type="taskItem"] > div {
+    flex: 1;
+  }
+
+  /*
+   * Callouts / Admonitions
+   */
+  .callout {
+    @apply my-4 rounded-md border-l-4 p-4;
+  }
+  .callout-note {
+    @apply border-blue-500 bg-blue-500/10;
+  }
+  .callout-tip {
+    @apply border-green-500 bg-green-500/10;
+  }
+  .callout-warning {
+    @apply border-amber-500 bg-amber-500/10;
+  }
+  .callout-danger {
+    @apply border-red-500 bg-red-500/10;
+  }
+  .callout-info {
+    @apply border-gray-500 bg-gray-500/10;
+  }
 }
 
 /*

@@ -8,7 +8,11 @@ import { buildEditorExtensions, insertUploadPlaceholder, replaceUploadPlaceholde
 import EditorBubbleMenu from './EditorBubbleMenu.vue'
 import SlashCommandMenu from './SlashCommandMenu.vue'
 import WikilinkSuggestionList from './WikilinkSuggestionList.vue'
-import { onBeforeUnmount, watch } from 'vue'
+import PropertiesPanel from './PropertiesPanel.vue'
+import yaml from 'yaml'
+import * as prettier from 'prettier/standalone'
+import * as markdownPlugin from 'prettier/plugins/markdown'
+import { onBeforeUnmount, watch, ref } from 'vue'
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -34,13 +38,42 @@ const EditorHotkeys = Extension.create({
         emit('save')
         return true
       },
+      'Alt-Shift-f': () => {
+        const currentMarkdown = this.editor.storage.markdown.getMarkdown()
+        prettier.format(currentMarkdown, {
+          parser: 'markdown',
+          plugins: [markdownPlugin]
+        }).then((formatted) => {
+          this.editor.commands.setContent(rawFrontmatterStr.value + formatted, { emitUpdate: true })
+        }).catch(err => console.error("Formatting failed:", err))
+        return true
+      },
       'Mod-Enter': () => this.editor.chain().focus().toggleTaskList().run()
     }
   }
 })
 
+const frontmatter = ref<Record<string, any> | null>(null)
+const rawFrontmatterStr = ref<string>('')
+
+function extractFrontmatter(md: string) {
+  const match = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/)
+  if (match) {
+    rawFrontmatterStr.value = match[0]
+    try {
+      frontmatter.value = yaml.parse(match[1])
+    } catch {
+      frontmatter.value = null
+    }
+    return md.slice(match[0].length)
+  }
+  rawFrontmatterStr.value = ''
+  frontmatter.value = null
+  return md
+}
+
 const editor = useEditor({
-  content: props.modelValue,
+  content: extractFrontmatter(props.modelValue),
   editable: props.editable,
   extensions: [
     ...buildEditorExtensions({ 
@@ -104,13 +137,14 @@ const editor = useEditor({
     }
   },
   onUpdate: ({ editor }) => {
-    emit('update:modelValue', editor.storage.markdown.getMarkdown())
+    emit('update:modelValue', rawFrontmatterStr.value + editor.storage.markdown.getMarkdown())
   }
 })
 
 watch(() => props.modelValue, (newVal) => {
-  if (editor.value && newVal !== editor.value.storage.markdown.getMarkdown()) {
-    editor.value.commands.setContent(newVal, { emitUpdate: false })
+  const mdWithoutFm = extractFrontmatter(newVal)
+  if (editor.value && mdWithoutFm !== editor.value.storage.markdown.getMarkdown()) {
+    editor.value.commands.setContent(mdWithoutFm, { emitUpdate: false })
   }
 })
 
@@ -144,6 +178,7 @@ defineExpose({ replacePlaceholder })
     @mousedown="focusEditorIfOutsideContent"
   >
     <div class="relative mx-auto max-w-editor px-8 pt-16 pb-48">
+      <PropertiesPanel v-if="frontmatter" :frontmatter="frontmatter" />
       <EditorBubbleMenu v-if="editor" :editor="editor" />
       <EditorContent :editor="editor" />
     </div>

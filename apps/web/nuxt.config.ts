@@ -12,7 +12,7 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/eslint', 'nuxt-auth-utils', '@pinia/nuxt', '@vite-pwa/nuxt'],
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', 'katex/dist/katex.min.css'],
 
   // The Pinia stores used to live under app/stores/, where @pinia/nuxt
   // auto-imports by directory convention. They moved into the @synap/store
@@ -129,6 +129,7 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       navigateFallbackDenylist: [/^\/api\//],
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
       runtimeCaching: [

@@ -55,7 +55,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { content } = matter(raw)
-  const html = await renderMarkdown(db, content)
+  const { html } = await renderMarkdown(db, content)
 
   return { html, title: share.title, requiresPassword: false }
 })

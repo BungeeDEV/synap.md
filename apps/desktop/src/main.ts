@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import 'katex/dist/katex.min.css';
 import './styles.css';
 import App from './App.vue';
 import StickyNoteApp from './components/StickyNoteApp.vue';
