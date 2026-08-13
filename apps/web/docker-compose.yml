@@ -1,6 +1,8 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     # Dokploy's Traefik instance handles all inbound routing (via the
     # Domains tab) and expects to reach the container on its internal
