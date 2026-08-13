@@ -1,36 +1,34 @@
-# --- Build stage -----------------------------------------------------------
-FROM node:22-alpine AS build
-WORKDIR /app
+# syntax=docker/dockerfile:1
 
-# better-sqlite3 compiles a native addon during install
-RUN apk add --no-cache python3 make g++
-
+FROM node:22-bookworm-slim AS base
 RUN corepack enable
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN npm install -g turbo
+
+FROM base AS pruner
+WORKDIR /app
+COPY . .
+RUN turbo prune synap-md --docker
+
+FROM base AS installer
+WORKDIR /app
+COPY --from=pruner /app/out/json/ .
 RUN pnpm install --frozen-lockfile
 
-COPY . .
-RUN pnpm build
+FROM base AS builder
+WORKDIR /app
+COPY --from=installer /app/ .
+COPY --from=pruner /app/out/full/ .
+RUN pnpm turbo build --filter=synap-md
 
-# --- Runtime stage -----------------------------------------------------------
-FROM node:22-alpine AS runtime
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-# su-exec drops root privileges in entrypoint.sh after it fixes /data
-# ownership - see entrypoint.sh for why the container can't just start as
-# `synap` directly.
-RUN apk add --no-cache su-exec && \
-    addgroup -S synap && adduser -S synap -G synap
-
-COPY --from=build /app/.output ./.output
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# No `USER synap` here - the container must start as root so entrypoint.sh
-# can chown the mounted /data volume, then it drops to `synap` itself via
-# su-exec before the app process (CMD below) runs.
-
+ENV HOST=0.0.0.0
+ENV PORT=3000
+RUN groupadd --system --gid 1001 nuxt && useradd --system --uid 1001 --gid nuxt nuxt
+COPY --from=builder --chown=nuxt:nuxt /app/apps/web/.output ./.output
+USER nuxt
 EXPOSE 3000
-ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", ".output/server/index.mjs"]
