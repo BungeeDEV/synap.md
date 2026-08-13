@@ -20,7 +20,12 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=installer /app/ .
 COPY --from=pruner /app/out/full/ .
-RUN pnpm turbo build --filter=synap-md
+# Re-run install so that `dependenciesMeta.injected` packages (@synap/store,
+# @synap/ui-vue) are populated with their actual source files.  The installer
+# stage runs `pnpm install` before source files exist (only out/json/ is
+# available there), which leaves the injected node_modules copies empty.
+RUN pnpm install --frozen-lockfile
+RUN pnpm turbo build --filter=synap-md...
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app

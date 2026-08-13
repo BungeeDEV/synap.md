@@ -57,6 +57,19 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      // @synap/store is `dependenciesMeta.injected` (apps/web/package.json),
+      // so pnpm creates a physical copy in node_modules rather than a symlink.
+      // In Docker the installer stage runs `pnpm install` before the package
+      // source files exist (turbo prune only copies package.json files first),
+      // leaving the injected copy empty — Rolldown then fails to resolve
+      // `@synap/store` during the client build.  Aliasing directly to the
+      // source entry bypasses the node_modules copy entirely; peer deps
+      // (pinia/vue) still resolve from apps/web's node_modules as before.
+      alias: {
+        '@synap/store': fileURLToPath(new URL('../../packages/store/src/index.ts', import.meta.url))
+      }
+    },
     optimizeDeps: {
       include: [
         '@tiptap/core',
