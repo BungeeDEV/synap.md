@@ -25,7 +25,6 @@ COPY --from=pruner /app/out/full/ .
 # stage runs `pnpm install` before source files exist (only out/json/ is
 # available there), which leaves the injected node_modules copies empty.
 RUN pnpm install --frozen-lockfile
-RUN find /app -path "*/node_modules/pinia/dist/pinia.mjs" | sort
 RUN pnpm turbo build --filter=synap-md...
 
 FROM node:22-bookworm-slim AS runner
