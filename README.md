@@ -36,6 +36,16 @@ file format.
 - 🐳 **One container, one volume** — deploy with Docker Compose or
   [Dokploy](https://dokploy.com) in minutes
 
+## Screenshots
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="img/login.png" alt="Login screen" /><br/><sub>Login</sub></td>
+<td align="center" width="33%"><img src="img/vault_view.png" alt="Vault view with sidebar and note tree" /><br/><sub>Vault</sub></td>
+<td align="center" width="33%"><img src="img/settings.png" alt="Settings screen" /><br/><sub>Settings</sub></td>
+</tr>
+</table>
+
 ## Repository structure
 
 This is a [Turborepo](https://turborepo.com)/pnpm monorepo:
@@ -107,9 +117,20 @@ Docker Compose and [Dokploy](https://dokploy.com) deployment guide.
 
 ## Branching model
 
-- **`main`** — stable, released code. Every tag (`vX.Y.Z`) points here.
-- **`develop`** — active development. Feature work targets this branch;
-  it's merged into `main` for releases.
+This repo follows a lightweight Git Flow:
+
+```
+feature/*  →  develop  →  main (tagged vX.Y.Z)
+```
+
+- **`main`** — stable, released code only. Nothing is committed here
+  directly; every tag (`vX.Y.Z`) marks a release point on this branch.
+- **`develop`** — integration branch for active development. All finished
+  feature/fix branches are merged back into `develop` first.
+- **`feature/*`** / **`fix/*`** — one branch per piece of work, branched off
+  `develop` and merged back into it (PR or direct merge).
+- **Releases** — once `develop` is in a releasable state, it's merged into
+  `main` and tagged there.
 
 ## Contributing
 
