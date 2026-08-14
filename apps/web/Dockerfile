@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
 FROM node:22-bookworm-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -18,12 +19,19 @@ RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
-COPY --from=installer /app/ .
+# Copy the content-addressable store populated by the installer stage so
+# the builder's single pnpm install can reuse already-downloaded packages
+# instead of fetching everything again.
+COPY --from=installer /pnpm/store /pnpm/store
+# Copy full source first so that pnpm's single install run below can
+# properly hardlink the dependenciesMeta.injected packages (@synap/store,
+# @synap/ui-vue) from their real source directories.  pnpm 10+ uses
+# hardlinks from the CAS store for injected packages rather than copies,
+# so the source must be present before install runs.
 COPY --from=pruner /app/out/full/ .
-# Re-run install so that `dependenciesMeta.injected` packages (@synap/store,
-# @synap/ui-vue) are populated with their actual source files.  The installer
-# stage runs `pnpm install` before source files exist (only out/json/ is
-# available there), which leaves the injected node_modules copies empty.
+# turbo prune --docker puts pnpm-lock.yaml only in out/json/, not out/full/.
+# Copy it explicitly so pnpm can run --frozen-lockfile below.
+COPY --from=pruner /app/out/json/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 RUN pnpm turbo build --filter=synap-md...
 
