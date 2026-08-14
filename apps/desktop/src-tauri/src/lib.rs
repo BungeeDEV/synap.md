@@ -89,28 +89,26 @@ fn init_db(
     // Background thread for local file changes (notify)
     let app_clone = app_handle.clone();
     std::thread::spawn(move || {
-        for res in rx {
-            if let Ok(event) = res {
-                if matches!(
-                    event.kind,
-                    notify::EventKind::Modify(notify::event::ModifyKind::Data(_))
-                        | notify::EventKind::Create(_)
-                ) {
-                    // Notify triggers multiple events. Debounce slightly
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+        for event in rx.into_iter().flatten() {
+            if matches!(
+                event.kind,
+                notify::EventKind::Modify(notify::event::ModifyKind::Data(_))
+                    | notify::EventKind::Create(_)
+            ) {
+                // Notify trigger multiple events. Debounce slightly
+                std::thread::sleep(std::time::Duration::from_millis(500));
 
-                    let state = app_clone.state::<AppState>();
-                    let url = state.server_url.lock().unwrap().clone();
-                    let token = state.token.lock().unwrap().clone();
+                let state = app_clone.state::<AppState>();
+                let url = state.server_url.lock().unwrap().clone();
+                let token = state.token.lock().unwrap().clone();
 
-                    if let (Some(u), Some(t)) = (url, token) {
-                        // Simply trigger a full sync when local files change!
-                        let app_clone_async = app_clone.clone();
-                        tauri::async_runtime::spawn(async move {
-                            let _ = perform_sync(&app_clone_async, &u, &t).await;
-                            let _ = app_clone_async.emit("sync-done", ());
-                        });
-                    }
+                if let (Some(u), Some(t)) = (url, token) {
+                    // Simply trigger a full sync when local files change!
+                    let app_clone_async = app_clone.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = perform_sync(&app_clone_async, &u, &t).await;
+                        let _ = app_clone_async.emit("sync-done", ());
+                    });
                 }
             }
         }
@@ -237,10 +235,8 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         .map_err(|e| e.to_string())?;
 
     let mut files = Vec::new();
-    for row in rows {
-        if let Ok(file) = row {
-            files.push(file);
-        }
+    for file in rows.flatten() {
+        files.push(file);
     }
     Ok(files)
 }
@@ -498,7 +494,7 @@ async fn wipe_sync_db(state: State<'_, AppState>) -> Result<(), String> {
     *state.watcher.lock().unwrap() = None;
 
     // Kill any background sync loops
-    *state.sync_loop_id.lock().unwrap() += 1;
+    stop_background_sync(state).await.ok();
 
     Ok(())
 }
@@ -645,10 +641,14 @@ async fn push_file(
             }
             if !parsed.conflicts.is_empty() {
                 use tauri_plugin_notification::NotificationExt;
-                let _ = app_handle.notification()
+                let _ = app_handle
+                    .notification()
                     .builder()
                     .title("Sync-Konflikt erkannt")
-                    .body(&format!("Es gab {} Konflikt(e) beim Synchronisieren.", parsed.conflicts.len()))
+                    .body(format!(
+                        "Es gab {} Konflikt(e) beim Synchronisieren.",
+                        parsed.conflicts.len()
+                    ))
                     .show();
                 return Err(format!("Server Conflict: {:?}", parsed.conflicts));
             }
@@ -727,13 +727,13 @@ pub fn run() {
             delete_secure_token
         ])
         .setup(|app| {
-            use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState};
             use tauri::menu::{Menu, MenuItem};
+            use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
 
             let show_i = MenuItem::with_id(app, "show", "Anzeigen", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&show_i, &quit_i])?;
-            
+
             let icon = app.default_window_icon().cloned().unwrap();
             let _tray = TrayIconBuilder::new()
                 .icon(icon)
@@ -749,7 +749,12 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { button, button_state, .. } = event {
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button,
+                        button_state,
+                        ..
+                    } = event
+                    {
                         if button == MouseButton::Left && button_state == MouseButtonState::Up {
                             if let Some(window) = tray.app_handle().get_webview_window("main") {
                                 let _ = window.show();
