@@ -1,0 +1,24 @@
+{
+  "name": "@synap/config-tailwind",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tailwind.config.ts",
+  "exports": {
+    ".": "./tailwind.config.ts"
+  },
+  "scripts": {
+    "test": "echo No tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "@synap/design-tokens": "workspace:^"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.20",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}

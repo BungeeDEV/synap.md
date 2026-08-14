@@ -1,0 +1,18 @@
+{
+  "name": "@synap/store",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./preferences_types": "./src/preferences_types.ts"
+  },
+  "scripts": {
+    "test": "echo No tests"
+  },
+  "peerDependencies": {
+    "pinia": "^4.0.2",
+    "vue": "^3.5.39"
+  }
+}
