@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=installer /pnpm/store /pnpm/store
 # Copy full source first so that pnpm's single install run below can
 # properly hardlink the dependenciesMeta.injected packages (@synap/store,
-# @synap/ui-vue) from their real source directories.  pnpm 10+ uses
+# @synap/ui-vue) from their real source directories.  pnpm 11+ uses
 # hardlinks from the CAS store for injected packages rather than copies,
 # so the source must be present before install runs.
 COPY --from=pruner /app/out/full/ .
