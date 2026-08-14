@@ -88,6 +88,7 @@ fn init_db(
 
     // Background thread for local file changes (notify)
     let app_clone = app_handle.clone();
+    // FIXME
     std::thread::spawn(move || {
         for event in rx.into_iter().flatten() {
             if matches!(
@@ -168,20 +169,15 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     let disk_files = scan_local_md_files(&vault_root);
 
     // 2. Register any new files (on disk but not in DB) with status 'local'
+    // 3. Also update hashes for existing files that may have changed on disk
     for rel_path in &disk_files {
         let abs_path = vault_root.join(rel_path);
         let hash = compute_hash(&abs_path).unwrap_or_default();
-        // INSERT OR IGNORE — only adds if the path doesn't exist yet
+
         let _ = conn.execute(
             "INSERT OR IGNORE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, NULL, 0, 'local')",
             params![rel_path, hash],
         );
-    }
-
-    // 3. Also update hashes for existing files that may have changed on disk
-    for rel_path in &disk_files {
-        let abs_path = vault_root.join(rel_path);
-        let current_hash = compute_hash(&abs_path).unwrap_or_default();
         // Check if hash differs from what's in DB
         let db_hash: Option<String> = conn
             .query_row(
@@ -194,10 +190,10 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
             .unwrap_or(None);
 
         if let Some(ref stored_hash) = db_hash {
-            if stored_hash != &current_hash {
+            if stored_hash != &hash {
                 let _ = conn.execute(
                     "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
-                    params![current_hash, rel_path],
+                    params![hash, rel_path],
                 );
             }
         }
