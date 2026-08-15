@@ -61,6 +61,24 @@ export interface EditorExtensionsOptions {
  * (`## `, `> `, `` ` `` ```, `- `, `1. `, `---`) - this is what replaces the
  * old `smartEditing.ts`'s narrower hand-rolled equivalent.
  */
+/**
+ * Patch Canvas2D to suppress Chromium's `willReadFrequently` warning
+ * triggered by Tiptap's Emoji extension when it checks for native emoji support.
+ */
+if (typeof HTMLCanvasElement !== 'undefined') {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext
+  HTMLCanvasElement.prototype.getContext = function (
+    this: HTMLCanvasElement,
+    contextId: string,
+    options?: any
+  ): any {
+    if (contextId === '2d') {
+      options = { ...(options || {}), willReadFrequently: true }
+    }
+    return originalGetContext.call(this, contextId as any, options)
+  }
+}
+
 export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExtension[] {
   return [
     StarterKit.configure({
