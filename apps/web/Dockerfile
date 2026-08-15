@@ -40,8 +40,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 1001 nuxt && useradd --system --uid 1001 --gid nuxt nuxt
 COPY --from=builder --chown=nuxt:nuxt /app/apps/web/.output ./.output
-USER nuxt
+COPY --chmod=755 apps/web/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3000
+# Container starts as root so the entrypoint can fix ownership of the mounted
+# /data volume (Dokploy/Docker create it as root by default), then drops to
+# the unprivileged nuxt user via gosu before running the actual server.
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", ".output/server/index.mjs"]
