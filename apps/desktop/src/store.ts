@@ -49,6 +49,7 @@ export const appState = reactive({
   isSidebarOpen: true,
   isSearchOpen: false,
   contextMenu: null as ContextMenuState | null,
+  folderToDelete: null as TreeNode | null,
 });
 
 export function resetAppState() {
@@ -62,6 +63,7 @@ export function resetAppState() {
   appState.isSidebarOpen = true;
   appState.isSearchOpen = false;
   appState.contextMenu = null;
+  appState.folderToDelete = null;
   appState.defaultView = 'editor';
   appState.editorFontSize = 16;
   appState.editorFontFamily = 'sans';

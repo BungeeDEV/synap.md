@@ -44,6 +44,8 @@ const breadcrumbs = computed(() => {
         v-for="tab in appState.tabs" 
         :key="tab"
         @click="selectTab(tab)"
+        @auxclick="(e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab, e); } }"
+        @mousedown.middle.prevent
         :class="[
           'group flex items-center gap-2 h-[30px] px-3 rounded-t-md text-[13px] cursor-pointer max-w-[200px] shrink-0 transition-colors',
           appState.activeFile === tab 

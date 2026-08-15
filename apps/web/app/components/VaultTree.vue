@@ -403,6 +403,27 @@ async function confirmDelete(): Promise<void> {
   toast.show(`"${node.name}" in den Papierkorb verschoben`)
 }
 
+async function confirmFolderDelete(): Promise<void> {
+  const node = pendingDelete.value
+  pendingDelete.value = null
+  if (!node || node.type !== 'folder') return
+
+  try {
+    await $fetch('/api/vault/folder', { method: 'DELETE', query: { path: node.path } })
+    // Close any tabs that were inside this folder
+    const prefix = `${node.path}/`
+    for (const tab of tabs.tabs) {
+      if (tab.path.startsWith(prefix)) {
+        tabs.closeTab(tab.path)
+      }
+    }
+    await vaultTree.refresh()
+    toast.show(`Ordner "${node.name}" gelöscht`)
+  } catch (err) {
+    toast.show(errorMessageOf(err, 'Fehler beim Löschen des Ordners'), 'error')
+  }
+}
+
 async function archiveNode(node: VaultTreeNode): Promise<void> {
   closeContextMenu()
   try {
@@ -524,6 +545,9 @@ function folderMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
       { id: 'export-zip', label: 'Exportieren als ZIP', icon: Download, onSelect: () => exportFolderZip(node) },
       { id: 'stats', label: 'Ordner-Statistik', icon: BarChart3, onSelect: () => openDetails(node) },
       { id: 'color', label: 'Farbe ändern', icon: Palette, submenu: 'color' }
+    ],
+    [
+      { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
     ]
   ]
 }
@@ -1127,11 +1151,18 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
     </ContextMenu>
 
     <ConfirmDialog
-      v-if="pendingDelete"
+      v-if="pendingDelete?.type === 'file'"
       title="Löschen"
       :message="deleteConfirmMessage"
       confirm-label="Löschen"
       @confirm="confirmDelete"
+      @cancel="pendingDelete = null"
+    />
+
+    <DeleteFolderModal
+      v-else-if="pendingDelete?.type === 'folder'"
+      :node="pendingDelete"
+      @confirm="confirmFolderDelete"
       @cancel="pendingDelete = null"
     />
 

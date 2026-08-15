@@ -18,6 +18,7 @@ import EditorWorkspace from './components/EditorWorkspace.vue';
 import SettingsModal from './components/SettingsModal.vue';
 import CommandPalette from './components/CommandPalette.vue';
 import ContextMenu from './components/ContextMenu.vue';
+import DeleteFolderModal from './components/DeleteFolderModal.vue';
 
 onMounted(async () => {
     const store = await load('store.json', { autoSave: false });
@@ -365,15 +366,8 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
         { id: 'color', label: 'Farbe ändern', icon: Palette, submenu: 'color' },
       ],
       [
-        { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: async () => {
-           if (!confirm(`Möchtest du den Ordner '${node.name}' wirklich löschen?`)) return;
-           if (appState.vaultPath) {
-             const fp = `${appState.vaultPath}/${node.path}`;
-             try {
-               await remove(fp, { recursive: true });
-               await refreshLocalFiles();
-             } catch(e) { alert(`Fehler beim Löschen: ${e}`); }
-           }
+        { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => {
+           appState.folderToDelete = node;
         }},
       ]
     ];
@@ -457,6 +451,7 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
     <!-- Modals (fixed overlays, unaffected by layout) -->
     <SettingsModal @sync="manualSync" @change-vault="changeVault" @reset-app="resetApp" @toggle-auto-sync="toggleAutoSync" />
     <CommandPalette @select="loadFile" />
+    <DeleteFolderModal />
     
     <ContextMenu 
       v-if="appState.contextMenu"
