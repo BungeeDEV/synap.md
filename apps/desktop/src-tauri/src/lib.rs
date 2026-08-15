@@ -1,6 +1,6 @@
 use notify::Watcher;
 use reqwest::Client;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -138,12 +138,12 @@ fn scan_local_md_files(vault_root: &Path) -> Vec<String> {
                 }
                 if path.is_dir() {
                     walk(&path, root, results);
-                } else if name.ends_with(".md") {
-                    if let Ok(rel) = path.strip_prefix(root) {
-                        // Always use forward slashes for consistency
-                        let rel_str = rel.to_string_lossy().replace('\\', "/");
-                        results.push(rel_str);
-                    }
+                } else if name.ends_with(".md")
+                    && let Ok(rel) = path.strip_prefix(root)
+                {
+                    // Always use forward slashes for consistency
+                    let rel_str = rel.to_string_lossy().replace('\\', "/");
+                    results.push(rel_str);
                 }
             }
         }
@@ -189,13 +189,13 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
             .unwrap_or(None)
             .unwrap_or(None);
 
-        if let Some(ref stored_hash) = db_hash {
-            if stored_hash != &hash {
-                let _ = conn.execute(
-                    "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
-                    params![hash, rel_path],
-                );
-            }
+        if let Some(ref stored_hash) = db_hash
+            && stored_hash != &hash
+        {
+            let _ = conn.execute(
+                "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
+                params![hash, rel_path],
+            );
         }
     }
 
@@ -304,27 +304,27 @@ pub async fn perform_sync(
                 .send()
                 .await;
 
-            if let Ok(pull_res) = pull_res {
-                if pull_res.status().is_success() {
-                    let p_text = pull_res.text().await.unwrap_or_default();
-                    if let Ok(wrapper) = serde_json::from_str::<PullResponseWrapper>(&p_text) {
-                        if let Some(item) = wrapper.files.into_iter().next() {
-                            // Write to disk
-                            if let Some(parent) = abs_path.parent() {
-                                let _ = fs::create_dir_all(parent);
-                            }
-                            let _ = fs::write(&abs_path, item.content);
+            if let Ok(pull_res) = pull_res
+                && pull_res.status().is_success()
+            {
+                let p_text = pull_res.text().await.unwrap_or_default();
+                if let Ok(wrapper) = serde_json::from_str::<PullResponseWrapper>(&p_text)
+                    && let Some(item) = wrapper.files.into_iter().next()
+                {
+                    // Write to disk
+                    if let Some(parent) = abs_path.parent() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                    let _ = fs::write(&abs_path, item.content);
 
-                            // Update DB
-                            let new_hash = compute_hash(&abs_path).unwrap_or_default();
-                            let db_guard = state.db.lock().unwrap();
-                            if let Some(conn) = db_guard.as_ref() {
-                                let _ = conn.execute(
-                                    "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                                    params![rel_path, new_hash, remote_hash],
-                                );
-                            }
-                        }
+                    // Update DB
+                    let new_hash = compute_hash(&abs_path).unwrap_or_default();
+                    let db_guard = state.db.lock().unwrap();
+                    if let Some(conn) = db_guard.as_ref() {
+                        let _ = conn.execute(
+                                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+                                params![rel_path, new_hash, remote_hash],
+                            );
                     }
                 }
             }
@@ -396,15 +396,15 @@ pub async fn perform_sync(
                     .send()
                     .await;
 
-                if let Ok(push_res) = push_res {
-                    if push_res.status().is_success() {
-                        let db_guard = state.db.lock().unwrap();
-                        if let Some(conn) = db_guard.as_ref() {
-                            let _ = conn.execute(
-                                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                                params![rel_path, local_hash, local_hash],
-                            );
-                        }
+                if let Ok(push_res) = push_res
+                    && push_res.status().is_success()
+                {
+                    let db_guard = state.db.lock().unwrap();
+                    if let Some(conn) = db_guard.as_ref() {
+                        let _ = conn.execute(
+                            "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+                            params![rel_path, local_hash, local_hash],
+                        );
                     }
                 }
             }
@@ -563,10 +563,10 @@ async fn pull_file(
     let abs_path = PathBuf::from(vault_path).join(&path);
 
     // Read from local disk first in Phase 1
-    if abs_path.exists() {
-        if let Ok(content) = fs::read_to_string(&abs_path) {
-            return Ok(content);
-        }
+    if abs_path.exists()
+        && let Ok(content) = fs::read_to_string(&abs_path)
+    {
+        return Ok(content);
     }
     Err("File not found locally. Run sync first.".into())
 }
@@ -750,13 +750,12 @@ pub fn run() {
                         button_state,
                         ..
                     } = event
+                        && button == MouseButton::Left
+                        && button_state == MouseButtonState::Up
+                        && let Some(window) = tray.app_handle().get_webview_window("main")
                     {
-                        if button == MouseButton::Left && button_state == MouseButtonState::Up {
-                            if let Some(window) = tray.app_handle().get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
-                        }
+                        let _ = window.show();
+                        let _ = window.set_focus();
                     }
                 })
                 .build(app)?;
