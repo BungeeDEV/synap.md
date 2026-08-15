@@ -60,6 +60,7 @@ export async function writeVaultFile(
     if (isInvalidPathSyntaxError(err)) {
       throw createError({ statusCode: 400, statusMessage: 'Invalid file name' })
     }
-    throw createError({ statusCode: 500, statusMessage: 'Failed to write file' })
+    console.error('[writeVaultFile error]:', err)
+    throw createError({ statusCode: 500, statusMessage: 'Failed to write file', data: String(err) })
   }
 }

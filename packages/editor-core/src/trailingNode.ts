@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 export const TrailingNode = Extension.create({
-  name: 'trailingNode',
+  name: 'synapTrailingNode',
 
   addOptions() {
     return {
