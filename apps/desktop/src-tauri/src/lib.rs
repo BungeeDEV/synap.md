@@ -168,13 +168,15 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     // 1. Scan the actual filesystem for .md files
     let disk_files = scan_local_md_files(&vault_root);
 
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+
     // 2. Register any new files (on disk but not in DB) with status 'local'
     // 3. Also update hashes for existing files that may have changed on disk
     for rel_path in &disk_files {
         let abs_path = vault_root.join(rel_path);
         let hash = compute_hash(&abs_path).unwrap_or_default();
 
-        let _ = conn.execute(
+        let _ = tx.execute(
             "INSERT OR IGNORE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, NULL, 0, 'local')",
             params![rel_path, hash],
         );
@@ -192,7 +194,7 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         if let Some(ref stored_hash) = db_hash
             && stored_hash != &hash
         {
-            let _ = conn.execute(
+            let _ = tx.execute(
                 "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
                 params![hash, rel_path],
             );
@@ -210,12 +212,14 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         .collect();
     for db_path in &db_paths {
         if !disk_files.contains(db_path) {
-            let _ = conn.execute(
+            let _ = tx.execute(
                 "UPDATE sync_state SET status = 'deleted' WHERE path = ?",
                 params![db_path],
             );
         }
     }
+
+    tx.commit().map_err(|e| e.to_string())?;
 
     // 5. Return the full merged list (skip 'deleted' entries for now)
     let mut out_stmt = conn
@@ -292,7 +296,7 @@ pub async fn perform_sync(
             .unwrap_or(None)
         };
 
-        if local_hash.is_none() || local_hash.unwrap() != remote_hash {
+        if local_hash.as_deref() != Some(remote_hash.as_str()) {
             // Need to Pull
             let pull_url = format!("{}/api/vault/sync/pull", url.trim_end_matches('/'));
             let payload = serde_json::json!({ "paths": vec![&rel_path] });
@@ -322,9 +326,9 @@ pub async fn perform_sync(
                     let db_guard = state.db.lock().unwrap();
                     if let Some(conn) = db_guard.as_ref() {
                         let _ = conn.execute(
-                                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                                params![rel_path, new_hash, remote_hash],
-                            );
+                            "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+                            params![rel_path, new_hash, remote_hash],
+                        );
                     }
                 }
             }
