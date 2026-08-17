@@ -7,7 +7,6 @@ import {
   Type, Bold, Italic, Strikethrough, Terminal, Highlighter, Table, Info, AlertTriangle, Sigma
 } from '@lucide/vue'
 import type { SlashCommand, SlashCommandGroup } from '@synap/editor-core'
-import { SLASH_COMMAND_GROUP_LABELS } from '@synap/editor-core'
 import { ref, computed, watch, nextTick } from 'vue'
 
 const IconMap: Record<string, any> = {
@@ -42,7 +41,7 @@ const groupedSections = computed<GroupedSection[]>(() => {
   props.items.forEach((command, index) => {
     let section = sections.get(command.group)
     if (!section) {
-      section = { group: command.group, label: SLASH_COMMAND_GROUP_LABELS[command.group], items: [] }
+      section = { group: command.group, label: t('slashCommands.groups.' + command.group), items: [] }
       sections.set(command.group, section)
     }
     section.items.push({ command, index })
@@ -102,7 +101,7 @@ defineExpose({ onKeyDown })
                   :class="index === selectedIndex ? 'text-white' : 'text-content-tertiary'"
                   stroke-width="1.5"
                 />
-                <span class="flex-1 truncate">{{ command.label }}</span>
+                <span class="flex-1 truncate">{{ t('slashCommands.' + command.id) }}</span>
                 <CornerDownLeft v-if="index === selectedIndex" class="h-3.5 w-3.5 shrink-0 text-white/70" stroke-width="1.5" />
               </button>
             </li>

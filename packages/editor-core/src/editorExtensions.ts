@@ -46,6 +46,7 @@ export interface EditorExtensionsOptions {
   slashCommandOptions: SlashCommandOptions
   slashSuggestion?: Omit<SuggestionOptions<SlashCommand>, 'editor'>
   wikilinkSuggestion?: Omit<SuggestionOptions<FileEntry>, 'editor'>
+  placeholder?: string
 }
 
 /**
@@ -91,7 +92,7 @@ export function buildEditorExtensions(options: EditorExtensionsOptions): AnyExte
       transformCopiedText: true
     }),
     Placeholder.configure({
-      placeholder: 'Schreib los …'
+      placeholder: options.placeholder ?? 'Schreib los …'
     }),
     TaskList,
     TaskItem.configure({ nested: true }),

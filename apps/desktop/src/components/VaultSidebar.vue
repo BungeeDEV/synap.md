@@ -2,10 +2,13 @@
 import { computed } from 'vue';
 import { appState, fileTree } from '../store';
 import FileTreeNode from './FileTreeNode.vue';
-import { 
+import {
   Settings, Search, Plus, FolderPlus, ArrowUpDown, ChevronDown,
-  LayoutTemplate, Archive, Trash2 
+  LayoutTemplate, Archive, Trash2
 } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: 'select', path: string): void,
@@ -35,10 +38,10 @@ const folderCount = computed(() => {
         <ChevronDown class="w-3.5 h-3.5 text-content-tertiary" stroke-width="2" />
       </div>
       <div class="flex items-center gap-1 text-content-tertiary">
-        <button @click="appState.isSearchOpen = true" class="p-1.5 hover:text-content-primary hover:bg-surface-2 rounded transition-colors" title="Suche (Cmd+K)">
+        <button @click="appState.isSearchOpen = true" class="p-1.5 hover:text-content-primary hover:bg-surface-2 rounded transition-colors" :title="t('desktopApp.searchTooltip')">
           <Search class="w-4 h-4" stroke-width="1.5" />
         </button>
-        <button @click="appState.isSettingsOpen = true" class="p-1.5 hover:text-content-primary hover:bg-surface-2 rounded transition-colors" title="Einstellungen">
+        <button @click="appState.isSettingsOpen = true" class="p-1.5 hover:text-content-primary hover:bg-surface-2 rounded transition-colors" :title="t('sidebar.settings')">
           <Settings class="w-4 h-4" stroke-width="1.5" />
         </button>
       </div>
@@ -46,14 +49,14 @@ const folderCount = computed(() => {
 
     <!-- Action Bar -->
     <div class="px-3 py-3 flex items-center gap-1 shrink-0">
-      <button @click="emit('new-note')" class="flex-1 btn-primary py-1.5 text-sm" title="Neue Notiz (Cmd+N)">
+      <button @click="emit('new-note')" class="flex-1 btn-primary py-1.5 text-sm" :title="t('desktopApp.newNoteTooltip')">
         <Plus class="w-4 h-4" stroke-width="2" />
-        Neue Notiz
+        {{ t('tree.newNote') }}
       </button>
-      <button class="p-1.5 text-content-tertiary hover:text-content-primary hover:bg-surface-2 rounded-md transition-colors" title="Neuer Ordner">
+      <button class="p-1.5 text-content-tertiary hover:text-content-primary hover:bg-surface-2 rounded-md transition-colors" :title="t('tree.newFolderTooltip')">
         <FolderPlus class="w-4 h-4" stroke-width="1.5" />
       </button>
-      <button class="p-1.5 text-content-tertiary hover:text-content-primary hover:bg-surface-2 rounded-md transition-colors" title="Sortieren">
+      <button class="p-1.5 text-content-tertiary hover:text-content-primary hover:bg-surface-2 rounded-md transition-colors" :title="t('desktopApp.sortTooltip')">
         <ArrowUpDown class="w-4 h-4" stroke-width="1.5" />
       </button>
     </div>
@@ -68,35 +71,35 @@ const folderCount = computed(() => {
 
       <!-- Library Section -->
       <div>
-        <h3 class="text-xs font-semibold text-content-tertiary uppercase tracking-[0.05em] mb-1 px-2">Bibliothek</h3>
+        <h3 class="text-xs font-semibold text-content-tertiary uppercase tracking-[0.05em] mb-1 px-2">{{ t('sidebar.library') }}</h3>
         <div class="space-y-0.5">
           <div class="sidebar-row group text-[15px] py-2 px-2">
             <div class="flex items-center gap-2 truncate">
               <LayoutTemplate class="w-4 h-4 text-content-tertiary shrink-0" stroke-width="1.5" />
-              <span>Vorlagen</span>
+              <span>{{ t('sidebar.templates') }}</span>
             </div>
           </div>
           <div class="sidebar-row group text-[15px] py-2 px-2">
             <div class="flex items-center gap-2 truncate">
               <Archive class="w-4 h-4 text-content-tertiary shrink-0" stroke-width="1.5" />
-              <span>Archiv</span>
+              <span>{{ t('sidebar.archive') }}</span>
             </div>
           </div>
           <div class="sidebar-row group text-[15px] py-2 px-2">
             <div class="flex items-center gap-2 truncate">
               <Trash2 class="w-4 h-4 text-content-tertiary shrink-0" stroke-width="1.5" />
-              <span>Papierkorb</span>
+              <span>{{ t('sidebar.trash') }}</span>
             </div>
           </div>
         </div>
       </div>
-      
+
     </div>
 
     <!-- Stats Footer -->
     <div class="px-4 py-2 border-t border-border shrink-0">
       <p class="text-[11px] text-content-tertiary font-medium">
-        {{ fileCount }} Dateien · {{ folderCount }} Ordner
+        {{ t('sidebar.files', { count: fileCount }) }} · {{ t('sidebar.folders', { count: folderCount }) }}
       </p>
     </div>
   </aside>

@@ -38,7 +38,7 @@ importers:
         version: link:../../packages/store
       '@synap/ui-vue':
         specifier: workspace:*
-        version: file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@7.0.2))
+        version: file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue-i18n@10.0.8(vue@3.5.41(typescript@7.0.2)))(vue@3.5.41(typescript@7.0.2))
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -146,7 +146,7 @@ importers:
         version: file:packages/store(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.41(typescript@5.9.3)))(vue@3.5.41(typescript@5.9.3))
       '@synap/ui-vue':
         specifier: workspace:*
-        version: file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@5.9.3))
+        version: file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue-i18n@10.0.8(vue@3.5.41(typescript@5.9.3)))(vue@3.5.41(typescript@5.9.3))
       '@tailwindcss/typography':
         specifier: ^0.5.20
         version: 0.5.20(tailwindcss@4.3.3)
@@ -463,6 +463,9 @@ importers:
       vue:
         specifier: ^3.5.41
         version: 3.5.41(typescript@7.0.2)
+      vue-i18n:
+        specifier: ^10.0.0
+        version: 10.0.8(vue@3.5.41(typescript@7.0.2))
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -2056,6 +2059,7 @@ packages:
     resolution: {directory: packages/ui-vue, type: directory}
     peerDependencies:
       vue: ^3.5.41
+      vue-i18n: ^10.0.0
 
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
@@ -9157,7 +9161,7 @@ snapshots:
       pinia: 4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.41(typescript@5.9.3))
       vue: 3.5.41(typescript@5.9.3)
 
-  '@synap/ui-vue@file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@5.9.3))':
+  '@synap/ui-vue@file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue-i18n@10.0.8(vue@3.5.41(typescript@5.9.3)))(vue@3.5.41(typescript@5.9.3))':
     dependencies:
       '@lucide/vue': 1.31.0(vue@3.5.41(typescript@5.9.3))
       '@synap/editor-core': link:packages/editor-core
@@ -9167,12 +9171,13 @@ snapshots:
       '@tiptap/vue-3': 3.30.1(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.1(@tiptap/pm@3.30.1))(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@5.9.3))
       prettier: 3.9.6
       vue: 3.5.41(typescript@5.9.3)
+      vue-i18n: 10.0.8(vue@3.5.41(typescript@5.9.3))
       yaml: 2.9.0
     transitivePeerDependencies:
       - '@floating-ui/dom'
       - '@tiptap/pm'
 
-  '@synap/ui-vue@file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@7.0.2))':
+  '@synap/ui-vue@file:packages/ui-vue(@floating-ui/dom@1.8.0)(@tiptap/pm@3.30.1)(vue-i18n@10.0.8(vue@3.5.41(typescript@7.0.2)))(vue@3.5.41(typescript@7.0.2))':
     dependencies:
       '@lucide/vue': 1.31.0(vue@3.5.41(typescript@7.0.2))
       '@synap/editor-core': link:packages/editor-core
@@ -9182,6 +9187,7 @@ snapshots:
       '@tiptap/vue-3': 3.30.1(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.1(@tiptap/pm@3.30.1))(@tiptap/pm@3.30.1)(vue@3.5.41(typescript@7.0.2))
       prettier: 3.9.6
       vue: 3.5.41(typescript@7.0.2)
+      vue-i18n: 10.0.8(vue@3.5.41(typescript@7.0.2))
       yaml: 2.9.0
     transitivePeerDependencies:
       - '@floating-ui/dom'

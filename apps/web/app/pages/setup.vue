@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
 const error = ref('')
 const submitting = ref(false)
+const { t } = useI18n()
 
 const { fetch: refreshSession } = useUserSession()
 
@@ -11,11 +14,11 @@ async function handleSubmit() {
   error.value = ''
 
   if (password.value !== passwordConfirm.value) {
-    error.value = 'Passwords do not match'
+    error.value = t('setup.passwordMismatch')
     return
   }
   if (password.value.length < 8) {
-    error.value = 'Password must be at least 8 characters'
+    error.value = t('setup.passwordTooShort')
     return
   }
 
@@ -28,7 +31,7 @@ async function handleSubmit() {
     await refreshSession()
     await navigateTo('/')
   } catch (err) {
-    error.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? 'Setup failed'
+    error.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? t('setup.failed')
   } finally {
     submitting.value = false
   }
@@ -40,15 +43,15 @@ async function handleSubmit() {
     <form class="flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border-strong bg-surface-1 p-6" @submit.prevent="handleSubmit">
       <div class="flex flex-col gap-1">
         <h1 class="text-2xl font-semibold tracking-tight text-content-primary">
-          Welcome to synap.md
+          {{ t('setup.title') }}
         </h1>
         <p class="text-sm text-content-secondary">
-          Create the admin account to get started.
+          {{ t('setup.subtitle') }}
         </p>
       </div>
 
       <label class="flex flex-col gap-1 text-sm text-content-secondary">
-        Username
+        {{ t('auth.username') }}
         <input
           v-model="username"
           type="text"
@@ -59,7 +62,7 @@ async function handleSubmit() {
       </label>
 
       <label class="flex flex-col gap-1 text-sm text-content-secondary">
-        Password
+        {{ t('auth.password') }}
         <input
           v-model="password"
           type="password"
@@ -71,7 +74,7 @@ async function handleSubmit() {
       </label>
 
       <label class="flex flex-col gap-1 text-sm text-content-secondary">
-        Confirm password
+        {{ t('setup.confirmPassword') }}
         <input
           v-model="passwordConfirm"
           type="password"
@@ -91,7 +94,7 @@ async function handleSubmit() {
         :disabled="submitting"
         class="rounded-md bg-accent px-4 py-2 font-medium text-content-primary transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {{ submitting ? 'Creating…' : 'Create account' }}
+        {{ submitting ? t('setup.creating') : t('setup.createAccount') }}
       </button>
     </form>
   </main>

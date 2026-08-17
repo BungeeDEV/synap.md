@@ -24,7 +24,7 @@ watch(dialog, (state) => {
   for (const key of Object.keys(perFileOverride)) perFileOverride[key] = undefined
 })
 
-const folderOptions = computed(() => folderOptionsOf(vaultTree.tree))
+const folderOptions = computed(() => folderOptionsOf(vaultTree.tree, t('tree.vaultRoot')))
 
 // Native <select><option> can't take Tailwind indent classes like the
 // ContextMenuMoveSubmenu folder list does, so depth is faked with leading
@@ -141,13 +141,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                   <p class="flex flex-wrap items-center gap-x-1.5 text-xs text-content-tertiary">
                     <span>{{ formatBytes(file.size) }}</span>
                     <span v-if="!isMarkdownImportFilename(file.name)" class="text-danger">
-                      · wird nicht importiert (kein Markdown-Format)
+                      · {{ t('import.notMarkdown') }}
                     </span>
                     <span v-else-if="isLargeImportFile(file.size)" class="flex items-center gap-1 text-content-tertiary">
-                      · <AlertTriangle class="h-3 w-3" stroke-width="1.5" /> groß
+                      · <AlertTriangle class="h-3 w-3" stroke-width="1.5" /> {{ t('import.large') }}
                     </span>
                     <span v-if="isMarkdownImportFilename(file.name) && conflicts(file)" class="text-accent">
-                      · existiert bereits
+                      · {{ t('import.exists') }}
                     </span>
                   </p>
                 </div>
@@ -158,41 +158,41 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                   class="shrink-0 rounded-md border border-border-strong bg-surface-2 px-2 py-1 text-xs text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
                 >
                   <option :value="undefined">
-                    Standard ({{ globalConflictAction === 'skip' ? 'Überspringen' : globalConflictAction === 'replace' ? 'Ersetzen' : 'Beide behalten' }})
+                    {{ t('import.defaultAction', { action: globalConflictAction === 'skip' ? t('import.skip') : globalConflictAction === 'replace' ? t('import.replace') : t('import.keepBoth') }) }}
                   </option>
                   <option value="skip">
-                    Überspringen
+                    {{ t('import.skip') }}
                   </option>
                   <option value="replace">
-                    Ersetzen
+                    {{ t('import.replace') }}
                   </option>
                   <option value="keep-both">
-                    Beide behalten
+                    {{ t('import.keepBoth') }}
                   </option>
                 </select>
               </li>
             </ul>
 
             <div v-if="hasAnyConflict" class="flex items-center gap-2 text-sm">
-              <span class="text-content-secondary">Bei Namenskonflikten (Standard):</span>
+              <span class="text-content-secondary">{{ t('import.onConflictDefault') }}</span>
               <select
                 v-model="globalConflictAction"
                 class="rounded-md border border-border-strong bg-surface-2 px-2 py-1 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
               >
                 <option value="skip">
-                  Überspringen
+                  {{ t('import.skip') }}
                 </option>
                 <option value="replace">
-                  Ersetzen
+                  {{ t('import.replace') }}
                 </option>
                 <option value="keep-both">
-                  Beide behalten
+                  {{ t('import.keepBoth') }}
                 </option>
               </select>
             </div>
 
             <p v-if="rejectedFiles.length && markdownFiles.length === 0" class="text-sm text-danger">
-              Keine der ausgewählten Dateien ist eine Markdown-Datei.
+              {{ t('import.noMarkdownFiles') }}
             </p>
           </div>
 
@@ -210,7 +210,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
               class="rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
               @click="handleConfirm"
             >
-              {{ markdownFiles.length }} {{ markdownFiles.length === 1 ? 'Datei' : 'Dateien' }} importieren
+              {{ t('import.importButton', { count: markdownFiles.length, unit: markdownFiles.length === 1 ? t('import.file') : t('import.files') }) }}
             </button>
           </div>
         </div>

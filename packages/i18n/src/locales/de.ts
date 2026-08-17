@@ -40,6 +40,19 @@ export default {
       mtimeasc: 'Älteste zuerst'
     },
     newNote: 'Neue Notiz',
+    newFolderTooltip: 'Neuer Ordner',
+    moreActions: 'Weitere Aktionen',
+    vaultRoot: 'Vault-Wurzel',
+    archiveFailed: 'Archivieren fehlgeschlagen',
+    internalLinkCopied: 'Interner Link kopiert',
+    exportFailed: 'Export fehlgeschlagen',
+    printFailed: 'Drucken fehlgeschlagen',
+    noteCreatedFromTemplate: 'Notiz aus Vorlage erstellt',
+    archivedToast: '"{name}" archiviert',
+    openedInNewTabToast: '"{name}" in neuem Tab geöffnet',
+    duplicatedToast: '"{name}" dupliziert',
+    createFailed: 'Erstellen fehlgeschlagen',
+    dailyNoteCreateFailed: 'Tagesnotiz konnte nicht erstellt werden',
     dailyNote: 'Tagesnotiz',
     newFromTemplate: 'Neu aus Vorlage',
     import: 'Importieren',
@@ -65,9 +78,12 @@ export default {
     targetFolder: 'Zielordner',
     retry: 'Erneut versuchen',
     cancelRemaining: 'Verbleibende abbrechen',
-    importFiles: 'Dateien importieren'
+    importFiles: 'Dateien importieren',
+    deleteFolderIrreversible: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+    checkingFolderContents: 'Prüfe Ordnerinhalt...'
   },
   actions: {
+    mentionedIn: 'Erwähnt in',
     lastEdited: 'Zuletzt bearbeitet {time}',
     lastModified: 'Zuletzt geändert',
     subfolders: 'Unterordner',
@@ -76,35 +92,146 @@ export default {
     details: 'Details',
     createdAt: 'Erstellt',
     words: 'Wörter',
-    chars: 'Zeichen'
+    chars: 'Zeichen',
+    size: 'Größe'
   },
   common: {
     loading: 'Lädt...',
     showList: 'Liste einblenden',
     hideList: 'Liste ausblenden',
     close: 'Schließen',
-    retry: 'Erneut versuchen'
+    retry: 'Erneut versuchen',
+    menu: 'Menü',
+    search: 'Suche',
+    userMenu: 'Benutzermenü',
+    back: 'Zurück'
   },
   import: {
     processed: '{count} von {total} verarbeitet',
     importing: '{count} von {total} importiert',
-    cancelRemaining: 'Verbleibende abbrechen'
+    cancelRemaining: 'Verbleibende abbrechen',
+    importFailed: 'Import fehlgeschlagen',
+    file: 'Datei',
+    files: 'Dateien',
+    importedCount: '{count} {unit} importiert',
+    skippedCount: '{count} übersprungen',
+    failedCount: '{count} fehlgeschlagen',
+    completed: 'Import abgeschlossen',
+    jumpToFolder: 'Zum Ordner springen',
+    notMarkdown: 'wird nicht importiert (kein Markdown-Format)',
+    large: 'groß',
+    exists: 'existiert bereits',
+    defaultAction: 'Standard ({action})',
+    skip: 'Überspringen',
+    replace: 'Ersetzen',
+    keepBoth: 'Beide behalten',
+    onConflictDefault: 'Bei Namenskonflikten (Standard):',
+    noMarkdownFiles: 'Keine der ausgewählten Dateien ist eine Markdown-Datei.',
+    importButton: '{count} {unit} importieren'
   },
   palette: {
     searchNotes: 'Notizen durchsuchen…',
     searchFolders: 'Ordner suchen…'
+  },
+  outline: {
+    backToExplorer: 'Zurück zum Explorer',
+    filterPlaceholder: 'Überschriften filtern...',
+    noHeadingsFound: 'Keine Überschriften gefunden'
+  },
+  statusBar: {
+    conflict: 'Konflikt',
+    saved: 'Gespeichert'
+  },
+  tabs: {
+    discardChangesTitle: 'Änderungen verwerfen?',
+    discardChangesMessage: 'Diese Note hat ungespeicherte Änderungen, die beim Schließen verloren gehen.',
+    discard: 'Verwerfen'
+  },
+  breadcrumb: {
+    hideToc: 'Inhaltsverzeichnis ausblenden',
+    showToc: 'Inhaltsverzeichnis einblenden'
+  },
+  setup: {
+    title: 'Willkommen bei synap.md',
+    subtitle: 'Erstelle das Admin-Konto, um loszulegen.',
+    confirmPassword: 'Passwort bestätigen',
+    passwordMismatch: 'Passwörter stimmen nicht überein',
+    passwordTooShort: 'Passwort muss mindestens 8 Zeichen lang sein',
+    createAccount: 'Konto erstellen',
+    creating: 'Erstelle...',
+    failed: 'Setup fehlgeschlagen'
+  },
+  settingsPage: {
+    backToEditor: 'Zurück zum Editor',
+    backToOverview: 'Zurück zur Übersicht'
+  },
+  notFound: {
+    message: 'Die gesuchte Seite wurde leider nicht gefunden.',
+    backHome: 'Zurück zur Startseite'
+  },
+  shared: {
+    defaultTitle: 'Freigegebenes Dokument',
+    wrongPassword: 'Falsches Passwort.',
+    linkExpired: 'Dieser Link ist abgelaufen oder hat die maximale Anzahl an Aufrufen erreicht.',
+    linkNotFound: 'Dieser Link existiert nicht.',
+    genericError: 'Ein Fehler ist aufgetreten.',
+    loadingDocument: 'Dokument wird geladen...',
+    passwordRequired: 'Passwort erforderlich',
+    passwordProtected: 'Dieses Dokument ist passwortgeschützt.',
+    passwordPlaceholder: 'Passwort eingeben',
+    checking: 'Prüft...',
+    unlock: 'Entsperren'
   },
   editor: {
     noNoteOpen: 'Keine Note geöffnet',
     loading: 'Lädt…',
     noResults: 'Keine Treffer',
     navigate: 'Navigieren',
-    select: 'Auswählen'
-  
-  
-  
-  
-  
+    select: 'Auswählen',
+    uploadFailed: 'Upload fehlgeschlagen',
+    placeholderPrompt: 'Schreib los …',
+    uploadingImage: 'Bild wird hochgeladen: {name}…',
+    uploadingFile: 'Datei wird hochgeladen: {name}…',
+    properties: 'Eigenschaften'
+  },
+  slashCommands: {
+    paragraph: 'Text',
+    'heading-1': 'Überschrift 1',
+    'heading-2': 'Überschrift 2',
+    'heading-3': 'Überschrift 3',
+    'bulleted-list': 'Aufzählung',
+    'numbered-list': 'Nummerierung',
+    'task-list': 'Checkliste',
+    quote: 'Zitat',
+    bold: 'Fett',
+    italic: 'Kursiv',
+    strikethrough: 'Durchgestrichen',
+    code: 'Inline-Code',
+    highlight: 'Markieren',
+    table: 'Tabelle',
+    'callout-info': 'Hinweis',
+    'callout-warning': 'Warnung',
+    'math-block': 'Mathe-Block',
+    'code-block': 'Code-Block',
+    link: 'Link',
+    wikilink: 'Wikilink',
+    image: 'Bild',
+    attachment: 'Datei-Anhang',
+    'horizontal-rule': 'Horizontale Linie',
+    linkPromptLabel: 'Link-URL',
+    groups: {
+      text: 'Text',
+      heading: 'Überschriften',
+      list: 'Listen',
+      format: 'Formatierung',
+      insert: 'Einfügen'
+    }
+  },
+  conflict: {
+    title: 'Datei wurde extern geändert',
+    message: 'Die Datei wurde außerhalb der App geändert, seit sie geladen wurde. Wie soll fortgefahren werden?',
+    loadExternal: 'Externe Version laden',
+    keepMine: 'Meine Version überschreiben'
   },
   settings: {
     title: 'Einstellungen',
@@ -160,6 +287,35 @@ export default {
     activeTokens: 'Aktive Tokens',
     noApiTokens: 'Noch keine API-Tokens generiert.',
     neverUsed: 'Noch nie genutzt',
+    tokenNamePlaceholder: 'Token-Name (z.B. Mein MacBook)',
+    revokeToken: 'Token widerrufen',
+    lastUsedAt: 'Zuletzt genutzt',
+    tokenCreateError: 'Fehler beim Erstellen des Tokens',
+    deleteTokenConfirm: 'Soll dieser Token wirklich gelöscht werden? Externe Clients, die ihn nutzen, verlieren sofort den Zugriff.',
+    tokenDeleteError: 'Fehler beim Löschen des Tokens',
+    dailyNotesSaved: 'Daily-Notes-Einstellungen gespeichert',
+    saveFailed: 'Speichern fehlgeschlagen',
+    settingSaved: 'Einstellung gespeichert',
+    settingSaveFailed: 'Einstellung konnte nicht gespeichert werden',
+    templateCreated: 'Vorlage erstellt',
+    templateCreateFailed: 'Vorlage konnte nicht erstellt werden',
+    templateDeleted: 'Vorlage gelöscht',
+    deleteFailed: 'Löschen fehlgeschlagen',
+    untitledTemplate: 'Unbenannt',
+    usernameEmpty: 'Benutzername darf nicht leer sein',
+    passwordMinLength: 'Muss mindestens 8 Zeichen lang sein',
+    usernameChanged: 'Benutzername geändert',
+    usernameChangeFailed: 'Benutzername konnte nicht geändert werden',
+    passwordChanged: 'Passwort geändert',
+    passwordChangeFailed: 'Passwort konnte nicht geändert werden',
+    connectionError: 'Keine Verbindung zum Server',
+    restoreFailed: 'Wiederherstellen fehlgeschlagen',
+    movedToTrashToast: 'In den Papierkorb verschoben',
+    permanentlyDeletedToast: 'Endgültig gelöscht',
+    restoredToast: 'Wiederhergestellt',
+    restoredAsRenamedToast: 'Wiederhergestellt als "{name}" (Name war bereits vergeben)',
+    exporting: 'Exportiert…',
+    exportVault: 'Vault exportieren',
     archiveTitle: 'Archiv',
     archiveEmpty: 'Das Archiv ist leer.',
     backupTitle: 'Backup',
@@ -179,6 +335,18 @@ export default {
     manageTemplates: 'Vorlagen verwalten',
     newTemplate: 'Neue Vorlage',
     noTemplatesYet: 'Noch keine Vorlagen vorhanden.',
+    archivedOn: 'archiviert am {date}',
+    restore: 'Wiederherstellen',
+    moveToTrash: 'In den Papierkorb verschieben',
+    moveToTrashConfirm: '„{name}“ wird in den Papierkorb verschoben.',
+    moveAction: 'Verschieben',
+    deletePermanently: 'Endgültig löschen',
+    deleteTemplate: 'Vorlage löschen',
+    deleteIrreversibleConfirm: '„{name}“ wird unwiderruflich gelöscht.',
+    day: 'Tag',
+    days: 'Tagen',
+    deletedAgo: 'gelöscht vor {count} {unit}',
+    permanentDeleteIn: 'wird in {count} {unit} endgültig gelöscht'
 },
   auth: {
     username: 'Benutzername',
@@ -186,7 +354,8 @@ export default {
     invalidCredentials: 'Zugangsdaten ungültig',
     signIn: 'Anmelden',
     signingIn: 'Anmeldung läuft...',
-    rememberMe: 'Angemeldet bleiben'
+    rememberMe: 'Angemeldet bleiben',
+    logout: 'Abmelden'
   },
   share: {
     title: 'Dokument freigeben',
@@ -198,6 +367,7 @@ export default {
     save: 'Speichern',
     saving: 'Speichert...',
     saveError: 'Fehler beim Speichern',
+    loadError: 'Fehler beim Laden',
     linkRequiresSave: 'Freigabe-Link (Speichern erforderlich)',
     generatingLink: 'Wird beim Speichern generiert...',
     loadingShare: 'Lädt...',
@@ -205,7 +375,16 @@ export default {
     passwordShare: 'Passwort',
     passwordSet: 'Ein Passwort ist aktuell gesetzt.',
     expiresAt: 'Ablaufdatum',
-    maxViews: 'Max. Aufrufe'
+    maxViews: 'Max. Aufrufe',
+    copyLink: 'Link kopieren',
+    customIdPlaceholder: 'Zufällige ID generieren',
+    passwordUnchangedPlaceholder: 'Passwort unverändert (leer lassen zum Behalten)',
+    noPasswordPlaceholder: 'Kein Passwort (optional)',
+    unlimitedPlaceholder: 'Unbegrenzt',
+    disabledToast: 'Freigabe deaktiviert',
+    savedToast: 'Freigabe gespeichert',
+    linkCopiedToast: 'Link kopiert',
+    copyErrorToast: 'Fehler beim Kopieren'
   
   
   
@@ -258,13 +437,62 @@ export default {
     cancelDesktop: 'Abbrechen',
     asMarkdownDesktop: 'Als Markdown',
     printPdfDesktop: 'Drucken (PDF)'
-  
-  
-  
-  
-  
-  
-  
-  
+  },
+  desktopApp: {
+    searchTooltip: 'Suche (Cmd+K)',
+    newNoteTooltip: 'Neue Notiz (Cmd+N)',
+    sortTooltip: 'Sortieren',
+    statsFooter: '{files} Dateien · {folders} Ordner',
+    searchPlaceholder: 'Notiz suchen...',
+    openHint: 'Öffnen',
+    noNotesFound: 'Keine Notizen gefunden.',
+    noFileSelected: 'Keine Datei ausgewählt',
+    selectOrCreateNote: 'Wähle oder erstelle eine Notiz',
+    ready: 'Bereit',
+    loadError: 'Ladefehler',
+    saving: 'Speichere...',
+    saved: 'Gespeichert',
+    saveError: 'Fehler beim Speichern',
+    boldTooltip: 'Fett (Strg+B)',
+    italicTooltip: 'Kursiv (Strg+I)',
+    strikeTooltip: 'Durchgestrichen',
+    heading1Tooltip: 'Überschrift 1',
+    heading2Tooltip: 'Überschrift 2',
+    bulletListTooltip: 'Aufzählung',
+    orderedListTooltip: 'Nummerierung',
+    taskListTooltip: 'Checkliste',
+    codeBlockTooltip: 'Code Block',
+    vaultSyncActive: 'Vault & Auto-Sync aktiv.',
+    syncingWithServer: 'Synchronisiert mit Server...',
+    synced: 'Synchronisiert.',
+    genericError: 'Fehler: {error}',
+    loadErrorPrefix: 'Fehler beim Laden: {error}',
+    errorLoadingFiles: 'Fehler beim Laden der Dateien: {error}',
+    appError: 'App-Fehler: {error}',
+    renamePrompt: 'Neuer Name:',
+    newSubfolderPrompt: 'Name des Unterordners:',
+    renameError: 'Fehler beim Umbenennen: {error}',
+    resetConfirm: 'Bist du sicher? Alle lokalen Einstellungen und Verbindungsdaten werden gelöscht (deine Notizen bleiben auf der Festplatte).',
+    resetError: 'Fehler beim Zurücksetzen: {error}',
+    deleteFileConfirm: 'Möchtest du die Datei \'{name}\' wirklich löschen?',
+    deleteFileError: 'Fehler beim Löschen: {error}',
+    linkCopied: 'Link in die Zwischenablage kopiert!',
+    fileDetails: 'Datei: {name}\nPfad: {path}',
+    untitledNote: 'Unbenannt',
+    newNoteHeading: '# Neue Notiz\n\n',
+    ctxNewNoteHere: 'Neue Note hier',
+    ctxImportFiles: 'Dateien importieren…',
+    ctxFavorite: 'Favorisieren',
+    ctxMoveTo: 'Verschieben nach…',
+    ctxExportZip: 'Exportieren als ZIP',
+    ctxFolderStats: 'Ordner-Statistik',
+    ctxChangeColor: 'Farbe ändern',
+    ctxOpenNewTab: 'Öffnen in neuem Tab',
+    ctxOpenSticky: 'Als Sticky Note öffnen',
+    ctxCopyLink: 'Internen Link kopieren',
+    ctxShare: 'Externen Link teilen',
+    ctxExport: 'Exportieren',
+    ctxShowDetails: 'Details anzeigen',
+    ctxArchive: 'Archivieren'
   }
 }

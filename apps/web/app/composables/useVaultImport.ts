@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import type { ImportConflictAction } from '#shared/import'
 
 const LARGE_FILE_WARNING_BYTES = 5 * 1024 * 1024
@@ -60,6 +61,7 @@ export function useVaultImport() {
   const sidebarPanel = useSidebarPanelStore()
   const tabs = useTabsStore()
   const toast = useToast()
+  const { t } = useI18n()
 
   function openImportDialog(files: File[], targetFolder: string): void {
     if (files.length === 0) return
@@ -112,7 +114,7 @@ export function useVaultImport() {
       return { path: response.path, status: response.status }
     } catch (err) {
       const statusMessage = (err as { data?: { statusMessage?: string } })?.data?.statusMessage
-      return { path: null, status: 'error', error: statusMessage ?? 'Import fehlgeschlagen' }
+      return { path: null, status: 'error', error: statusMessage ?? t('import.importFailed') }
     }
   }
 
@@ -192,15 +194,15 @@ export function useVaultImport() {
 
     if (!usePanel) {
       const parts = [
-        importedCount > 0 ? `${importedCount} ${importedCount === 1 ? 'Datei' : 'Dateien'} importiert` : null,
-        skippedCount > 0 ? `${skippedCount} übersprungen` : null,
-        errorCount > 0 ? `${errorCount} fehlgeschlagen` : null
+        importedCount > 0 ? t('import.importedCount', { count: importedCount, unit: importedCount === 1 ? t('import.file') : t('import.files') }) : null,
+        skippedCount > 0 ? t('import.skippedCount', { count: skippedCount }) : null,
+        errorCount > 0 ? t('import.failedCount', { count: errorCount }) : null
       ].filter((part): part is string => part !== null)
 
       toast.show(
-        parts.join(', ') || 'Import abgeschlossen',
+        parts.join(', ') || t('import.completed'),
         errorCount > 0 && importedCount === 0 ? 'error' : 'default',
-        importedPaths.length > 0 ? { label: 'Zum Ordner springen', onClick: () => revealFolder(targetFolder) } : undefined
+        importedPaths.length > 0 ? { label: t('import.jumpToFolder'), onClick: () => revealFolder(targetFolder) } : undefined
       )
     }
   }

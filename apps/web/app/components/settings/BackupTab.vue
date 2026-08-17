@@ -17,7 +17,7 @@ async function exportVault(): Promise<void> {
     link.click()
     URL.revokeObjectURL(url)
   } catch {
-    show('Export fehlgeschlagen', 'error')
+    show(t('tree.exportFailed'), 'error')
   } finally {
     exporting.value = false
   }
@@ -35,7 +35,7 @@ async function exportVault(): Promise<void> {
       @click="exportVault"
     >
       <Download class="h-5 w-5" stroke-width="1.5" />
-      {{ exporting ? 'Exportiert…' : 'Vault exportieren' }}
+      {{ exporting ? t('settings.exporting') : t('settings.exportVault') }}
     </button>
   </div>
 </template>

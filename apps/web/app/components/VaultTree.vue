@@ -387,7 +387,7 @@ function openMoveFromSwipe(node: VaultTreeNode, event: MouseEvent): void {
   contextMenu.value = { node, x: event.clientX, y: event.clientY, initialSubmenu: 'move' }
 }
 
-const deleteConfirmMessage = computed(() => `"${pendingDelete.value?.name}" wirklich löschen?`)
+const deleteConfirmMessage = computed(() => t('tree.confirmDelete', { name: pendingDelete.value?.name }))
 
 function requestDelete(node: VaultTreeNode): void {
   closeContextMenu()
@@ -402,7 +402,7 @@ async function confirmDelete(): Promise<void> {
   await $fetch('/api/vault/file', { method: 'DELETE', query: { path: node.path } })
   tabs.closeTab(node.path)
   await vaultTree.refresh()
-  toast.show(`"${node.name}" in den Papierkorb verschoben`)
+  toast.show(t('tree.movedToTrash', { name: node.name }))
 }
 
 async function confirmFolderDelete(): Promise<void> {
@@ -420,9 +420,9 @@ async function confirmFolderDelete(): Promise<void> {
       }
     }
     await vaultTree.refresh()
-    toast.show(`Ordner "${node.name}" gelöscht`)
+    toast.show(t('tree.folderDeleted', { name: node.name }))
   } catch (err) {
-    toast.show(errorMessageOf(err, 'Fehler beim Löschen des Ordners'), 'error')
+    toast.show(errorMessageOf(err, t('tree.deleteFailed')), 'error')
   }
 }
 
@@ -432,9 +432,9 @@ async function archiveNode(node: VaultTreeNode): Promise<void> {
     await $fetch('/api/vault/archive', { method: 'POST', body: { path: node.path } })
     tabs.closeTab(node.path)
     await vaultTree.refresh()
-    toast.show(`"${node.name}" archiviert`)
+    toast.show(t('tree.archivedToast', { name: node.name }))
   } catch {
-    toast.show('Archivieren fehlgeschlagen', 'error')
+    toast.show(t('tree.archiveFailed'), 'error')
   }
 }
 
@@ -447,7 +447,7 @@ async function selectMoveTarget(node: VaultTreeNode, targetFolderPath: string): 
 async function openInNewTab(node: VaultTreeNode): Promise<void> {
   closeContextMenu()
   await tabs.openTab(node.path, { activate: false })
-  toast.show(`"${node.name}" in neuem Tab geöffnet`)
+  toast.show(t('tree.openedInNewTabToast', { name: node.name }))
 }
 
 async function duplicateNode(node: VaultTreeNode): Promise<void> {
@@ -456,16 +456,16 @@ async function duplicateNode(node: VaultTreeNode): Promise<void> {
     const response = await $fetch<{ path: string }>('/api/vault/duplicate', { method: 'POST', body: { path: node.path } })
     await vaultTree.refresh()
     await tabs.openTab(response.path)
-    toast.show(`"${node.name}" dupliziert`)
+    toast.show(t('tree.duplicatedToast', { name: node.name }))
   } catch (err) {
-    toast.show(errorMessageOf(err, 'Duplizieren fehlgeschlagen'), 'error')
+    toast.show(errorMessageOf(err, t('tree.duplicateFailed')), 'error')
   }
 }
 
 async function copyInternalLink(node: VaultTreeNode): Promise<void> {
   closeContextMenu()
   await navigator.clipboard.writeText(`[[${titleFromPath(node.path)}]]`)
-  toast.show('Interner Link kopiert')
+  toast.show(t('tree.internalLinkCopied'))
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {
@@ -483,7 +483,7 @@ async function exportAsMarkdown(node: VaultTreeNode): Promise<void> {
     const file = await $fetch<{ raw: string }>('/api/vault/file', { query: { path: node.path } })
     triggerBlobDownload(new Blob([file.raw], { type: 'text/markdown' }), node.name)
   } catch {
-    toast.show('Export fehlgeschlagen', 'error')
+    toast.show(t('tree.exportFailed'), 'error')
   }
 }
 
@@ -493,7 +493,7 @@ async function printNote(node: VaultTreeNode): Promise<void> {
     const response = await $fetch<{ html: string }>('/api/vault/render', { query: { path: node.path } })
     printHtmlDocument(titleFromPath(node.path), response.html)
   } catch {
-    toast.show('Drucken fehlgeschlagen', 'error')
+    toast.show(t('tree.printFailed'), 'error')
   }
 }
 
@@ -514,21 +514,21 @@ function exportFolderZip(node: VaultTreeNode): void {
 function fileMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
   return [
     [
-      { id: 'open-new-tab', label: 'Öffnen in neuem Tab', icon: ExternalLink, onSelect: () => openInNewTab(node) },
-      { id: 'rename', label: 'Umbenennen', icon: Pencil, onSelect: () => startRename(node) },
-      { id: 'favorite', label: isFavorite(node.path) ? 'Favorit entfernen' : 'Favorisieren', icon: Star, onSelect: () => toggleFavorite(node.path) }
+      { id: 'open-new-tab', label: t('desktopApp.ctxOpenNewTab'), icon: ExternalLink, onSelect: () => openInNewTab(node) },
+      { id: 'rename', label: t('tree.rename'), icon: Pencil, onSelect: () => startRename(node) },
+      { id: 'favorite', label: isFavorite(node.path) ? t('actions.removeFavorite') : t('actions.addFavorite'), icon: Star, onSelect: () => toggleFavorite(node.path) }
     ],
     [
-      { id: 'duplicate', label: 'Duplizieren', icon: Copy, onSelect: () => duplicateNode(node) },
-      { id: 'move', label: 'Verschieben nach…', icon: Move, submenu: 'move' },
-      { id: 'copy-link', label: 'Internen Link kopieren', icon: Link2, onSelect: () => copyInternalLink(node) },
-      { id: 'share', label: 'Externen Link teilen', icon: Globe, onSelect: () => openExternalShare(node) },
-      { id: 'export', label: 'Exportieren', icon: Download, submenu: 'export' },
-      { id: 'details', label: 'Details anzeigen', icon: Info, onSelect: () => openDetails(node) }
+      { id: 'duplicate', label: t('tree.duplicate'), icon: Copy, onSelect: () => duplicateNode(node) },
+      { id: 'move', label: t('desktopApp.ctxMoveTo'), icon: Move, submenu: 'move' },
+      { id: 'copy-link', label: t('desktopApp.ctxCopyLink'), icon: Link2, onSelect: () => copyInternalLink(node) },
+      { id: 'share', label: t('desktopApp.ctxShare'), icon: Globe, onSelect: () => openExternalShare(node) },
+      { id: 'export', label: t('desktopApp.ctxExport'), icon: Download, submenu: 'export' },
+      { id: 'details', label: t('desktopApp.ctxShowDetails'), icon: Info, onSelect: () => openDetails(node) }
     ],
     [
-      { id: 'archive', label: 'Archivieren', icon: Archive, onSelect: () => archiveNode(node) },
-      { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
+      { id: 'archive', label: t('desktopApp.ctxArchive'), icon: Archive, onSelect: () => archiveNode(node) },
+      { id: 'delete', label: t('tree.delete'), icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
     ]
   ]
 }
@@ -536,20 +536,20 @@ function fileMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
 function folderMenuGroups(node: VaultTreeNode): ContextMenuGroup[] {
   return [
     [
-      { id: 'new-file', label: 'Neue Note hier', icon: FilePlus, onSelect: () => startCreate('create-file', node.path) },
-      { id: 'new-folder', label: 'Neuer Unterordner', icon: FolderPlus, onSelect: () => startCreate('create-folder', node.path) },
-      { id: 'import', label: 'Dateien importieren…', icon: Upload, onSelect: () => triggerImportPicker(node.path) },
-      { id: 'favorite', label: isFavorite(node.path) ? 'Favorit entfernen' : 'Favorisieren', icon: Star, onSelect: () => toggleFavorite(node.path) }
+      { id: 'new-file', label: t('desktopApp.ctxNewNoteHere'), icon: FilePlus, onSelect: () => startCreate('create-file', node.path) },
+      { id: 'new-folder', label: t('tree.newFolder'), icon: FolderPlus, onSelect: () => startCreate('create-folder', node.path) },
+      { id: 'import', label: t('desktopApp.ctxImportFiles'), icon: Upload, onSelect: () => triggerImportPicker(node.path) },
+      { id: 'favorite', label: isFavorite(node.path) ? t('actions.removeFavorite') : t('actions.addFavorite'), icon: Star, onSelect: () => toggleFavorite(node.path) }
     ],
     [
-      { id: 'rename', label: 'Umbenennen', icon: Pencil, onSelect: () => startRename(node) },
-      { id: 'move', label: 'Verschieben nach…', icon: Move, submenu: 'move' },
-      { id: 'export-zip', label: 'Exportieren als ZIP', icon: Download, onSelect: () => exportFolderZip(node) },
-      { id: 'stats', label: 'Ordner-Statistik', icon: BarChart3, onSelect: () => openDetails(node) },
-      { id: 'color', label: 'Farbe ändern', icon: Palette, submenu: 'color' }
+      { id: 'rename', label: t('tree.rename'), icon: Pencil, onSelect: () => startRename(node) },
+      { id: 'move', label: t('desktopApp.ctxMoveTo'), icon: Move, submenu: 'move' },
+      { id: 'export-zip', label: t('desktopApp.ctxExportZip'), icon: Download, onSelect: () => exportFolderZip(node) },
+      { id: 'stats', label: t('desktopApp.ctxFolderStats'), icon: BarChart3, onSelect: () => openDetails(node) },
+      { id: 'color', label: t('desktopApp.ctxChangeColor'), icon: Palette, submenu: 'color' }
     ],
     [
-      { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
+      { id: 'delete', label: t('tree.delete'), icon: Trash2, danger: true, onSelect: () => requestDelete(node) }
     ]
   ]
 }
@@ -598,7 +598,7 @@ function collidesWithSibling(candidatePath: string, parentPath: string, excludeP
 function startCreate(kind: 'create-file' | 'create-folder', parentPath: string): void {
   closeContextMenu()
   if (parentPath) vaultTree.expand(parentPath)
-  editState.value = { kind, parentPath, value: 'Untitled', error: null }
+  editState.value = { kind, parentPath, value: t('desktopApp.untitledNote'), error: null }
 }
 
 function startRename(node: VaultTreeNode): void {
@@ -640,7 +640,7 @@ async function submitEdit(): Promise<void> {
       return
     }
     if (collidesWithSibling(newPath, state.parentPath, node.path)) {
-      editState.value = { ...state, error: 'Existiert bereits in diesem Ordner' }
+      editState.value = { ...state, error: t('tree.alreadyExists') }
       return
     }
 
@@ -651,7 +651,7 @@ async function submitEdit(): Promise<void> {
       await applyRenameResponse(response)
       await vaultTree.refresh()
     } catch (err) {
-      editState.value = { ...state, error: errorMessageOf(err, 'Umbenennen fehlgeschlagen') }
+      editState.value = { ...state, error: errorMessageOf(err, t('tree.renameFailed')) }
     }
     return
   }
@@ -660,14 +660,14 @@ async function submitEdit(): Promise<void> {
   const path = buildCandidatePath(state.value, state.parentPath, isFile)
 
   if (collidesWithSibling(path, state.parentPath)) {
-    editState.value = { ...state, error: 'Existiert bereits in diesem Ordner' }
+    editState.value = { ...state, error: t('tree.alreadyExists') }
     return
   }
 
   try {
     if (isFile && state.templateName) {
       await $fetch('/api/vault/note-from-template', { method: 'POST', body: { path, templateName: state.templateName } })
-      toast.show('Notiz aus Vorlage erstellt')
+      toast.show(t('tree.noteCreatedFromTemplate'))
     } else if (isFile) {
       await $fetch('/api/vault/file', { method: 'PUT', body: { path, content: '' } })
     } else {
@@ -677,7 +677,7 @@ async function submitEdit(): Promise<void> {
     await vaultTree.refresh()
     if (isFile) await tabs.openTab(path)
   } catch (err) {
-    editState.value = { ...state, error: errorMessageOf(err, 'Erstellen fehlgeschlagen') }
+    editState.value = { ...state, error: errorMessageOf(err, t('tree.createFailed')) }
   }
 }
 
@@ -727,7 +727,7 @@ function pickTemplate(template: TemplateOption): void {
   closeTemplateMenu()
   const parentPath = vaultTree.selectedFolder
   if (parentPath) vaultTree.expand(parentPath)
-  editState.value = { kind: 'create-file', parentPath, value: 'Untitled', error: null, templateName: template.name }
+  editState.value = { kind: 'create-file', parentPath, value: t('desktopApp.untitledNote'), error: null, templateName: template.name }
 }
 
 // --- Import .md files from the OS (native file picker) ---
@@ -755,7 +755,7 @@ async function openDailyNote(): Promise<void> {
     await tabs.openTab(response.path)
     mobileNav.close()
   } catch (err) {
-    toast.show(errorMessageOf(err, 'Tagesnotiz konnte nicht erstellt werden'), 'error')
+    toast.show(errorMessageOf(err, t('tree.dailyNoteCreateFailed')), 'error')
   }
 }
 
@@ -932,7 +932,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary transition-colors duration-150 hover:bg-white/[0.08] active:scale-95"
-          title="Neuer Ordner"
+          :title="t('tree.newFolderTooltip')"
           @click="startCreate('create-folder', vaultTree.selectedFolder)"
         >
           <FolderPlus class="h-4 w-4" stroke-width="1.5" />
@@ -950,7 +950,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-lg text-content-secondary transition-colors duration-150 hover:bg-white/[0.08] active:scale-95"
-            title="Weitere Aktionen"
+            :title="t('tree.moreActions')"
             @click="toggleOverflowMenu"
           >
             <MoreHorizontal class="h-4 w-4" stroke-width="1.5" />
@@ -1336,7 +1336,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             type="button"
             class="shrink-0 rounded-md p-1 transition duration-150 active:scale-90"
             :class="isFavorite(node.path) ? 'text-accent' : 'text-content-tertiary/50 opacity-0 group-hover:opacity-100 hover:text-accent focus:opacity-100'"
-            :title="isFavorite(node.path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+            :title="isFavorite(node.path) ? t('actions.removeFavorite') : t('actions.addFavorite')"
             @click.stop="toggleFavorite(node.path)"
           >
             <Star class="h-3.5 w-3.5" stroke-width="1.5" :fill="isFavorite(node.path) ? 'currentColor' : 'none'" />

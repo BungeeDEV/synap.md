@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 interface Backlink {
   path: string
   title: string
 }
 
 const props = defineProps<{ path: string }>()
+const { t } = useI18n()
 
 const tabs = useTabsStore()
 const backlinks = ref<Backlink[]>([])
@@ -29,7 +32,7 @@ function open(path: string): void {
 <template>
   <div v-if="!loading && backlinks.length" class="max-h-32 shrink-0 overflow-y-auto overscroll-contain border-t border-border px-4 py-2">
     <p class="mb-1.5 text-sm font-medium tracking-wider text-content-tertiary uppercase">
-      Erwähnt in
+      {{ t('actions.mentionedIn') }}
     </p>
     <ul class="flex flex-wrap gap-2">
       <li v-for="link in backlinks" :key="link.path">

@@ -44,10 +44,10 @@ async function restore(entry: TrashEntry): Promise<void> {
     })
     entries.value = entries.value.filter((e) => e.id !== entry.id)
     show(result.renamed
-      ? `Wiederhergestellt als "${nameOf(result.path)}" (Name war bereits vergeben)`
-      : 'Wiederhergestellt')
+      ? t('settings.restoredAsRenamedToast', { name: nameOf(result.path) })
+      : t('settings.restoredToast'))
   } catch {
-    show('Wiederherstellen fehlgeschlagen', 'error')
+    show(t('settings.restoreFailed'), 'error')
   }
 }
 
@@ -59,9 +59,9 @@ async function confirmDeletePermanent(): Promise<void> {
   try {
     await $fetch('/api/trash/delete-permanent', { method: 'POST', body: { id: entry.id } })
     entries.value = entries.value.filter((e) => e.id !== entry.id)
-    show('Endgültig gelöscht')
+    show(t('settings.permanentlyDeletedToast'))
   } catch {
-    show('Löschen fehlgeschlagen', 'error')
+    show(t('settings.deleteFailed'), 'error')
   }
 }
 </script>
@@ -86,14 +86,14 @@ async function confirmDeletePermanent(): Promise<void> {
             {{ nameOf(entry.originalPath) }}
           </p>
           <p class="truncate text-sm text-content-tertiary">
-            {{ entry.originalPath }} · gelöscht vor {{ daysAgo(entry.deletedAt) }} {{ daysAgo(entry.deletedAt) === 1 ? 'Tag' : 'Tagen' }}
-            · wird in {{ entry.daysRemaining }} {{ entry.daysRemaining === 1 ? 'Tag' : 'Tagen' }} endgültig gelöscht
+            {{ entry.originalPath }} · {{ t('settings.deletedAgo', { count: daysAgo(entry.deletedAt), unit: daysAgo(entry.deletedAt) === 1 ? t('settings.day') : t('settings.days') }) }}
+            · {{ t('settings.permanentDeleteIn', { count: entry.daysRemaining, unit: entry.daysRemaining === 1 ? t('settings.day') : t('settings.days') }) }}
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            title="Wiederherstellen"
+            :title="t('settings.restore')"
             class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary md:min-h-0 md:min-w-0 md:p-2.5"
             @click="restore(entry)"
           >
@@ -101,7 +101,7 @@ async function confirmDeletePermanent(): Promise<void> {
           </button>
           <button
             type="button"
-            title="Endgültig löschen"
+            :title="t('settings.deletePermanently')"
             class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger md:min-h-0 md:min-w-0 md:p-2.5"
             @click="pendingDelete = entry"
           >
@@ -113,9 +113,9 @@ async function confirmDeletePermanent(): Promise<void> {
 
     <ConfirmDialog
       v-if="pendingDelete"
-      title="Endgültig löschen"
-      :message="`„${nameOf(pendingDelete.originalPath)}“ wird unwiderruflich gelöscht.`"
-      confirm-label="Endgültig löschen"
+      :title="t('settings.deletePermanently')"
+      :message="t('settings.deleteIrreversibleConfirm', { name: nameOf(pendingDelete.originalPath) })"
+      :confirm-label="t('settings.deletePermanently')"
       @confirm="confirmDeletePermanent"
       @cancel="pendingDelete = null"
     />

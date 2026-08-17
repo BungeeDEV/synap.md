@@ -68,7 +68,7 @@ function selectTab(id: string) {
         <button
           type="button"
           class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
-          title="Zurück zum Editor"
+          :title="t('settingsPage.backToEditor')"
           @click="navigateTo('/')"
         >
           <ArrowLeft class="h-5 w-5" stroke-width="1.5" />
@@ -99,7 +99,7 @@ function selectTab(id: string) {
         <button
           type="button"
           class="rounded-md p-2.5 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
-          title="Zurück zur Übersicht"
+          :title="t('settingsPage.backToOverview')"
           @click="showMobileNav = true"
         >
           <ArrowLeft class="h-5 w-5" stroke-width="1.5" />

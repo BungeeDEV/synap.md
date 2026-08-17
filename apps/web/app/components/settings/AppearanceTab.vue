@@ -23,7 +23,7 @@ async function setTheme(theme: EditorPreferences['theme']): Promise<void> {
   try {
     await preferences.update({ theme })
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 
@@ -32,7 +32,7 @@ async function setAccentColor(event: Event): Promise<void> {
   try {
     await preferences.update({ accentColor: color })
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 
@@ -40,7 +40,7 @@ async function resetAccentColor(): Promise<void> {
   try {
     await preferences.update({ accentColor: null })
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 
@@ -49,7 +49,7 @@ async function setLocale(event: Event): Promise<void> {
   try {
     await preferences.update({ locale })
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 

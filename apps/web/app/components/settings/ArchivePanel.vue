@@ -43,10 +43,10 @@ async function restore(entry: ArchiveEntry): Promise<void> {
     })
     entries.value = entries.value.filter((e) => e.id !== entry.id)
     show(result.renamed
-      ? `Wiederhergestellt als "${nameOf(result.path)}" (Name war bereits vergeben)`
-      : 'Wiederhergestellt')
+      ? t('settings.restoredAsRenamedToast', { name: nameOf(result.path) })
+      : t('settings.restoredToast'))
   } catch {
-    show('Wiederherstellen fehlgeschlagen', 'error')
+    show(t('settings.restoreFailed'), 'error')
   }
 }
 
@@ -58,9 +58,9 @@ async function confirmDeleteToTrash(): Promise<void> {
   try {
     await $fetch('/api/archive/delete', { method: 'POST', body: { id: entry.id } })
     entries.value = entries.value.filter((e) => e.id !== entry.id)
-    show('In den Papierkorb verschoben')
+    show(t('settings.movedToTrashToast'))
   } catch {
-    show('Löschen fehlgeschlagen', 'error')
+    show(t('settings.deleteFailed'), 'error')
   }
 }
 </script>
@@ -85,13 +85,13 @@ async function confirmDeleteToTrash(): Promise<void> {
             {{ nameOf(entry.originalPath) }}
           </p>
           <p class="truncate text-sm text-content-tertiary">
-            {{ entry.originalPath }} · archiviert am {{ formatDate(entry.archivedAt) }}
+            {{ entry.originalPath }} · {{ t('settings.archivedOn', { date: formatDate(entry.archivedAt) }) }}
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            title="Wiederherstellen"
+            :title="t('settings.restore')"
             class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary md:min-h-0 md:min-w-0 md:p-2.5"
             @click="restore(entry)"
           >
@@ -99,7 +99,7 @@ async function confirmDeleteToTrash(): Promise<void> {
           </button>
           <button
             type="button"
-            title="In den Papierkorb verschieben"
+            :title="t('settings.moveToTrash')"
             class="flex min-h-12 min-w-12 items-center justify-center rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger md:min-h-0 md:min-w-0 md:p-2.5"
             @click="pendingDelete = entry"
           >
@@ -111,9 +111,9 @@ async function confirmDeleteToTrash(): Promise<void> {
 
     <ConfirmDialog
       v-if="pendingDelete"
-      title="In den Papierkorb verschieben"
-      :message="`„${nameOf(pendingDelete.originalPath)}“ wird in den Papierkorb verschoben.`"
-      confirm-label="Verschieben"
+      :title="t('settings.moveToTrash')"
+      :message="t('settings.moveToTrashConfirm', { name: nameOf(pendingDelete.originalPath) })"
+      :confirm-label="t('settings.moveAction')"
       @confirm="confirmDeleteToTrash"
       @cancel="pendingDelete = null"
     />

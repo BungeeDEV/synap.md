@@ -8,12 +8,15 @@ import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { Extension } from '@tiptap/core';
 import { buildEditorExtensions } from '@synap/editor-core';
 import { syncChannel, myWindowId, debounce, type SyncPayload } from '../sync';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{ file: string }>();
 
 const content = ref('');
 const vaultPath = ref('');
-const saveStatus = ref('Bereit');
+const saveStatus = ref(t('desktopApp.ready'));
 const fontSize = ref(16);
 
 let saveTimeout: any = null;
@@ -78,7 +81,7 @@ async function loadFileContent() {
                 editor.value.commands.setContent(text, { emitUpdate: false });
             }
         } catch (e) {
-            saveStatus.value = "Ladefehler";
+            saveStatus.value = t('desktopApp.loadError');
         }
     }
 }
@@ -123,14 +126,14 @@ onMounted(() => {
 
 async function saveContent() {
     if (!vaultPath.value) return;
-    saveStatus.value = "Speichere...";
+    saveStatus.value = t('desktopApp.saving');
     try {
         const fullPath = `${vaultPath.value}/${props.file}`;
         await writeTextFile(fullPath, content.value);
-        saveStatus.value = "Gespeichert";
-        setTimeout(() => saveStatus.value = "Bereit", 1500);
+        saveStatus.value = t('desktopApp.saved');
+        setTimeout(() => saveStatus.value = t('desktopApp.ready'), 1500);
     } catch (e) {
-        saveStatus.value = "Fehler beim Speichern";
+        saveStatus.value = t('desktopApp.saveError');
     }
 }
 
@@ -178,7 +181,7 @@ async function startDrag() {
     <!-- Custom Title Bar -->
     <div data-tauri-drag-region @mousedown.self="startDrag" class="titlebar h-10 min-h-[40px] w-full flex items-center justify-between px-3 select-none cursor-move shadow-md z-10" style="background-color: var(--color-accent-DEFAULT); color: var(--color-base);">
       <span data-tauri-drag-region @mousedown.self="startDrag" class="text-sm font-semibold flex-1 truncate cursor-move" style="color: var(--color-base);">{{ props.file.split('/').pop() }}</span>
-      <button @click="closeWindow" class="p-1 hover:bg-black/10 rounded-md transition-colors" style="color: var(--color-base);" title="Schließen">
+      <button @click="closeWindow" class="p-1 hover:bg-black/10 rounded-md transition-colors" style="color: var(--color-base);" :title="t('common.close')">
         <X class="w-5 h-5 pointer-events-none" />
       </button>
     </div>
@@ -196,48 +199,48 @@ async function startDrag() {
         
         <!-- Text Group -->
         <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
-            <button @click="editor.chain().focus().toggleBold().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bold') }" class="p-1 hover:bg-surface-1 transition-colors" title="Fett (Strg+B)">
+            <button @click="editor.chain().focus().toggleBold().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bold') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.boldTooltip')">
             <Bold class="w-3.5 h-3.5" />
             </button>
             <div class="w-px h-3.5 bg-divider mx-0.5"></div>
-            <button @click="editor.chain().focus().toggleItalic().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('italic') }" class="p-1 hover:bg-surface-1 transition-colors" title="Kursiv (Strg+I)">
+            <button @click="editor.chain().focus().toggleItalic().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('italic') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.italicTooltip')">
             <Italic class="w-3.5 h-3.5" />
             </button>
             <div class="w-px h-3.5 bg-divider mx-0.5"></div>
-            <button @click="editor.chain().focus().toggleStrike().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('strike') }" class="p-1 hover:bg-surface-1 transition-colors" title="Durchgestrichen">
+            <button @click="editor.chain().focus().toggleStrike().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('strike') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.strikeTooltip')">
             <Strikethrough class="w-3.5 h-3.5" />
             </button>
         </div>
-        
+
         <!-- Headings Group -->
         <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
-            <button @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 1 }) }" class="p-1 hover:bg-surface-1 transition-colors" title="Überschrift 1">
+            <button @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 1 }) }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.heading1Tooltip')">
             <Heading1 class="w-3.5 h-3.5" />
             </button>
             <div class="w-px h-3.5 bg-divider mx-0.5"></div>
-            <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 2 }) }" class="p-1 hover:bg-surface-1 transition-colors" title="Überschrift 2">
+            <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 2 }) }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.heading2Tooltip')">
             <Heading2 class="w-3.5 h-3.5" />
             </button>
         </div>
-        
+
         <!-- Lists Group -->
         <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
-            <button @click="editor.chain().focus().toggleBulletList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bulletList') }" class="p-1 hover:bg-surface-1 transition-colors" title="Aufzählung">
+            <button @click="editor.chain().focus().toggleBulletList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bulletList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.bulletListTooltip')">
             <List class="w-3.5 h-3.5" />
             </button>
             <div class="w-px h-3.5 bg-divider mx-0.5"></div>
-            <button @click="editor.chain().focus().toggleOrderedList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('orderedList') }" class="p-1 hover:bg-surface-1 transition-colors" title="Nummerierung">
+            <button @click="editor.chain().focus().toggleOrderedList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('orderedList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.orderedListTooltip')">
             <ListOrdered class="w-3.5 h-3.5" />
             </button>
             <div class="w-px h-3.5 bg-divider mx-0.5"></div>
-            <button @click="editor.chain().focus().toggleTaskList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('taskList') }" class="p-1 hover:bg-surface-1 transition-colors" title="Checkliste">
+            <button @click="editor.chain().focus().toggleTaskList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('taskList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.taskListTooltip')">
             <CheckSquare class="w-3.5 h-3.5" />
             </button>
         </div>
 
         <!-- Code -->
         <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
-            <button @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('codeBlock') }" class="p-1 hover:bg-surface-1 transition-colors" title="Code Block">
+            <button @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('codeBlock') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.codeBlockTooltip')">
             <Code class="w-3.5 h-3.5" />
             </button>
         </div>

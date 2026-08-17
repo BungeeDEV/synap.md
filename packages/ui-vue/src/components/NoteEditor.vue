@@ -13,6 +13,9 @@ import yaml from 'yaml'
 import * as prettier from 'prettier/standalone'
 import * as markdownPlugin from 'prettier/plugins/markdown'
 import { onBeforeUnmount, watch, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -76,16 +79,18 @@ const editor = useEditor({
   content: extractFrontmatter(props.modelValue),
   editable: props.editable,
   extensions: [
-    ...buildEditorExtensions({ 
+    ...buildEditorExtensions({
       onWikilinkNavigate: (target) => emit('wikilink-navigate', target),
+      placeholder: t('editor.placeholderPrompt'),
       slashCommandOptions: {
         onAttachmentInsert: (type) => {
           emit('attachment-insert', type, async (file: File) => {
              const isImage = file.type.startsWith('image/')
-             const id = insertUploadPlaceholder(editor.value!, `${isImage ? 'Bild' : 'Datei'} wird hochgeladen: ${file.name}…`)
+             const id = insertUploadPlaceholder(editor.value!, isImage ? t('editor.uploadingImage', { name: file.name }) : t('editor.uploadingFile', { name: file.name }))
              return id
           })
-        }
+        },
+        linkPromptLabel: t('slashCommands.linkPromptLabel')
       },
       slashSuggestion: {
         render: () => {

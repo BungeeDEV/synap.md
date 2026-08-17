@@ -31,9 +31,9 @@ async function saveDailyNotesSettings(): Promise<void> {
   savingDailyNotes.value = true
   try {
     await preferences.update({ dailyNotes: { folder: folder.value, dateFormat: dateFormat.value } })
-    show('Daily-Notes-Einstellungen gespeichert')
+    show(t('settings.dailyNotesSaved'))
   } catch {
-    show('Speichern fehlgeschlagen', 'error')
+    show(t('settings.saveFailed'), 'error')
   } finally {
     savingDailyNotes.value = false
   }
@@ -43,9 +43,9 @@ async function setDefaultTemplate(event: Event): Promise<void> {
   const value = (event.target as HTMLSelectElement).value
   try {
     await preferences.update({ dailyNotes: { templateName: value === '' ? null : value } })
-    show('Einstellung gespeichert')
+    show(t('settings.settingSaved'))
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 
@@ -56,7 +56,7 @@ const loadingTemplates = ref(true)
 const pendingDelete = ref<TemplateInfo | null>(null)
 
 const creatingTemplate = ref(false)
-const newTemplateName = ref('Untitled')
+const newTemplateName = ref(t('settings.untitledTemplate'))
 const newTemplateError = ref<string | null>(null)
 
 async function loadTemplates(): Promise<void> {
@@ -77,7 +77,7 @@ function errorMessageOf(err: unknown, fallback: string): string {
 
 function startCreateTemplate(): void {
   creatingTemplate.value = true
-  newTemplateName.value = 'Untitled'
+  newTemplateName.value = t('settings.untitledTemplate')
   newTemplateError.value = null
 }
 
@@ -96,9 +96,9 @@ async function submitCreateTemplate(): Promise<void> {
     await $fetch('/api/templates/create', { method: 'POST', body: { name: newTemplateName.value.trim() } })
     creatingTemplate.value = false
     await loadTemplates()
-    show('Vorlage erstellt')
+    show(t('settings.templateCreated'))
   } catch (err) {
-    newTemplateError.value = errorMessageOf(err, 'Vorlage konnte nicht erstellt werden')
+    newTemplateError.value = errorMessageOf(err, t('settings.templateCreateFailed'))
   }
 }
 
@@ -116,9 +116,9 @@ async function confirmDeleteTemplate(): Promise<void> {
     await $fetch('/api/templates/delete', { method: 'POST', body: { path: template.path } })
     tabs.closeTab(template.path)
     await loadTemplates()
-    show('Vorlage gelöscht')
+    show(t('settings.templateDeleted'))
   } catch {
-    show('Löschen fehlgeschlagen', 'error')
+    show(t('settings.deleteFailed'), 'error')
   }
 }
 
@@ -178,7 +178,7 @@ const templateDropdownOptions = computed(() => templates.value)
       </h2>
 
       <p v-if="loadingTemplates" class="text-sm text-content-tertiary">
-        Lädt…
+        {{ t('common.loading') }}
       </p>
 
       <ul v-else class="divide-y divide-border">
@@ -206,7 +206,7 @@ const templateDropdownOptions = computed(() => templates.value)
           </button>
           <button
             type="button"
-            title="Vorlage löschen"
+            :title="t('settings.deleteTemplate')"
             class="min-h-12 shrink-0 rounded-md p-3 text-content-tertiary transition-colors duration-150 hover:bg-danger/10 hover:text-danger md:min-h-0 md:p-2.5"
             @click="pendingDelete = template"
           >
@@ -218,9 +218,9 @@ const templateDropdownOptions = computed(() => templates.value)
 
     <ConfirmDialog
       v-if="pendingDelete"
-      title="Vorlage löschen"
-      :message="`„${pendingDelete.name}“ wird unwiderruflich gelöscht.`"
-      confirm-label="Löschen"
+      :title="t('settings.deleteTemplate')"
+      :message="t('settings.deleteIrreversibleConfirm', { name: pendingDelete.name })"
+      :confirm-label="t('tree.delete')"
       @confirm="confirmDeleteTemplate"
       @cancel="pendingDelete = null"
     />

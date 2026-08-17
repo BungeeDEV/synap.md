@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import type { TreeEditState } from '~/components/VaultTree.vue'
 
 /**
@@ -13,6 +14,7 @@ export function useNoteCreation() {
   const sidebarPanel = useSidebarPanelStore()
   const vaultTree = useVaultTreeStore()
   const route = useRoute()
+  const { t } = useI18n()
 
   /** Mirrors VaultTree.vue's own "+ Neue Note" toolbar action (same shared `vaultTreeEditState` used for its inline create/rename input) so every note-creation entry point shares one code path. */
   async function triggerNewNote(): Promise<void> {
@@ -23,7 +25,7 @@ export function useNoteCreation() {
     useState<TreeEditState | null>('vaultTreeEditState', () => null).value = {
       kind: 'create-file',
       parentPath: vaultTree.selectedFolder,
-      value: 'Untitled',
+      value: t('desktopApp.untitledNote'),
       error: null
     }
   }

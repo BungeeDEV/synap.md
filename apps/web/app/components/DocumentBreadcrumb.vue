@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ChevronRight, Menu } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 import type { ViewMode } from '@synap/store'
 
 const props = defineProps<{ path: string, tocVisible: boolean, mode: ViewMode }>()
 const emit = defineEmits<{ 'toggle-toc': [], 'update:mode': [mode: ViewMode] }>()
+const { t } = useI18n()
 
 // Last segment (filename) rendered without the .md extension - the rest are
 // plain folder names as they appear in the vault tree.
@@ -34,7 +36,7 @@ const segments = computed(() => {
       <button
         type="button"
         class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
-        :title="tocVisible ? 'Inhaltsverzeichnis ausblenden' : 'Inhaltsverzeichnis einblenden'"
+        :title="tocVisible ? t('breadcrumb.hideToc') : t('breadcrumb.showToc')"
         @click="emit('toggle-toc')"
       >
         <Menu class="h-4 w-4" stroke-width="1.75" />

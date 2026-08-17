@@ -34,7 +34,7 @@ function onLogout(): void {
     <button
       type="button"
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/20 text-xs font-medium text-accent transition duration-150 hover:bg-accent/30 active:scale-95"
-      title="Benutzermenü"
+      :title="t('common.userMenu')"
       @click="toggle"
     >
       {{ initials }}
@@ -68,7 +68,7 @@ function onLogout(): void {
           @click="onLogout"
         >
           <LogOut class="h-4 w-4" stroke-width="1.5" />
-          {{ t('auth.logout') || 'Abmelden' }}
+          {{ t('auth.logout') }}
         </button>
       </div>
     </Transition>

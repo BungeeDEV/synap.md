@@ -17,7 +17,7 @@ async function saveUsername(): Promise<void> {
   usernameError.value = ''
 
   if (newUsername.value.trim().length === 0) {
-    usernameError.value = 'Benutzername darf nicht leer sein'
+    usernameError.value = t('settings.usernameEmpty')
     return
   }
 
@@ -25,9 +25,9 @@ async function saveUsername(): Promise<void> {
   try {
     await $fetch('/api/auth/change-username', { method: 'POST', body: { newUsername: newUsername.value.trim() } })
     await refreshSession()
-    show('Benutzername geändert')
+    show(t('settings.usernameChanged'))
   } catch (err) {
-    usernameError.value = errorMessageOf(err, 'Benutzername konnte nicht geändert werden')
+    usernameError.value = errorMessageOf(err, t('settings.usernameChangeFailed'))
   } finally {
     usernameSaving.value = false
   }
@@ -45,11 +45,11 @@ async function savePassword(): Promise<void> {
   newPasswordError.value = ''
 
   if (newPassword.value.length < 8) {
-    newPasswordError.value = 'Muss mindestens 8 Zeichen lang sein'
+    newPasswordError.value = t('settings.passwordMinLength')
     return
   }
   if (newPassword.value !== repeatPassword.value) {
-    newPasswordError.value = 'Passwörter stimmen nicht überein'
+    newPasswordError.value = t('setup.passwordMismatch')
     return
   }
 
@@ -62,9 +62,9 @@ async function savePassword(): Promise<void> {
     currentPassword.value = ''
     newPassword.value = ''
     repeatPassword.value = ''
-    show('Passwort geändert')
+    show(t('settings.passwordChanged'))
   } catch (err) {
-    currentPasswordError.value = errorMessageOf(err, 'Passwort konnte nicht geändert werden')
+    currentPasswordError.value = errorMessageOf(err, t('settings.passwordChangeFailed'))
   } finally {
     passwordSaving.value = false
   }

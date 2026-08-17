@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { Eye, PenLine } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 import type { ViewMode } from '@synap/store'
 
 const modelValue = defineModel<ViewMode>({ required: true })
+const { t } = useI18n()
 
 // Just 2 modes now that the Tiptap editor itself is WYSIWYG/live-preview -
 // "Quelltext"/"Magic View"/"Split" all collapsed into the one editor mode,
 // see the Tiptap-Rewrite plan's view-mode consolidation decision.
-const modes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
-  { value: 'editor', label: 'Editor', icon: PenLine },
-  { value: 'reader', label: 'Vorschau', icon: Eye }
-]
+const modes = computed<{ value: ViewMode, label: string, icon: typeof Eye }[]>(() => [
+  { value: 'editor', label: t('desktopSettings.viewEditor'), icon: PenLine },
+  { value: 'reader', label: t('desktopSettings.viewReader'), icon: Eye }
+])
 </script>
 
 <template>

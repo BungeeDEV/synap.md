@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { LogOut, Menu, Search } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{ logout: [], openCommandPalette: [] }>()
 
 const mobileNav = useMobileNavStore()
 const tabs = useTabsStore()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -12,7 +14,7 @@ const tabs = useTabsStore()
     <button
       type="button"
       class="shrink-0 rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
-      title="Menü"
+      :title="t('common.menu')"
       @click="mobileNav.toggle()"
     >
       <Menu class="h-5 w-5" stroke-width="1.5" />
@@ -26,7 +28,7 @@ const tabs = useTabsStore()
       <button
         type="button"
         class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
-        title="Suche"
+        :title="t('common.search')"
         @click="emit('openCommandPalette')"
       >
         <Search class="h-5 w-5" stroke-width="1.5" />
@@ -34,7 +36,7 @@ const tabs = useTabsStore()
       <button
         type="button"
         class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04]"
-        title="Log out"
+        :title="t('auth.logout')"
         @click="emit('logout')"
       >
         <LogOut class="h-5 w-5" stroke-width="1.5" />
