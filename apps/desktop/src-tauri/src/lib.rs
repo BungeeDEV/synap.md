@@ -433,7 +433,7 @@ async fn perform_sync_inner(
             ).ok();
         }
 
-        tx.commit().map_err(|e| e.to_string()).ok();
+        tx.commit().map_err(|e| e.to_string())?;
     }
 
     // 3. Push local-only or modified files to the server
