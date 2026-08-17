@@ -3,6 +3,7 @@ import { Moon, Sun, RotateCcw, Check, ChevronDown } from '@lucide/vue'
 import { hexToRgb, themeIds } from '@synap/design-tokens'
 import { LOCALE_IDS } from '@synap/i18n'
 import type { EditorPreferences } from '@synap/store'
+import { SegmentedControl } from '@synap/ui-vue'
 import { useI18n } from 'vue-i18n'
 
 const preferences = usePreferencesStore()
@@ -10,8 +11,8 @@ const { show } = useToast()
 const { t } = useI18n()
 
 const themes = computed(() => [
-  { value: 'dark', label: t('settings.themeDark'), icon: Moon },
-  { value: 'light', label: t('settings.themeLight'), icon: Sun }
+  { value: 'dark' as const, label: t('settings.themeDark'), icon: Moon },
+  { value: 'light' as const, label: t('settings.themeLight'), icon: Sun }
 ])
 
 const locales = [
@@ -108,37 +109,24 @@ async function selectLocale(value: EditorPreferences['locale']): Promise<void> {
 
 <template>
   <div class="space-y-8">
-    <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
+    <section class="rounded-xl border border-border bg-surface-1 p-6">
+      <h2 class="mb-4 text-sm font-semibold text-content-primary">
         {{ t('settings.appearance') }}
       </h2>
-      <div class="inline-flex w-full items-center gap-0.5 rounded-full border border-border p-0.5 md:w-auto md:p-1">
-        <button
-          v-for="theme in themes"
-          :key="theme.value"
-          type="button"
-          :aria-pressed="preferences.preferences.theme === theme.value"
-          class="flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-base transition-colors duration-150 md:min-h-0 md:flex-none"
-          :class="preferences.preferences.theme === theme.value ? 'bg-surface-2 text-content-primary' : 'text-content-tertiary hover:text-content-secondary'"
-          @click="setTheme(theme.value)"
-        >
-          <component :is="theme.icon" class="h-5 w-5" stroke-width="1.5" />
-          {{ theme.label }}
-        </button>
-      </div>
+      <SegmentedControl :model-value="preferences.preferences.theme" :options="themes" @update:model-value="setTheme" />
     </section>
 
-    <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
+    <section class="rounded-xl border border-border bg-surface-1 p-6">
+      <h2 class="mb-4 text-sm font-semibold text-content-primary">
         {{ t('settings.accentColor') }}
       </h2>
-      <div class="flex flex-wrap items-center gap-3 rounded-lg bg-surface-1 p-4 md:bg-transparent md:p-0">
+      <div class="flex flex-wrap items-center gap-3">
         <button
           v-for="preset in accentPresets"
           :key="preset.hex"
           type="button"
           class="relative h-8 w-8 shrink-0 rounded-full transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
-          :class="[preset.swatchClass, isPresetActive(preset.hex) ? ['ring-2', 'ring-offset-2', 'ring-offset-base', preset.ringClass] : '']"
+          :class="[preset.swatchClass, isPresetActive(preset.hex) ? ['ring-2', 'ring-offset-2', 'ring-offset-surface-1', preset.ringClass] : '']"
           :aria-label="preset.label"
           :aria-pressed="isPresetActive(preset.hex)"
           @click="setAccentPreset(preset.hex)"
@@ -150,7 +138,7 @@ async function selectLocale(value: EditorPreferences['locale']): Promise<void> {
           <input
             type="color"
             class="accent-swatch-input h-8 w-8 rounded-full transition-transform duration-150 hover:scale-110"
-            :class="isCustomAccentActive ? 'ring-2 ring-offset-2 ring-offset-base ring-content-primary' : ''"
+            :class="isCustomAccentActive ? 'ring-2 ring-offset-2 ring-offset-surface-1 ring-content-primary' : ''"
             :value="displayAccentColor"
             :aria-label="t('settings.accentCustom')"
             @change="setAccentColor"
@@ -175,8 +163,8 @@ async function selectLocale(value: EditorPreferences['locale']): Promise<void> {
       </div>
     </section>
 
-    <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
+    <section class="rounded-xl border border-border bg-surface-1 p-6">
+      <h2 class="mb-4 text-sm font-semibold text-content-primary">
         {{ t('settings.language') }}
       </h2>
       <div class="relative inline-block w-full md:w-auto">

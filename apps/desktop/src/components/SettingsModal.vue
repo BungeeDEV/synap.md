@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { appState } from '../store';
-import { X, Server, Folder, Settings2, ShieldAlert, Keyboard, Palette, Moon, Sun, Check, ChevronDown } from '@lucide/vue';
+import { X, Server, Folder, Settings2, ShieldAlert, Keyboard, Palette, Moon, Sun, Check, ChevronDown, PenLine, Eye } from '@lucide/vue';
 import { hexToRgb } from '@synap/design-tokens';
+import { RangeSlider, SegmentedControl } from '@synap/ui-vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -15,6 +16,16 @@ const emit = defineEmits<{
 }>();
 
 const activeTab = ref('allgemein');
+
+const themeOptions = computed(() => [
+  { value: 'dark' as const, label: t('settings.themeDark'), icon: Moon },
+  { value: 'light' as const, label: t('settings.themeLight'), icon: Sun }
+]);
+
+const defaultViewOptions = computed(() => [
+  { value: 'editor' as const, label: t('desktopSettings.viewEditor'), icon: PenLine },
+  { value: 'reader' as const, label: t('desktopSettings.viewReader'), icon: Eye }
+]);
 
 // Tailwind's built-in default palette (not arbitrary values, per
 // STYLEGUIDE.md). accentColor stays a free-form hex under the hood - these
@@ -95,35 +106,35 @@ async function toggleAutostart() {
         
         <button 
           @click="activeTab = 'allgemein'"
-          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'allgemein' ? 'bg-white/10 text-content-primary font-medium' : 'text-content-secondary hover:bg-white/5']"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'allgemein' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Folder class="w-4 h-4" /> {{ t('desktopSettings.generalTitle') }}
         </button>
         
         <button 
           @click="activeTab = 'sync'"
-          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'sync' ? 'bg-white/10 text-content-primary font-medium' : 'text-content-secondary hover:bg-white/5']"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'sync' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Server class="w-4 h-4" /> {{ t('desktopSettings.syncTitle') }}
         </button>
         
         <button 
           @click="activeTab = 'editor'"
-          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'editor' ? 'bg-white/10 text-content-primary font-medium' : 'text-content-secondary hover:bg-white/5']"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'editor' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Settings2 class="w-4 h-4" /> {{ t('settings.editor') }}
         </button>
 
         <button 
           @click="activeTab = 'appearance'"
-          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'appearance' ? 'bg-white/10 text-content-primary font-medium' : 'text-content-secondary hover:bg-white/5']"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'appearance' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Palette class="w-4 h-4" /> {{ t('settings.appearance') }}
         </button>
 
         <button 
           @click="activeTab = 'shortcuts'"
-          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'shortcuts' ? 'bg-white/10 text-content-primary font-medium' : 'text-content-secondary hover:bg-white/5']"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'shortcuts' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Keyboard class="w-4 h-4" /> {{ t('desktopSettings.shortcutsTitle') }}
         </button>
@@ -234,36 +245,21 @@ async function toggleAutostart() {
               
               <div class="space-y-6">
                 <!-- Theme -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('settings.theme') }}</label>
-                  <div class="flex items-center gap-1 bg-surface-2 p-1 rounded-lg border border-divider w-max">
-                    <button
-                      @click="appState.theme = 'dark'"
-                      :class="['flex items-center gap-1.5 px-4 py-1.5 rounded-md text-[13px] transition-colors', appState.theme === 'dark' ? 'bg-surface-1 text-content-primary shadow-sm border border-divider' : 'text-content-secondary hover:text-content-primary border border-transparent']"
-                    >
-                      <Moon class="w-3.5 h-3.5" stroke-width="1.5" />
-                      {{ t('settings.themeDark') }}
-                    </button>
-                    <button
-                      @click="appState.theme = 'light'"
-                      :class="['flex items-center gap-1.5 px-4 py-1.5 rounded-md text-[13px] transition-colors', appState.theme === 'light' ? 'bg-surface-1 text-content-primary shadow-sm border border-divider' : 'text-content-secondary hover:text-content-primary border border-transparent']"
-                    >
-                      <Sun class="w-3.5 h-3.5" stroke-width="1.5" />
-                      {{ t('settings.themeLight') }}
-                    </button>
-                  </div>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('settings.theme') }}</h2>
+                  <SegmentedControl :model-value="appState.theme" :options="themeOptions" @update:model-value="appState.theme = $event" />
                 </div>
 
                 <!-- Accent Color -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('settings.accentColor') }}</label>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('settings.accentColor') }}</h2>
                   <div class="flex flex-wrap items-center gap-3">
                     <button
                       v-for="preset in accentPresets"
                       :key="preset.hex"
                       type="button"
                       class="relative h-8 w-8 shrink-0 rounded-full transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
-                      :class="[preset.swatchClass, isPresetActive(preset.hex) ? ['ring-2', 'ring-offset-2', 'ring-offset-surface-1', preset.ringClass] : '']"
+                      :class="[preset.swatchClass, isPresetActive(preset.hex) ? ['ring-2', 'ring-offset-2', 'ring-offset-surface-2', preset.ringClass] : '']"
                       :aria-label="preset.label"
                       :aria-pressed="isPresetActive(preset.hex)"
                       @click="setAccentPreset(preset.hex)"
@@ -275,7 +271,7 @@ async function toggleAutostart() {
                       <input
                         type="color"
                         class="accent-swatch-input h-8 w-8 rounded-full transition-transform duration-150 hover:scale-110"
-                        :class="isCustomAccentActive ? 'ring-2 ring-offset-2 ring-offset-surface-1 ring-content-primary' : ''"
+                        :class="isCustomAccentActive ? 'ring-2 ring-offset-2 ring-offset-surface-2 ring-content-primary' : ''"
                         :value="displayAccentColor"
                         :aria-label="t('settings.accentCustom')"
                         @change="(e) => appState.accentColor = (e.target as HTMLInputElement).value"
@@ -299,8 +295,8 @@ async function toggleAutostart() {
                 </div>
 
                 <!-- Language -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('settings.language') }}</label>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('settings.language') }}</h2>
                   <div class="relative inline-block w-full max-w-64">
                     <button
                       type="button"
@@ -357,28 +353,15 @@ async function toggleAutostart() {
               
               <div class="space-y-6">
                 <!-- Default View -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('desktopSettings.defaultView') }}</label>
-                  <div class="flex items-center gap-1 bg-surface-2 p-1 rounded-lg border border-divider w-max">
-                    <button 
-                      @click="appState.defaultView = 'editor'"
-                      :class="['px-4 py-1.5 rounded-md text-[13px] transition-colors', appState.defaultView === 'editor' ? 'bg-surface-1 text-content-primary shadow-sm border border-divider' : 'text-content-secondary hover:text-content-primary border border-transparent']"
-                    >
-                      {{ t('desktopSettings.viewEditor') }}
-                    </button>
-                    <button 
-                      @click="appState.defaultView = 'reader'"
-                      :class="['px-4 py-1.5 rounded-md text-[13px] transition-colors', appState.defaultView === 'reader' ? 'bg-surface-1 text-content-primary shadow-sm border border-divider' : 'text-content-secondary hover:text-content-primary border border-transparent']"
-                    >
-                      {{ t('desktopSettings.viewReader') }}
-                    </button>
-                  </div>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('desktopSettings.defaultView') }}</h2>
+                  <SegmentedControl :model-value="appState.defaultView" :options="defaultViewOptions" @update:model-value="appState.defaultView = $event" />
                 </div>
 
                 <!-- Font Family -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('desktopSettings.fontFamily') }}</label>
-                  <select v-model="appState.editorFontFamily" class="custom-select w-full max-w-[250px] text-[13px] font-medium">
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('desktopSettings.fontFamily') }}</h2>
+                  <select v-model="appState.editorFontFamily" class="custom-select w-full max-w-64 text-[13px] font-medium">
                     <option value="sans">{{ t('desktopSettings.fontSans') }}</option>
                     <option value="serif">{{ t('desktopSettings.fontSerif') }}</option>
                     <option value="mono">{{ t('desktopSettings.fontMono') }}</option>
@@ -386,31 +369,27 @@ async function toggleAutostart() {
                 </div>
 
                 <!-- Font Size -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('desktopSettings.fontSize') }}</label>
-                  <div class="flex items-center gap-4">
-                    <input 
-                      type="range" 
-                      v-model.number="appState.editorFontSize" 
-                      min="12" max="24" step="1"
-                      class="custom-slider flex-1 max-w-[250px]"
-                    />
-                    <span class="text-[13px] text-content-primary font-mono w-8 bg-surface-2 px-2 py-1 rounded text-center border border-divider shadow-inner">{{ appState.editorFontSize }}</span>
-                  </div>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('desktopSettings.fontSize') }}</h2>
+                  <RangeSlider
+                    :model-value="appState.editorFontSize"
+                    :min="12"
+                    :max="24"
+                    suffix="px"
+                    @update:model-value="appState.editorFontSize = $event"
+                  />
                 </div>
 
                 <!-- Line Height -->
-                <div>
-                  <label class="block text-xs font-semibold text-content-primary mb-2">{{ t('desktopSettings.lineHeight') }}</label>
-                  <div class="flex items-center gap-4">
-                    <input 
-                      type="range" 
-                      v-model.number="appState.editorLineHeight" 
-                      min="1.2" max="2.2" step="0.1"
-                      class="custom-slider flex-1 max-w-[250px]"
-                    />
-                    <span class="text-[13px] text-content-primary font-mono w-8 bg-surface-2 px-2 py-1 rounded text-center border border-divider shadow-inner">{{ appState.editorLineHeight }}</span>
-                  </div>
+                <div class="rounded-xl border border-border bg-surface-2 p-6">
+                  <h2 class="mb-4 text-sm font-semibold text-content-primary">{{ t('desktopSettings.lineHeight') }}</h2>
+                  <RangeSlider
+                    :model-value="appState.editorLineHeight"
+                    :min="1.2"
+                    :max="2.2"
+                    :step="0.1"
+                    @update:model-value="appState.editorLineHeight = $event"
+                  />
                 </div>
 
               </div>
