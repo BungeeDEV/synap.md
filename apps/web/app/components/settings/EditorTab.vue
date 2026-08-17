@@ -17,9 +17,9 @@ const modes = computed(() => [
 async function setDefaultViewMode(mode: ViewMode): Promise<void> {
   try {
     await preferences.update({ defaultViewMode: mode })
-    show('Einstellung gespeichert')
+    show(t('settings.settingSaved'))
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 
@@ -28,7 +28,7 @@ async function setFontSize(event: Event): Promise<void> {
   try {
     await preferences.update({ editorFontSize: size })
   } catch {
-    show('Einstellung konnte nicht gespeichert werden', 'error')
+    show(t('settings.settingSaveFailed'), 'error')
   }
 }
 </script>

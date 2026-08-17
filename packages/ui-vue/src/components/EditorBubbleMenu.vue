@@ -2,8 +2,10 @@
 import type { Editor } from '@tiptap/core'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import { Bold, Code, Italic, Strikethrough } from '@lucide/vue'
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{ editor: Editor }>()
 
 // Tiptap's Editor isn't a reactive Vue object (ProseMirror state changes
@@ -18,12 +20,12 @@ function isActive(name: string): boolean {
   return props.editor.isActive(name)
 }
 
-const buttons = [
-  { name: 'bold', icon: Bold, label: 'Fett', action: () => props.editor.chain().focus().toggleBold().run() },
-  { name: 'italic', icon: Italic, label: 'Kursiv', action: () => props.editor.chain().focus().toggleItalic().run() },
-  { name: 'strike', icon: Strikethrough, label: 'Durchgestrichen', action: () => props.editor.chain().focus().toggleStrike().run() },
-  { name: 'code', icon: Code, label: 'Code', action: () => props.editor.chain().focus().toggleCode().run() }
-] as const
+const buttons = computed(() => [
+  { name: 'bold', icon: Bold, label: t('slashCommands.bold'), action: () => props.editor.chain().focus().toggleBold().run() },
+  { name: 'italic', icon: Italic, label: t('slashCommands.italic'), action: () => props.editor.chain().focus().toggleItalic().run() },
+  { name: 'strike', icon: Strikethrough, label: t('slashCommands.strikethrough'), action: () => props.editor.chain().focus().toggleStrike().run() },
+  { name: 'code', icon: Code, label: t('slashCommands.code'), action: () => props.editor.chain().focus().toggleCode().run() }
+])
 
 function shouldShow({ state }: { state: Editor['state'] }): boolean {
   return !state.selection.empty && state.doc.textBetween(state.selection.from, state.selection.to).trim().length > 0

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { AlertTriangle, Check, Cloud } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 import { countChars, countWords } from '~/utils/textStats'
 
 const props = defineProps<{ content: string, saving: boolean, conflict: boolean }>()
+const { t } = useI18n()
 
 const wordCount = computed(() => countWords(props.content))
 const charCount = computed(() => countChars(props.content))
 
 const statusLabel = computed(() => {
-  if (props.conflict) return 'Konflikt'
-  if (props.saving) return 'Speichert…'
-  return 'Gespeichert'
+  if (props.conflict) return t('statusBar.conflict')
+  if (props.saving) return t('share.saving')
+  return t('statusBar.saved')
 })
 
 // Monochrome by default (VS Code/Obsidian-style status bar, not a colored
@@ -37,7 +39,7 @@ onBeforeUnmount(() => { if (flashTimer) clearTimeout(flashTimer) })
 
 <template>
   <div class="flex h-6 w-full shrink-0 touch-manipulation select-none items-center justify-between border-t border-border px-3 text-xs text-content-tertiary">
-    <span>{{ wordCount }} Wörter · {{ charCount }} Zeichen</span>
+    <span>{{ wordCount }} {{ t('actions.words') }} · {{ charCount }} {{ t('actions.chars') }}</span>
     <span class="flex items-center gap-1.5" :class="conflict ? 'text-danger' : ''">
       <component
         :is="statusIcon"

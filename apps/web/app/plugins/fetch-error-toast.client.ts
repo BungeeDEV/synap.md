@@ -8,12 +8,13 @@
  */
 export default defineNuxtPlugin(() => {
   const { show } = useToast()
+  const nuxtApp = useNuxtApp()
 
   globalThis.$fetch = $fetch.create({
     onRequestError({ request }) {
       const url = typeof request === 'string' ? request : request.url
       if (url.includes('/api/')) {
-        show('Keine Verbindung zum Server', 'error')
+        show(nuxtApp.$i18n.t('settings.connectionError'), 'error')
       }
     }
   })

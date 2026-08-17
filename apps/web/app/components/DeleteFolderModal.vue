@@ -53,7 +53,7 @@ function onConfirm() {
                   {{ t('dialogs.deleteFolderConfirm', { name: node.name }) }}
                 </p>
                 <p class="text-[13px] text-content-tertiary">
-                  Diese Aktion kann nicht rückgängig gemacht werden.
+                  {{ t('dialogs.deleteFolderIrreversible') }}
                 </p>
               </div>
             </div>

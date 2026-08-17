@@ -40,6 +40,19 @@ export default {
       mtimeasc: 'Oldest First'
     },
     newNote: 'New Note',
+    newFolderTooltip: 'New Folder',
+    moreActions: 'More actions',
+    vaultRoot: 'Vault root',
+    archiveFailed: 'Archiving failed',
+    internalLinkCopied: 'Internal link copied',
+    exportFailed: 'Export failed',
+    printFailed: 'Print failed',
+    noteCreatedFromTemplate: 'Note created from template',
+    archivedToast: '"{name}" archived',
+    openedInNewTabToast: '"{name}" opened in new tab',
+    duplicatedToast: '"{name}" duplicated',
+    createFailed: 'Failed to create',
+    dailyNoteCreateFailed: 'Daily note could not be created',
     dailyNote: 'Daily Note',
     newFromTemplate: 'New from Template',
     import: 'Import',
@@ -65,9 +78,12 @@ export default {
     targetFolder: 'Target Folder',
     retry: 'Retry',
     cancelRemaining: 'Cancel Remaining',
-    importFiles: 'Import Files'
+    importFiles: 'Import Files',
+    deleteFolderIrreversible: 'This action cannot be undone.',
+    checkingFolderContents: 'Checking folder contents...'
   },
   actions: {
+    mentionedIn: 'Mentioned in',
     lastEdited: 'Last edited {time}',
     lastModified: 'Last modified',
     subfolders: 'Subfolders',
@@ -76,35 +92,146 @@ export default {
     details: 'Details',
     createdAt: 'Created',
     words: 'Words',
-    chars: 'Characters'
+    chars: 'Characters',
+    size: 'Size'
   },
   common: {
     loading: 'Loading...',
     showList: 'Show List',
     hideList: 'Hide List',
     close: 'Close',
-    retry: 'Retry'
+    retry: 'Retry',
+    menu: 'Menu',
+    search: 'Search',
+    userMenu: 'User menu',
+    back: 'Back'
   },
   import: {
     processed: '{count} of {total} processed',
     importing: '{count} of {total} imported',
-    cancelRemaining: 'Cancel Remaining'
+    cancelRemaining: 'Cancel Remaining',
+    importFailed: 'Import failed',
+    file: 'file',
+    files: 'files',
+    importedCount: '{count} {unit} imported',
+    skippedCount: '{count} skipped',
+    failedCount: '{count} failed',
+    completed: 'Import completed',
+    jumpToFolder: 'Jump to folder',
+    notMarkdown: 'will not be imported (not Markdown)',
+    large: 'large',
+    exists: 'already exists',
+    defaultAction: 'Default ({action})',
+    skip: 'Skip',
+    replace: 'Replace',
+    keepBoth: 'Keep both',
+    onConflictDefault: 'On name conflicts (default):',
+    noMarkdownFiles: 'None of the selected files is a Markdown file.',
+    importButton: 'Import {count} {unit}'
   },
   palette: {
     searchNotes: 'Search notes…',
     searchFolders: 'Search folders…'
+  },
+  outline: {
+    backToExplorer: 'Back to explorer',
+    filterPlaceholder: 'Filter headings...',
+    noHeadingsFound: 'No headings found'
+  },
+  statusBar: {
+    conflict: 'Conflict',
+    saved: 'Saved'
+  },
+  tabs: {
+    discardChangesTitle: 'Discard changes?',
+    discardChangesMessage: 'This note has unsaved changes that will be lost when closing.',
+    discard: 'Discard'
+  },
+  breadcrumb: {
+    hideToc: 'Hide table of contents',
+    showToc: 'Show table of contents'
+  },
+  setup: {
+    title: 'Welcome to synap.md',
+    subtitle: 'Create the admin account to get started.',
+    confirmPassword: 'Confirm password',
+    passwordMismatch: 'Passwords do not match',
+    passwordTooShort: 'Password must be at least 8 characters',
+    createAccount: 'Create account',
+    creating: 'Creating…',
+    failed: 'Setup failed'
+  },
+  settingsPage: {
+    backToEditor: 'Back to editor',
+    backToOverview: 'Back to overview'
+  },
+  notFound: {
+    message: 'Sorry, the page you were looking for could not be found.',
+    backHome: 'Back to home'
+  },
+  shared: {
+    defaultTitle: 'Shared document',
+    wrongPassword: 'Wrong password.',
+    linkExpired: 'This link has expired or reached the maximum number of views.',
+    linkNotFound: 'This link does not exist.',
+    genericError: 'An error occurred.',
+    loadingDocument: 'Loading document...',
+    passwordRequired: 'Password required',
+    passwordProtected: 'This document is password protected.',
+    passwordPlaceholder: 'Enter password',
+    checking: 'Checking...',
+    unlock: 'Unlock'
   },
   editor: {
     noNoteOpen: 'No note opened',
     loading: 'Loading...',
     noResults: 'No results',
     navigate: 'Navigate',
-    select: 'Select'
-  
-  
-  
-  
-  
+    select: 'Select',
+    uploadFailed: 'Upload failed',
+    placeholderPrompt: 'Start writing…',
+    uploadingImage: 'Uploading image: {name}…',
+    uploadingFile: 'Uploading file: {name}…',
+    properties: 'Properties'
+  },
+  slashCommands: {
+    paragraph: 'Text',
+    'heading-1': 'Heading 1',
+    'heading-2': 'Heading 2',
+    'heading-3': 'Heading 3',
+    'bulleted-list': 'Bulleted List',
+    'numbered-list': 'Numbered List',
+    'task-list': 'Task List',
+    quote: 'Quote',
+    bold: 'Bold',
+    italic: 'Italic',
+    strikethrough: 'Strikethrough',
+    code: 'Inline Code',
+    highlight: 'Highlight',
+    table: 'Table',
+    'callout-info': 'Note',
+    'callout-warning': 'Warning',
+    'math-block': 'Math Block',
+    'code-block': 'Code Block',
+    link: 'Link',
+    wikilink: 'Wikilink',
+    image: 'Image',
+    attachment: 'Attachment',
+    'horizontal-rule': 'Horizontal Rule',
+    linkPromptLabel: 'Link URL',
+    groups: {
+      text: 'Text',
+      heading: 'Headings',
+      list: 'Lists',
+      format: 'Formatting',
+      insert: 'Insert'
+    }
+  },
+  conflict: {
+    title: 'File was changed externally',
+    message: 'The file was changed outside the app since it was loaded. How would you like to proceed?',
+    loadExternal: 'Load external version',
+    keepMine: 'Overwrite with my version'
   },
   settings: {
     title: 'Settings',
@@ -160,6 +287,35 @@ export default {
     activeTokens: 'Active Tokens',
     noApiTokens: 'No API tokens generated yet.',
     neverUsed: 'Never used',
+    tokenNamePlaceholder: 'Token name (e.g. My MacBook)',
+    revokeToken: 'Revoke token',
+    lastUsedAt: 'Last used',
+    tokenCreateError: 'Error creating token',
+    deleteTokenConfirm: 'Do you really want to delete this token? External clients using it will immediately lose access.',
+    tokenDeleteError: 'Error deleting token',
+    dailyNotesSaved: 'Daily notes settings saved',
+    saveFailed: 'Save failed',
+    settingSaved: 'Setting saved',
+    settingSaveFailed: 'Setting could not be saved',
+    templateCreated: 'Template created',
+    templateCreateFailed: 'Template could not be created',
+    templateDeleted: 'Template deleted',
+    deleteFailed: 'Delete failed',
+    untitledTemplate: 'Untitled',
+    usernameEmpty: 'Username must not be empty',
+    passwordMinLength: 'Must be at least 8 characters',
+    usernameChanged: 'Username changed',
+    usernameChangeFailed: 'Username could not be changed',
+    passwordChanged: 'Password changed',
+    passwordChangeFailed: 'Password could not be changed',
+    connectionError: 'No connection to server',
+    restoreFailed: 'Restore failed',
+    movedToTrashToast: 'Moved to trash',
+    permanentlyDeletedToast: 'Permanently deleted',
+    restoredToast: 'Restored',
+    restoredAsRenamedToast: 'Restored as "{name}" (name was already taken)',
+    exporting: 'Exporting…',
+    exportVault: 'Export vault',
     archiveTitle: 'Archive',
     archiveEmpty: 'The archive is empty.',
     backupTitle: 'Backup',
@@ -179,6 +335,18 @@ export default {
     manageTemplates: 'Manage Templates',
     newTemplate: 'New Template',
     noTemplatesYet: 'No templates yet.',
+    archivedOn: 'archived on {date}',
+    restore: 'Restore',
+    moveToTrash: 'Move to trash',
+    moveToTrashConfirm: '"{name}" will be moved to trash.',
+    moveAction: 'Move',
+    deletePermanently: 'Delete permanently',
+    deleteTemplate: 'Delete template',
+    deleteIrreversibleConfirm: '"{name}" will be permanently deleted.',
+    day: 'day',
+    days: 'days',
+    deletedAgo: 'deleted {count} {unit} ago',
+    permanentDeleteIn: 'will be permanently deleted in {count} {unit}'
 },
   auth: {
     username: 'Username',
@@ -186,7 +354,8 @@ export default {
     invalidCredentials: 'Invalid credentials',
     signIn: 'Sign in',
     signingIn: 'Signing in...',
-    rememberMe: 'Keep me logged in'
+    rememberMe: 'Keep me logged in',
+    logout: 'Log out'
   },
   share: {
     title: 'Share Document',
@@ -198,6 +367,7 @@ export default {
     save: 'Save',
     saving: 'Saving...',
     saveError: 'Error saving',
+    loadError: 'Error loading',
     linkRequiresSave: 'Share Link (Requires saving)',
     generatingLink: 'Will be generated upon saving...',
     loadingShare: 'Loading...',
@@ -205,7 +375,16 @@ export default {
     passwordShare: 'Password',
     passwordSet: 'A password is currently set.',
     expiresAt: 'Expiration Date',
-    maxViews: 'Max Views'
+    maxViews: 'Max Views',
+    copyLink: 'Copy link',
+    customIdPlaceholder: 'Generate random ID',
+    passwordUnchangedPlaceholder: 'Password unchanged (leave empty to keep)',
+    noPasswordPlaceholder: 'No password (optional)',
+    unlimitedPlaceholder: 'Unlimited',
+    disabledToast: 'Sharing disabled',
+    savedToast: 'Sharing saved',
+    linkCopiedToast: 'Link copied',
+    copyErrorToast: 'Error copying'
   
   
   
@@ -258,13 +437,62 @@ export default {
     cancelDesktop: 'Cancel',
     asMarkdownDesktop: 'As Markdown',
     printPdfDesktop: 'Print (PDF)'
-  
-  
-  
-  
-  
-  
-  
-  
+  },
+  desktopApp: {
+    searchTooltip: 'Search (Cmd+K)',
+    newNoteTooltip: 'New Note (Cmd+N)',
+    sortTooltip: 'Sort',
+    statsFooter: '{files} Files · {folders} Folders',
+    searchPlaceholder: 'Search notes...',
+    openHint: 'Open',
+    noNotesFound: 'No notes found.',
+    noFileSelected: 'No file selected',
+    selectOrCreateNote: 'Select or create a note',
+    ready: 'Ready',
+    loadError: 'Load error',
+    saving: 'Saving...',
+    saved: 'Saved',
+    saveError: 'Error saving',
+    boldTooltip: 'Bold (Ctrl+B)',
+    italicTooltip: 'Italic (Ctrl+I)',
+    strikeTooltip: 'Strikethrough',
+    heading1Tooltip: 'Heading 1',
+    heading2Tooltip: 'Heading 2',
+    bulletListTooltip: 'Bullet List',
+    orderedListTooltip: 'Numbered List',
+    taskListTooltip: 'Task List',
+    codeBlockTooltip: 'Code Block',
+    vaultSyncActive: 'Vault & Auto-Sync active.',
+    syncingWithServer: 'Syncing with server...',
+    synced: 'Synced.',
+    genericError: 'Error: {error}',
+    loadErrorPrefix: 'Load error: {error}',
+    errorLoadingFiles: 'Error loading files: {error}',
+    appError: 'App error: {error}',
+    renamePrompt: 'New name:',
+    newSubfolderPrompt: 'Subfolder name:',
+    renameError: 'Error renaming: {error}',
+    resetConfirm: 'Are you sure? All local settings and connection data will be deleted (your notes stay safe on disk).',
+    resetError: 'Error resetting: {error}',
+    deleteFileConfirm: 'Do you really want to delete the file \'{name}\'?',
+    deleteFileError: 'Error deleting: {error}',
+    linkCopied: 'Link copied to clipboard!',
+    fileDetails: 'File: {name}\nPath: {path}',
+    untitledNote: 'Untitled',
+    newNoteHeading: '# New Note\n\n',
+    ctxNewNoteHere: 'New note here',
+    ctxImportFiles: 'Import files…',
+    ctxFavorite: 'Add to Favorites',
+    ctxMoveTo: 'Move to…',
+    ctxExportZip: 'Export as ZIP',
+    ctxFolderStats: 'Folder Statistics',
+    ctxChangeColor: 'Change Color',
+    ctxOpenNewTab: 'Open in new tab',
+    ctxOpenSticky: 'Open as Sticky Note',
+    ctxCopyLink: 'Copy internal link',
+    ctxShare: 'Share external link',
+    ctxExport: 'Export',
+    ctxShowDetails: 'Show details',
+    ctxArchive: 'Archive'
   }
 }

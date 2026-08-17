@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 import { extractHeadings, type Heading } from '~/utils/extractHeadings'
+
+const { t } = useI18n()
 
 const OUTLINE_DEBOUNCE_MS = 250
 
@@ -78,11 +81,11 @@ function jumpToHeading(heading: Heading): void {
 <template>
   <div class="flex h-full min-h-0 touch-manipulation select-none flex-col">
     <div class="flex h-11 shrink-0 items-center justify-between border-b border-border px-2">
-      <span class="text-sm font-medium tracking-wider text-content-tertiary uppercase">Outline</span>
+      <span class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('sidebar.outline') }}</span>
       <button
         type="button"
         class="rounded-md p-3 text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:p-2"
-        title="Zurück zum Explorer"
+        :title="t('outline.backToExplorer')"
         @click="sidebarPanel.setPanel('explorer')"
       >
         <X class="h-5 w-5" stroke-width="1.5" />
@@ -95,14 +98,14 @@ function jumpToHeading(heading: Heading): void {
         <input
           v-model="filterQuery"
           type="text"
-          placeholder="Filter headings..."
+          :placeholder="t('outline.filterPlaceholder')"
           class="w-full bg-transparent text-base text-content-primary placeholder:text-content-tertiary focus:outline-none"
         >
       </div>
 
       <div class="flex-1 overflow-y-auto overscroll-contain p-1">
         <p v-if="!filteredHeadings.length" class="p-2 text-base text-content-tertiary">
-          Keine Überschriften gefunden
+          {{ t('outline.noHeadingsFound') }}
         </p>
         <ul v-else class="space-y-0.5">
           <li v-for="(heading, i) in filteredHeadings" :key="`${heading.line}-${i}`">
@@ -121,7 +124,7 @@ function jumpToHeading(heading: Heading): void {
     </div>
 
     <div v-else class="flex flex-1 items-center justify-center text-center text-sm text-content-tertiary">
-      Keine Datei geöffnet
+      {{ t('editor.noNoteOpen') }}
     </div>
   </div>
 </template>

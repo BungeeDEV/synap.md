@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n'
-const { t } = useI18n();
+const { t, locale: i18nLocale } = useI18n();
 import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -70,7 +70,6 @@ onMounted(async () => {
     }, { deep: true });
 
     // Watch and apply theme/accentColor/locale
-    const { locale: i18nLocale } = useI18n();
     watch(() => [appState.theme, appState.accentColor, appState.locale], async () => {
         document.documentElement.dataset.theme = appState.theme;
         i18nLocale.value = appState.locale;
@@ -190,13 +189,14 @@ async function createNewNote(targetPath?: string) {
     try {
         let i = 1;
         const prefix = targetPath ? `${targetPath}/` : '';
-        let newName = `${prefix}Unbenannt.md`;
+        const untitled = t('desktopApp.untitledNote');
+        let newName = `${prefix}${untitled}.md`;
         while (appState.localFiles.find(f => f.path === newName)) {
-            newName = `${prefix}Unbenannt ${i}.md`;
+            newName = `${prefix}${untitled} ${i}.md`;
             i++;
         }
         const fullPath = `${appState.vaultPath}/${newName}`;
-        await writeTextFile(fullPath, '# Neue Notiz\n\n');
+        await writeTextFile(fullPath, t('desktopApp.newNoteHeading'));
         await refreshLocalFiles();
         await loadFile(newName);
     } catch (e) {
@@ -224,11 +224,11 @@ async function startApp(path: string) {
             }
         }
         await refreshLocalFiles();
-        appState.statusMsg = "Vault & Auto-Sync aktiv.";
+        appState.statusMsg = t('desktopApp.vaultSyncActive');
 
         await listen('sync-done', () => refreshLocalFiles());
     } catch (e: any) {
-        appState.statusMsg = `App Error: ${e}`;
+        appState.statusMsg = t('desktopApp.appError', { error: e });
     }
 }
 
@@ -237,12 +237,12 @@ async function refreshLocalFiles() {
         appState.localFiles = await invoke<any[]>('get_local_files');
         rebuildFileTree();
     } catch (e: any) {
-        appState.statusMsg = `Error loading files: ${e}`;
+        appState.statusMsg = t('desktopApp.errorLoadingFiles', { error: e });
     }
 }
 
 async function manualSync() {
-    appState.statusMsg = "Syncing with server...";
+    appState.statusMsg = t('desktopApp.syncingWithServer');
     try {
         const store = await load('store.json', { autoSave: false });
         await store.set('serverUrl', appState.serverUrl);
@@ -254,9 +254,9 @@ async function manualSync() {
         }
         await invoke('sync_now', { url: appState.serverUrl, token: appState.token });
         await refreshLocalFiles();
-        appState.statusMsg = "Synced.";
+        appState.statusMsg = t('desktopApp.synced');
     } catch (e: any) {
-        appState.statusMsg = `Error: ${e}`;
+        appState.statusMsg = t('desktopApp.genericError', { error: e });
     }
 }
 
@@ -282,7 +282,7 @@ async function changeVault() {
 }
 
 async function resetApp() {
-    if (!confirm("Bist du sicher? Alle lokalen Einstellungen und Verbindungsdaten werden gelöscht (deine Notizen bleiben auf der Festplatte).")) {
+    if (!confirm(t('desktopApp.resetConfirm'))) {
         return;
     }
     
@@ -301,7 +301,7 @@ async function resetApp() {
         resetAppState();
     } catch (e: any) {
         console.error("Failed to wipe app:", e);
-        alert(`Fehler beim Zurücksetzen: ${e}`);
+        alert(t('desktopApp.resetError', { error: e }));
     }
 }
 
@@ -314,13 +314,13 @@ async function loadFile(path: string) {
         appState.activeContent = content;
         appState.activeFile = path;
         appState.isReaderMode = appState.defaultView === 'reader';
-        
+
         // Add to tabs if not present
         if (!appState.tabs.includes(path)) {
             appState.tabs.push(path);
         }
     } catch (e: any) {
-        appState.statusMsg = `Load error: ${e}`;
+        appState.statusMsg = t('desktopApp.loadErrorPrefix', { error: e });
     }
 }
 
@@ -343,11 +343,11 @@ watch(() => appState.activeContent, async (newVal) => {
         try {
             const fullPath = `${appState.vaultPath}/${appState.activeFile}`;
             await writeTextFile(fullPath, newVal);
-            appState.statusMsg = `Gespeichert`;
+            appState.statusMsg = t('desktopApp.saved');
             appState.justSaved = true;
             setTimeout(() => appState.justSaved = false, 500);
         } catch (e: any) {
-            appState.statusMsg = `Fehler: ${e}`;
+            appState.statusMsg = t('desktopApp.genericError', { error: e });
         }
     }, 500);
 });
@@ -358,7 +358,7 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
   const node = appState.contextMenu.node;
   
   const handleRename = async () => {
-    const newName = prompt('Neuer Name:', node.name);
+    const newName = prompt(t('desktopApp.renamePrompt'), node.name);
     if (newName && newName !== node.name && appState.vaultPath) {
       const oldPath = `${appState.vaultPath}/${node.path}`;
       const newPathStr = node.path.substring(0, node.path.length - node.name.length) + newName + (node.isDir ? '' : (newName.endsWith('.md') ? '' : '.md'));
@@ -369,36 +369,36 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
         if (appState.activeFile === node.path) {
           appState.activeFile = newPathStr;
         }
-      } catch (e) { alert(`Fehler beim Umbenennen: ${e}`); }
+      } catch (e) { alert(t('desktopApp.renameError', { error: e })); }
     }
   };
 
   if (node.isDir) {
     return [
       [
-        { id: 'new_note', label: 'Neue Note hier', icon: FilePlus, onSelect: () => createNewNote(node.path) },
-        { id: 'new_folder', label: 'Neuer Unterordner', icon: FolderPlus, onSelect: async () => {
+        { id: 'new_note', label: t('desktopApp.ctxNewNoteHere'), icon: FilePlus, onSelect: () => createNewNote(node.path) },
+        { id: 'new_folder', label: t('tree.newFolder'), icon: FolderPlus, onSelect: async () => {
            if (!appState.vaultPath) return;
-           const folderName = prompt('Name des Unterordners:');
+           const folderName = prompt(t('desktopApp.newSubfolderPrompt'));
            if (folderName) {
                try {
                    await mkdir(`${appState.vaultPath}/${node.path}/${folderName}`);
                    await refreshLocalFiles();
-               } catch(e) { alert(`Fehler: ${e}`); }
+               } catch(e) { alert(t('desktopApp.genericError', { error: e })); }
            }
         }},
-        { id: 'import', label: 'Dateien importieren…', icon: Download, onSelect: () => console.log('Import', node.path) },
-        { id: 'favorite', label: 'Favorisieren', icon: Star, onSelect: () => console.log('Fav', node.path) },
+        { id: 'import', label: t('desktopApp.ctxImportFiles'), icon: Download, onSelect: () => console.log('Import', node.path) },
+        { id: 'favorite', label: t('desktopApp.ctxFavorite'), icon: Star, onSelect: () => console.log('Fav', node.path) },
       ],
       [
-        { id: 'rename', label: 'Umbenennen', icon: Edit2, onSelect: handleRename },
-        { id: 'move', label: 'Verschieben nach…', icon: FolderOutput, submenu: 'move' },
-        { id: 'export_zip', label: 'Exportieren als ZIP', icon: Download, onSelect: () => console.log('Export ZIP', node.path) },
-        { id: 'stats', label: 'Ordner-Statistik', icon: Info, onSelect: () => console.log('Stats', node.path) },
-        { id: 'color', label: 'Farbe ändern', icon: Palette, submenu: 'color' },
+        { id: 'rename', label: t('tree.rename'), icon: Edit2, onSelect: handleRename },
+        { id: 'move', label: t('desktopApp.ctxMoveTo'), icon: FolderOutput, submenu: 'move' },
+        { id: 'export_zip', label: t('desktopApp.ctxExportZip'), icon: Download, onSelect: () => console.log('Export ZIP', node.path) },
+        { id: 'stats', label: t('desktopApp.ctxFolderStats'), icon: Info, onSelect: () => console.log('Stats', node.path) },
+        { id: 'color', label: t('desktopApp.ctxChangeColor'), icon: Palette, submenu: 'color' },
       ],
       [
-        { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: () => {
+        { id: 'delete', label: t('tree.delete'), icon: Trash2, danger: true, onSelect: () => {
            appState.folderToDelete = node;
         }},
       ]
@@ -406,39 +406,39 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
   } else {
     return [
       [
-        { id: 'open_new', label: 'Öffnen in neuem Tab', icon: ExternalLink, onSelect: () => loadFile(node.path) },
-        { id: 'sticky', label: 'Als Sticky Note öffnen', icon: StickyNote, onSelect: async () => {
+        { id: 'open_new', label: t('desktopApp.ctxOpenNewTab'), icon: ExternalLink, onSelect: () => loadFile(node.path) },
+        { id: 'sticky', label: t('desktopApp.ctxOpenSticky'), icon: StickyNote, onSelect: async () => {
              try {
                  await invoke('open_sticky', { path: node.path });
-             } catch(e) { alert(`Fehler: ${e}`); }
+             } catch(e) { alert(t('desktopApp.genericError', { error: e })); }
         }},
-        { id: 'rename', label: 'Umbenennen', icon: Edit2, onSelect: handleRename },
-        { id: 'favorite', label: 'Favorisieren', icon: Star, onSelect: () => console.log('Fav', node.path) },
+        { id: 'rename', label: t('tree.rename'), icon: Edit2, onSelect: handleRename },
+        { id: 'favorite', label: t('desktopApp.ctxFavorite'), icon: Star, onSelect: () => console.log('Fav', node.path) },
       ],
       [
-        { id: 'duplicate', label: 'Duplizieren', icon: Copy, onSelect: async () => {
+        { id: 'duplicate', label: t('tree.duplicate'), icon: Copy, onSelect: async () => {
            if (!appState.vaultPath) return;
            const copyPath = node.path.replace(/\.md$/, ' (Kopie).md');
            try {
              await copyFile(`${appState.vaultPath}/${node.path}`, `${appState.vaultPath}/${copyPath}`);
              await refreshLocalFiles();
-           } catch(e) { alert(`Fehler: ${e}`); }
+           } catch(e) { alert(t('desktopApp.genericError', { error: e })); }
         }},
-        { id: 'move', label: 'Verschieben nach…', icon: FolderOutput, submenu: 'move' },
-        { id: 'copy_link', label: 'Internen Link kopieren', icon: Copy, onSelect: async () => {
+        { id: 'move', label: t('desktopApp.ctxMoveTo'), icon: FolderOutput, submenu: 'move' },
+        { id: 'copy_link', label: t('desktopApp.ctxCopyLink'), icon: Copy, onSelect: async () => {
            try {
              await navigator.clipboard.writeText(`synap://${node.path}`);
-             appState.statusMsg = "Link in die Zwischenablage kopiert!";
+             appState.statusMsg = t('desktopApp.linkCopied');
            } catch(e) { console.error(e); }
         }},
-        { id: 'share', label: 'Externen Link teilen', icon: Share, onSelect: () => console.log('Share', node.path) },
-        { id: 'export', label: 'Exportieren', icon: Download, submenu: 'export' },
-        { id: 'details', label: 'Details anzeigen', icon: Info, onSelect: () => alert(`Datei: ${node.name}\nPfad: ${node.path}`) },
+        { id: 'share', label: t('desktopApp.ctxShare'), icon: Share, onSelect: () => console.log('Share', node.path) },
+        { id: 'export', label: t('desktopApp.ctxExport'), icon: Download, submenu: 'export' },
+        { id: 'details', label: t('desktopApp.ctxShowDetails'), icon: Info, onSelect: () => alert(t('desktopApp.fileDetails', { name: node.name, path: node.path })) },
       ],
       [
-        { id: 'archive', label: 'Archivieren', icon: FolderOutput, onSelect: () => console.log('Archive', node.path) },
-        { id: 'delete', label: 'Löschen', icon: Trash2, danger: true, onSelect: async () => {
-           if (!confirm(`Möchtest du die Datei '${node.name}' wirklich löschen?`)) return;
+        { id: 'archive', label: t('desktopApp.ctxArchive'), icon: FolderOutput, onSelect: () => console.log('Archive', node.path) },
+        { id: 'delete', label: t('tree.delete'), icon: Trash2, danger: true, onSelect: async () => {
+           if (!confirm(t('desktopApp.deleteFileConfirm', { name: node.name }))) return;
            if (appState.vaultPath) {
              const fp = `${appState.vaultPath}/${node.path}`;
              try {
@@ -448,7 +448,7 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
                  appState.activeFile = null;
                  appState.activeContent = '';
                }
-             } catch(e) { alert(`Fehler beim Löschen: ${e}`); }
+             } catch(e) { alert(t('desktopApp.deleteFileError', { error: e })); }
            }
         }},
       ]

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { NoteEditor as BaseNoteEditor } from '@synap/ui-vue'
+import { useI18n } from 'vue-i18n'
 import { uploadAttachment } from '~/utils/attachmentUpload'
 
 const props = defineProps<{ path: string }>()
 
 const tabs = useTabsStore()
 const preferences = usePreferencesStore()
+const { t } = useI18n()
 const { saving, conflict, save, saveNow, keepMine, loadTheirs } = useAutosave(props.path)
 
 const tab = computed(() => tabs.tabs.find((t) => t.path === props.path))
@@ -45,7 +47,7 @@ async function handleAttachmentInsert(type: 'image' | 'file', handler: (file: Fi
         editorRef.value?.replacePlaceholder(id, content)
       } catch (err) {
         editorRef.value?.replacePlaceholder(id, null)
-        useToast().show(errorMessageOf(err, 'Upload fehlgeschlagen'), 'error')
+        useToast().show(errorMessageOf(err, t('editor.uploadFailed')), 'error')
       }
     }
   }
@@ -107,10 +109,10 @@ watch(
         <Transition appear enter-active-class="transition duration-150 ease-out" leave-active-class="transition duration-100 ease-in" enter-from-class="scale-95 opacity-0" leave-to-class="scale-95 opacity-0">
           <div class="w-full max-w-md rounded-xl border border-border-strong bg-surface-1 p-6 text-sm text-content-primary shadow-float">
             <h2 class="mb-2 font-semibold text-content-primary">
-              Datei wurde extern geändert
+              {{ t('conflict.title') }}
             </h2>
             <p class="mb-4 text-content-secondary">
-              Die Datei wurde außerhalb der App geändert, seit sie geladen wurde. Wie soll fortgefahren werden?
+              {{ t('conflict.message') }}
             </p>
             <div class="flex justify-end gap-2">
               <button
@@ -118,14 +120,14 @@ watch(
                 class="rounded-md bg-surface-2 px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04]"
                 @click="loadTheirs"
               >
-                Externe Version laden
+                {{ t('conflict.loadExternal') }}
               </button>
               <button
                 type="button"
                 class="rounded-md border border-danger/40 bg-surface-2 px-4 py-2 text-danger transition-colors duration-150 hover:bg-danger/10"
                 @click="keepMine"
               >
-                Meine Version überschreiben
+                {{ t('conflict.keepMine') }}
               </button>
             </div>
           </div>

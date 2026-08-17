@@ -31,7 +31,7 @@ void load()
     <h2 class="border-b border-border pb-2 text-xl font-semibold">{{ t('settings.vaultStatsTitle') }}</h2>
 
     <p v-if="loading" class="text-sm text-content-tertiary">
-      Lädt…
+      {{ t('common.loading') }}
     </p>
 
     <div v-else-if="stats" class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">

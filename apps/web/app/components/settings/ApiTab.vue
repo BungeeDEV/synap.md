@@ -22,17 +22,17 @@ async function createToken() {
     newName.value = ''
     await refresh()
   } catch (err: any) {
-    errorMsg.value = err.message || 'Fehler beim Erstellen des Tokens'
+    errorMsg.value = err.message || t('settings.tokenCreateError')
   }
 }
 
 async function deleteToken(id: number) {
-  if (!confirm('Soll dieser Token wirklich gelöscht werden? Externe Clients, die ihn nutzen, verlieren sofort den Zugriff.')) return
+  if (!confirm(t('settings.deleteTokenConfirm'))) return
   try {
     await $fetch(`/api/settings/token/${id}`, { method: 'DELETE' })
     await refresh()
   } catch (err: any) {
-    alert(err.message || 'Fehler beim Löschen des Tokens')
+    alert(err.message || t('settings.tokenDeleteError'))
   }
 }
 </script>
@@ -66,7 +66,7 @@ async function deleteToken(id: number) {
         <input
           v-model="newName"
           type="text"
-          placeholder="Token-Name (z.B. Mein MacBook)"
+          :placeholder="t('settings.tokenNamePlaceholder')"
           class="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2.5 text-content-primary placeholder:text-content-tertiary focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
           required
         />
@@ -94,8 +94,8 @@ async function deleteToken(id: number) {
             <div>
               <div class="font-medium text-content-primary">{{ token.name }}</div>
               <div class="mt-1 flex items-center gap-4 text-xs text-content-tertiary">
-                <span>Erstellt: {{ new Date(token.created_at).toLocaleDateString() }}</span>
-                <span v-if="token.last_used_at">Zuletzt genutzt: {{ new Date(token.last_used_at).toLocaleDateString() }}</span>
+                <span>{{ t('actions.createdAt') }}: {{ new Date(token.created_at).toLocaleDateString() }}</span>
+                <span v-if="token.last_used_at">{{ t('settings.lastUsedAt') }}: {{ new Date(token.last_used_at).toLocaleDateString() }}</span>
                 <span v-else>{{ t('settings.neverUsed') }}</span>
               </div>
             </div>
@@ -103,7 +103,7 @@ async function deleteToken(id: number) {
             <button
               type="button"
               class="rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-red-500/10 hover:text-red-500"
-              title="Token widerrufen"
+              :title="t('settings.revokeToken')"
               @click="deleteToken(token.id)"
             >
               <Trash2 class="h-5 w-5" stroke-width="1.5" />

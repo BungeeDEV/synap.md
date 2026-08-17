@@ -21,8 +21,8 @@ export interface SlashCommand {
 }
 
 /** Wraps the current selection (or, with no selection, a freshly inserted placeholder word) in a Link mark - `window.prompt` rather than new BubbleMenu UI, since the BubbleMenu spec only calls for Bold/Italic/Strike/Code. */
-function insertLink(editor: Editor): void {
-  const url = window.prompt('Link-URL')
+function insertLink(editor: Editor, promptLabel: string): void {
+  const url = window.prompt(promptLabel)
   if (!url) return
 
   const { from, to } = editor.state.selection
@@ -41,6 +41,7 @@ function insertWikilink(editor: Editor): void {
 
 export interface SlashCommandOptions {
   onAttachmentInsert: (type: 'image' | 'file') => void
+  linkPromptLabel?: string
 }
 
 // Order is significant: it's the display/fallback order within each group,
@@ -75,7 +76,7 @@ export const getSlashCommands = (options: SlashCommandOptions): SlashCommand[] =
   { id: 'callout-warning', label: 'Warnung', icon: 'AlertTriangle', group: 'insert', aliases: ['warnung', 'warning', 'achtung'], run: (editor) => editor.chain().focus().insertContent({ type: 'callout', attrs: { type: 'warning' }, content: [{ type: 'paragraph' }] }).run() },
   { id: 'math-block', label: 'Mathe-Block', icon: 'Sigma', group: 'insert', aliases: ['math', 'mathe', 'latex', 'formel'], run: (editor) => editor.chain().focus().insertContent({ type: 'mathBlock' }).run() },
   { id: 'code-block', label: 'Code-Block', icon: 'Code', group: 'insert', aliases: ['codeblock'], run: (editor) => editor.chain().focus().toggleCodeBlock().run() },
-  { id: 'link', label: 'Link', icon: 'Link', group: 'insert', aliases: ['link', 'url'], run: insertLink },
+  { id: 'link', label: 'Link', icon: 'Link', group: 'insert', aliases: ['link', 'url'], run: (editor) => insertLink(editor, options.linkPromptLabel ?? 'Link-URL') },
   { id: 'wikilink', label: 'Wikilink', icon: 'AtSign', group: 'insert', aliases: ['wiki', 'mention'], run: insertWikilink },
   { id: 'image', label: 'Bild', icon: 'Image', group: 'insert', aliases: ['bild', 'image', 'foto'], run: () => options.onAttachmentInsert('image') },
   { id: 'attachment', label: 'Datei-Anhang', icon: 'Paperclip', group: 'insert', aliases: ['datei', 'file', 'anhang'], run: () => options.onAttachmentInsert('file') },

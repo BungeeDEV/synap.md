@@ -14,7 +14,7 @@ const query = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const filteredOptions = computed(() => {
-  const options = folderOptionsOf(vaultTree.tree).filter((option) => isValidMoveTarget(props.node, option.path))
+  const options = folderOptionsOf(vaultTree.tree, t('tree.vaultRoot')).filter((option) => isValidMoveTarget(props.node, option.path))
   const trimmed = query.value.trim().toLowerCase()
   if (!trimmed) return options
   return options.filter((option) => option.name.toLowerCase().includes(trimmed))
@@ -45,7 +45,7 @@ onMounted(() => { void nextTick(() => inputRef.value?.focus()) })
         </button>
       </li>
       <li v-if="filteredOptions.length === 0" class="px-2.5 py-2 text-sm text-content-tertiary">
-        Keine Treffer
+        {{ t('editor.noResults') }}
       </li>
     </ul>
   </div>

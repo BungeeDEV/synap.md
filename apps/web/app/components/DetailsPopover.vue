@@ -130,7 +130,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Größe
+                {{ t('actions.size') }}
               </dt>
               <dd class="text-content-primary">
                 {{ formatBytes(details.totalSizeBytes) }}

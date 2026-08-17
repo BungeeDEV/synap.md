@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import { appState } from '../store';
 import { ChevronRight, FileText, PencilLine, Eye, X } from '@lucide/vue';
 import NoteEditor from './NoteEditor.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: string;
@@ -75,21 +78,21 @@ const breadcrumbs = computed(() => {
           <span :class="['truncate', idx === breadcrumbs.length - 1 ? 'segment-last' : '']">{{ segment }}</span>
         </template>
       </div>
-      <div v-else class="text-sm text-content-tertiary">Keine Datei ausgewählt</div>
+      <div v-else class="text-sm text-content-tertiary">{{ t('desktopApp.noFileSelected') }}</div>
 
       <!-- Right: View Mode Toggle (no border, accent bg for active) -->
       <div v-if="appState.activeFile" class="flex items-center gap-0.5 rounded-full p-0.5 bg-surface-2">
-        <button 
+        <button
           @click="appState.isReaderMode = false"
           :class="['p-1.5 rounded-full transition-colors', !appState.isReaderMode ? 'bg-accent text-base' : 'text-content-tertiary hover:text-content-secondary']"
-          title="Bearbeiten"
+          :title="t('settings.modeEdit')"
         >
           <PencilLine class="w-3.5 h-3.5" stroke-width="2" />
         </button>
-        <button 
+        <button
           @click="appState.isReaderMode = true"
           :class="['p-1.5 rounded-full transition-colors', appState.isReaderMode ? 'bg-accent text-base' : 'text-content-tertiary hover:text-content-secondary']"
-          title="Lesen"
+          :title="t('settings.modeRead')"
         >
           <Eye class="w-3.5 h-3.5" stroke-width="2" />
         </button>
@@ -111,13 +114,13 @@ const breadcrumbs = computed(() => {
     <!-- Empty State -->
     <div v-else class="flex-1 p-8 flex flex-col items-center justify-center text-content-tertiary gap-3">
       <FileText class="w-10 h-10 opacity-30" stroke-width="1.5" />
-      <p>Wähle oder erstelle eine Notiz</p>
+      <p>{{ t('desktopApp.selectOrCreateNote') }}</p>
     </div>
 
     <!-- Floating Statusbar -->
     <div class="statusbar shadow-float z-50">
       <span v-if="appState.statusMsg" class="truncate max-w-[200px]">{{ appState.statusMsg }}</span>
-      <span v-else>Bereit</span>
+      <span v-else>{{ t('desktopApp.ready') }}</span>
       <div class="w-px h-4 bg-divider-strong mx-1"></div>
       <div :class="['save-dot', appState.justSaved ? 'just-saved' : '']"></div>
     </div>

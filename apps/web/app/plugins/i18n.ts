@@ -5,7 +5,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   const i18n = createSynapI18n()
   nuxtApp.vueApp.use(i18n)
 
-  // Initialize locale from preferences if store is available (or we can watch it)
-  // We'll watch it in app.vue or a dedicated auth/preference plugin, 
-  // but for now we mount it so it's available.
+  // Exposes the global composer (i18n.global) on nuxtApp so non-component
+  // code (raw plugins like fetch-error-toast.client.ts, composables outside
+  // setup) can translate without vue-i18n's useI18n(), which requires a
+  // live component instance via Vue's inject() and isn't available there.
+  return { provide: { i18n: i18n.global } }
 })

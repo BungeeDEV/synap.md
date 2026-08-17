@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import {ChevronLeft} from '@lucide/vue'
+import {useI18n} from 'vue-i18n'
 import {
   isSubmenuItem,
   type ContextMenuGroup,
   type ContextMenuItem
 } from '~/utils/contextMenuTypes'
+
+const {t} = useI18n()
 
 const props = defineProps<{
   open: boolean,
@@ -181,7 +184,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           <ChevronLeft
               class="h-4 w-4 shrink-0"
               stroke-width="1.5"/>
-          Zurück
+          {{ t('common.back') }}
         </button>
         <slot
             :name="activeSubmenuId ?? undefined"

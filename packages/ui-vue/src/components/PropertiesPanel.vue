@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{
   frontmatter: Record<string, any> | null
 }>()
@@ -33,7 +35,7 @@ const otherProperties = computed(() => {
 
 <template>
   <div v-if="hasFrontmatter" class="properties-panel border border-base-200 rounded-lg p-4 mb-6 bg-base-100/50">
-    <div class="text-sm font-semibold mb-3 text-base-content/80">Properties</div>
+    <div class="text-sm font-semibold mb-3 text-base-content/80">{{ t('editor.properties') }}</div>
     <div class="grid grid-cols-[120px_1fr] gap-2 text-sm">
       <template v-if="title">
         <div class="text-base-content/60 font-medium py-1">title</div>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
 const tabs = useTabsStore()
 const pendingClosePath = ref<string | null>(null)
+const { t } = useI18n()
 
 function selectTab(path: string): void {
   tabs.setActiveTab(path)
@@ -37,7 +39,7 @@ function confirmClose(): void {
       <span>{{ tab.title }}</span>
       <span
         class="flex h-5 w-5 items-center justify-center rounded transition duration-150 hover:bg-white/[0.06] active:scale-90"
-        title="Schließen"
+        :title="t('common.close')"
         @click="closeTab(tab.path, $event)"
       >
         <span v-if="tab.dirty" class="h-1.5 w-1.5 rounded-full bg-content-tertiary group-hover:hidden" />
@@ -48,9 +50,9 @@ function confirmClose(): void {
 
   <ConfirmDialog
     v-if="pendingClosePath"
-    title="Änderungen verwerfen?"
-    message="Diese Note hat ungespeicherte Änderungen, die beim Schließen verloren gehen."
-    confirm-label="Verwerfen"
+    :title="t('tabs.discardChangesTitle')"
+    :message="t('tabs.discardChangesMessage')"
+    :confirm-label="t('tabs.discard')"
     @confirm="confirmClose"
     @cancel="pendingClosePath = null"
   />

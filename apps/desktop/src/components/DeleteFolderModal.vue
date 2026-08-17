@@ -72,7 +72,7 @@ async function confirmDelete() {
     emit('deleted');
     close();
   } catch (e: any) {
-    errorMessage.value = `Fehler beim Löschen: ${e}`;
+    errorMessage.value = t('desktopApp.deleteFileError', { error: e });
     isDeleting.value = false;
   }
 }
@@ -100,13 +100,13 @@ async function confirmDelete() {
             {{ t('dialogs.deleteFolderConfirm', { name: targetNode.name }) }}
           </p>
           <p class="text-[13px] text-content-tertiary">
-            Diese Aktion kann nicht rückgängig gemacht werden.
+            {{ t('dialogs.deleteFolderIrreversible') }}
           </p>
         </div>
 
         <div v-if="isChecking" class="text-[13px] text-content-tertiary flex items-center gap-2 px-2">
           <div class="w-3 h-3 border-2 border-content-tertiary border-t-transparent rounded-full animate-spin"></div>
-          Prüfe Ordnerinhalt...
+          {{ t('dialogs.checkingFolderContents') }}
         </div>
 
         <template v-else>

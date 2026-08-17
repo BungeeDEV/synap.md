@@ -2,6 +2,9 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { appState } from '../store';
 import { Search, FileText, CornerDownLeft } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: 'select', path: string): void
@@ -78,7 +81,7 @@ function selectFile(path: string) {
           ref="searchInput"
           v-model="searchQuery"
           class="flex-1 bg-transparent text-[15px] text-content-primary focus:outline-none placeholder:text-content-tertiary"
-          placeholder="Notiz suchen..."
+          :placeholder="t('desktopApp.searchPlaceholder')"
         />
         <div class="text-[11px] font-mono text-content-tertiary bg-surface-2 px-1.5 py-0.5 rounded border border-divider">ESC</div>
       </div>
@@ -102,22 +105,22 @@ function selectFile(path: string) {
             </div>
             
             <div v-if="index === selectedIndex" class="shrink-0 flex items-center text-accent/50 gap-1">
-              <span class="text-[10px] uppercase font-semibold tracking-wider">Öffnen</span>
+              <span class="text-[10px] uppercase font-semibold tracking-wider">{{ t('desktopApp.openHint') }}</span>
               <CornerDownLeft class="w-3.5 h-3.5" stroke-width="2" />
             </div>
           </div>
         </template>
         <template v-else>
           <div class="px-4 py-8 text-center text-content-tertiary text-[13px]">
-            Keine Notizen gefunden.
+            {{ t('desktopApp.noNotesFound') }}
           </div>
         </template>
       </div>
-      
+
       <!-- Footer Info -->
       <div class="px-4 py-2 border-t border-divider bg-surface-2 flex items-center gap-4 text-[11px] text-content-tertiary">
-        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↑</span> <span class="font-mono bg-surface-1 px-1 rounded border border-divider">↓</span> Navigieren</span>
-        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↵</span> Auswählen</span>
+        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↑</span> <span class="font-mono bg-surface-1 px-1 rounded border border-divider">↓</span> {{ t('editor.navigate') }}</span>
+        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↵</span> {{ t('editor.select') }}</span>
       </div>
     </div>
   </div>

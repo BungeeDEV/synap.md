@@ -44,7 +44,7 @@ async function loadShareSettings() {
       requireLogin.value = false
     }
   } catch (e: any) {
-    toast.show(e.data?.statusMessage || 'Fehler beim Laden', 'error')
+    toast.show(e.data?.statusMessage || t('share.loadError'), 'error')
   } finally {
     loading.value = false
   }
@@ -66,7 +66,7 @@ async function handleSave() {
     if (!isShared.value) {
       if (shareId.value) {
         await $fetch('/api/share', { method: 'DELETE', query: { path: targetPath.value } })
-        toast.show('Freigabe deaktiviert', 'success')
+        toast.show(t('share.disabledToast'), 'success')
       }
     } else {
       let expires = null
@@ -95,7 +95,7 @@ async function handleSave() {
         }
       })
       shareId.value = res.id
-      toast.show('Freigabe gespeichert', 'success')
+      toast.show(t('share.savedToast'), 'success')
     }
     closeShareDialog()
   } catch (e: any) {
@@ -110,9 +110,9 @@ async function handleCopy() {
   const url = `${window.location.origin}/share/${shareId.value}`
   try {
     await navigator.clipboard.writeText(url)
-    toast.show('Link kopiert', 'success')
+    toast.show(t('share.linkCopiedToast'), 'success')
   } catch {
-    toast.show('Fehler beim Kopieren', 'error')
+    toast.show(t('share.copyErrorToast'), 'error')
   }
 }
 
@@ -166,7 +166,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                         v-if="shareId"
                         type="button"
                         class="shrink-0 rounded-md bg-surface-2 p-1.5 text-content-secondary transition-colors hover:bg-surface-3 hover:text-content-primary"
-                        title="Link kopieren"
+                        :title="t('share.copyLink')"
                         @click="handleCopy"
                       >
                         <Copy class="h-4 w-4" stroke-width="1.5" />
@@ -180,7 +180,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                       <input
                         v-model="customId"
                         type="text"
-                        placeholder="Zufällige ID generieren"
+                        :placeholder="t('share.customIdPlaceholder')"
                         class="w-full rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-sm text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
                       />
                     </div>
@@ -192,7 +192,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                     <input
                       v-model="password"
                       type="password"
-                      :placeholder="originalHasPassword ? 'Passwort unverändert (leer lassen zum Behalten)' : 'Kein Passwort (optional)'"
+                      :placeholder="originalHasPassword ? t('share.passwordUnchangedPlaceholder') : t('share.noPasswordPlaceholder')"
                       class="w-full rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-sm text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
                     />
                     <p v-if="originalHasPassword && !password" class="mt-1 text-xs text-content-tertiary">{{ t('share.passwordSet') }}</p>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                         v-model.number="maxViews"
                         type="number"
                         min="1"
-                        placeholder="Unbegrenzt"
+                        :placeholder="t('share.unlimitedPlaceholder')"
                         class="w-full rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-sm text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
                       />
                     </div>
