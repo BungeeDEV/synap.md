@@ -659,6 +659,27 @@
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
+
+  /* Accent Swatch Input - strips the native color input's own border/padding
+     chrome so it renders as a plain circular swatch instead of a boxy inset. */
+  .accent-swatch-input {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .accent-swatch-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .accent-swatch-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 9999px;
+  }
+  .accent-swatch-input::-moz-color-swatch {
+    border: none;
+    border-radius: 9999px;
+  }
 }
 
 @layer utilities {
