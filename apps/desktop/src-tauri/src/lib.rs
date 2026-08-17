@@ -1,4 +1,5 @@
-use notify::Watcher;
+use notify::event::ModifyKind;
+use notify::{EventKind, Watcher};
 use reqwest::Client;
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
@@ -6,6 +7,9 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::RecvTimeoutError;
+use std::time::Duration;
 use tauri::{Emitter, Manager, State};
 
 struct AppState {
@@ -16,6 +20,7 @@ struct AppState {
     token: Mutex<Option<String>>,
     watcher: Mutex<Option<notify::RecommendedWatcher>>,
     sync_loop_id: Mutex<u64>,
+    syncing: AtomicBool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -44,6 +49,18 @@ fn compute_hash(path: &Path) -> std::io::Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
+fn safe_join(vault_root: &Path, rel_path: &str) -> Result<PathBuf, String> {
+    let rel = Path::new(rel_path);
+    if rel.is_absolute()
+        || rel
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(format!("Rejected unsafe path from server: {}", rel_path));
+    }
+    Ok(vault_root.join(rel))
+}
+
 #[tauri::command]
 fn init_db(
     app_handle: tauri::AppHandle,
@@ -63,6 +80,9 @@ fn init_db(
 
     let db_path = db_dir.join("sync.db");
     let conn = Connection::open(&db_path).map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")
+        .map_err(|e| format!("Failed to set PRAGMA: {}", e))?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sync_state (
@@ -88,29 +108,39 @@ fn init_db(
 
     // Background thread for local file changes (notify)
     let app_clone = app_handle.clone();
-    // FIXME
     std::thread::spawn(move || {
-        for event in rx.into_iter().flatten() {
-            if matches!(
-                event.kind,
-                notify::EventKind::Modify(notify::event::ModifyKind::Data(_))
-                    | notify::EventKind::Create(_)
-            ) {
-                // Notify trigger multiple events. Debounce slightly
-                std::thread::sleep(std::time::Duration::from_millis(500));
-
-                let state = app_clone.state::<AppState>();
-                let url = state.server_url.lock().unwrap().clone();
-                let token = state.token.lock().unwrap().clone();
-
-                if let (Some(u), Some(t)) = (url, token) {
-                    // Simply trigger a full sync when local files change!
-                    let app_clone_async = app_clone.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let _ = perform_sync(&app_clone_async, &u, &t).await;
-                        let _ = app_clone_async.emit("sync-done", ());
-                    });
+        let mut pending = false;
+        loop {
+            match rx.recv_timeout(Duration::from_millis(500)) {
+                Ok(Ok(event)) => {
+                    if matches!(
+                        event.kind,
+                        EventKind::Modify(ModifyKind::Data(_)) | EventKind::Create(_)
+                    ) {
+                        pending = true;
+                    }
                 }
+                Ok(Err(e)) => {
+                    log::warn!("Watcher error: {}", e);
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    if pending {
+                        pending = false;
+
+                        let state = app_clone.state::<AppState>();
+                        let url = state.server_url.lock().unwrap().clone();
+                        let token = state.token.lock().unwrap().clone();
+
+                        if let (Some(u), Some(t)) = (url, token) {
+                            let app_clone_async = app_clone.clone();
+                            tauri::async_runtime::spawn(async move {
+                                perform_sync(&app_clone_async, &u, &t).await.ok();
+                                app_clone_async.emit("sync-done", ()).ok();
+                            });
+                        }
+                    }
+                }
+                Err(RecvTimeoutError::Disconnected) => break,
             }
         }
     });
@@ -174,14 +204,20 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     // 3. Also update hashes for existing files that may have changed on disk
     for rel_path in &disk_files {
         let abs_path = vault_root.join(rel_path);
-        let hash = compute_hash(&abs_path).unwrap_or_default();
+        let hash = match compute_hash(&abs_path) {
+            Ok(h) => h,
+            Err(e) => {
+                log::warn!("Failed to hash {}: {}", rel_path, e);
+                continue;
+            }
+        };
 
-        let _ = tx.execute(
+        tx.execute(
             "INSERT OR IGNORE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, NULL, 0, 'local')",
             params![rel_path, hash],
-        );
+        ).ok();
         // Check if hash differs from what's in DB
-        let db_hash: Option<String> = conn
+        let db_hash: Option<String> = tx
             .query_row(
                 "SELECT local_hash FROM sync_state WHERE path = ?",
                 params![rel_path],
@@ -194,15 +230,16 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         if let Some(ref stored_hash) = db_hash
             && stored_hash != &hash
         {
-            let _ = tx.execute(
+            tx.execute(
                 "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
                 params![hash, rel_path],
-            );
+            )
+            .ok();
         }
     }
 
     // 4. Mark files that are in DB but no longer on disk
-    let mut stmt = conn
+    let mut stmt = tx
         .prepare("SELECT path FROM sync_state")
         .map_err(|e| e.to_string())?;
     let db_paths: Vec<String> = stmt
@@ -210,12 +247,14 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();
+    drop(stmt);
     for db_path in &db_paths {
         if !disk_files.contains(db_path) {
-            let _ = tx.execute(
+            tx.execute(
                 "UPDATE sync_state SET status = 'deleted' WHERE path = ?",
                 params![db_path],
-            );
+            )
+            .ok();
         }
     }
 
@@ -245,7 +284,60 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
 // SYNC ENGINE
 // =======================
 
+async fn fetch_manifest(
+    client: &Client,
+    url: &str,
+    token: &str,
+) -> Result<Vec<ManifestItem>, String> {
+    let manifest_url = format!("{}/api/vault/manifest", url.trim_end_matches('/'));
+    let res = client
+        .get(&manifest_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+        .map_err(|e| format!("Network Error: {}", e))?;
+    let text = res.text().await.unwrap_or_default();
+
+    match serde_json::from_str::<ManifestResponse>(&text) {
+        Ok(wrapper) => Ok(wrapper.files),
+        Err(_) => serde_json::from_str::<Vec<ManifestItem>>(&text)
+            .map_err(|_| "Invalid Manifest".to_string()),
+    }
+}
+
 pub async fn perform_sync(
+    app_handle: &tauri::AppHandle,
+    url: &str,
+    token: &str,
+) -> Result<(), String> {
+    let state = app_handle.state::<AppState>();
+
+    if state
+        .syncing
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Ok(());
+    }
+
+    let result = perform_sync_inner(app_handle, url, token).await;
+
+    state.syncing.store(false, Ordering::SeqCst);
+    result
+}
+
+struct PulledUpdate {
+    path: String,
+    new_hash: String,
+    remote_hash: String,
+}
+
+struct PushedUpdate {
+    path: String,
+    hash: String,
+}
+
+async fn perform_sync_inner(
     app_handle: &tauri::AppHandle,
     url: &str,
     token: &str,
@@ -259,36 +351,30 @@ pub async fn perform_sync(
         .ok_or("No vault path")?;
     let vault_root = PathBuf::from(&vault_path);
 
-    // 1. Fetch Manifest
-    let manifest_url = format!("{}/api/vault/manifest", url.trim_end_matches('/'));
-    let res = state
-        .client
-        .get(&manifest_url)
-        .header("Authorization", format!("Bearer {}", token))
-        .send()
-        .await
-        .map_err(|e| format!("Network Error: {}", e))?;
-    let text = res.text().await.unwrap_or_default();
+    // 1. Fetch manifest once; reused for pull, push & remote-delete detection
+    let remote_files = fetch_manifest(&state.client, url, token).await?;
 
-    let remote_files = match serde_json::from_str::<ManifestResponse>(&text) {
-        Ok(wrapper) => wrapper.files,
-        Err(_) => {
-            serde_json::from_str::<Vec<ManifestItem>>(&text).map_err(|_| "Invalid Manifest")?
-        }
-    };
+    // 2. Scan remote files & pull missing/changed ones
+    let mut pulled_updates: Vec<PulledUpdate> = Vec::new();
 
-    // 2. Scan remote files and pull missing/changed ones
-    for remote in remote_files {
-        let rel_path = remote.path;
-        let remote_hash = remote.hash.unwrap_or_default();
-        let abs_path = vault_root.join(&rel_path);
+    for remote in &remote_files {
+        let rel_path = &remote.path;
+        let remote_hash = remote.hash.clone().unwrap_or_default();
+
+        let abs_path = match safe_join(&vault_root, rel_path) {
+            Ok(p) => p,
+            Err(e) => {
+                log::warn!("{}", e);
+                continue;
+            }
+        };
 
         let local_hash: Option<String> = {
             let db_guard = state.db.lock().unwrap();
             let conn = db_guard.as_ref().ok_or("DB not initialized")?;
             conn.query_row(
                 "SELECT local_hash FROM sync_state WHERE path = ?",
-                params![&rel_path],
+                params![rel_path],
                 |row| row.get(0),
             )
             .optional()
@@ -297,9 +383,8 @@ pub async fn perform_sync(
         };
 
         if local_hash.as_deref() != Some(remote_hash.as_str()) {
-            // Need to Pull
             let pull_url = format!("{}/api/vault/sync/pull", url.trim_end_matches('/'));
-            let payload = serde_json::json!({ "paths": vec![&rel_path] });
+            let payload = serde_json::json!({ "paths": vec![rel_path] });
             let pull_res = state
                 .client
                 .post(&pull_url)
@@ -315,54 +400,56 @@ pub async fn perform_sync(
                 if let Ok(wrapper) = serde_json::from_str::<PullResponseWrapper>(&p_text)
                     && let Some(item) = wrapper.files.into_iter().next()
                 {
-                    // Write to disk
                     if let Some(parent) = abs_path.parent() {
                         let _ = fs::create_dir_all(parent);
                     }
-                    let _ = fs::write(&abs_path, item.content);
+                    if let Err(e) = fs::write(&abs_path, item.content) {
+                        log::warn!("Failed to write pulled file {}: {}", rel_path, e);
+                        continue;
+                    }
 
-                    // Update DB
-                    let new_hash = compute_hash(&abs_path).unwrap_or_default();
-                    let db_guard = state.db.lock().unwrap();
-                    if let Some(conn) = db_guard.as_ref() {
-                        let _ = conn.execute(
-                            "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                            params![rel_path, new_hash, remote_hash],
-                        );
+                    match compute_hash(&abs_path) {
+                        Ok(new_hash) => pulled_updates.push(PulledUpdate {
+                            path: rel_path.clone(),
+                            new_hash,
+                            remote_hash: remote_hash.clone(),
+                        }),
+                        Err(e) => log::warn!("Failed to hash pulled file {}: {}", rel_path, e),
                     }
                 }
             }
         }
     }
 
+    // Batch all pull-related DB writes into a single transaction
+    if !pulled_updates.is_empty() {
+        let db_guard = state.db.lock().unwrap();
+        let conn = db_guard.as_ref().ok_or("DB not initialized")?;
+        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        for u in &pulled_updates {
+            tx.execute(
+                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+                params![u.path, u.new_hash, u.remote_hash]
+            ).ok();
+        }
+
+        tx.commit().map_err(|e| e.to_string()).ok();
+    }
+
     // 3. Push local-only or modified files to the server
     let local_files = scan_local_md_files(&vault_root);
-    let _remote_paths: std::collections::HashSet<String> = {
-        // Re-fetch manifest paths to know what's on the server
-        let manifest_url2 = format!("{}/api/vault/manifest", url.trim_end_matches('/'));
-        let res2 = state
-            .client
-            .get(&manifest_url2)
-            .header("Authorization", format!("Bearer {}", token))
-            .send()
-            .await;
-        if let Ok(res2) = res2 {
-            let text2 = res2.text().await.unwrap_or_default();
-            let items: Vec<ManifestItem> = match serde_json::from_str::<ManifestResponse>(&text2) {
-                Ok(w) => w.files,
-                Err(_) => serde_json::from_str(&text2).unwrap_or_default(),
-            };
-            items.into_iter().map(|i| i.path).collect()
-        } else {
-            std::collections::HashSet::new()
-        }
-    };
 
+    let mut pushed_updates: Vec<PushedUpdate> = Vec::new();
     for rel_path in &local_files {
         let abs_path = vault_root.join(rel_path);
-        let local_hash = compute_hash(&abs_path).unwrap_or_default();
+        let local_hash = match compute_hash(&abs_path) {
+            Ok(h) => h,
+            Err(e) => {
+                log::warn!("Failed to hash {}: {}", rel_path, e);
+                continue;
+            }
+        };
 
-        // Check DB status
         let db_status: Option<(String, Option<String>)> = {
             let db_guard = state.db.lock().unwrap();
             let conn = db_guard.as_ref().ok_or("DB not initialized")?;
@@ -385,34 +472,40 @@ pub async fn perform_sync(
             }
         };
 
-        if should_push {
-            // Read file content and push
-            if let Ok(content) = fs::read_to_string(&abs_path) {
-                let push_url = format!("{}/api/vault/sync/push", url.trim_end_matches('/'));
-                let payload = serde_json::json!({
-                    "files": [{ "path": rel_path, "content": content }]
+        if should_push && let Ok(content) = fs::read_to_string(&abs_path) {
+            let push_url = format!("{}/api/vault/sync/push", url.trim_end_matches('/'));
+            let payload = serde_json::json!({
+                "files": [{ "path": rel_path, "content": content }]
+            });
+            let push_res = state
+                .client
+                .post(&push_url)
+                .header("Authorization", format!("Bearer {}", token))
+                .json(&payload)
+                .send()
+                .await;
+            if let Ok(push_res) = push_res
+                && push_res.status().is_success()
+            {
+                pushed_updates.push(PushedUpdate {
+                    path: rel_path.clone(),
+                    hash: local_hash,
                 });
-                let push_res = state
-                    .client
-                    .post(&push_url)
-                    .header("Authorization", format!("Bearer {}", token))
-                    .json(&payload)
-                    .send()
-                    .await;
-
-                if let Ok(push_res) = push_res
-                    && push_res.status().is_success()
-                {
-                    let db_guard = state.db.lock().unwrap();
-                    if let Some(conn) = db_guard.as_ref() {
-                        let _ = conn.execute(
-                            "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                            params![rel_path, local_hash, local_hash],
-                        );
-                    }
-                }
             }
         }
+    }
+
+    if !pushed_updates.is_empty() {
+        let db_guard = state.db.lock().unwrap();
+        let conn = db_guard.as_ref().ok_or("DB not initialized")?;
+        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        for u in &pushed_updates {
+            tx.execute(
+                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+                params![u.path, u.hash, u.hash]
+            ).ok();
+        }
+        tx.commit().map_err(|e| e.to_string())?;
     }
 
     Ok(())
@@ -564,7 +657,7 @@ async fn pull_file(
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let vault_path = state.vault_path.lock().unwrap().clone().unwrap_or_default();
-    let abs_path = PathBuf::from(vault_path).join(&path);
+    let abs_path = safe_join(&PathBuf::from(vault_path), &path)?;
 
     // Read from local disk first in Phase 1
     if abs_path.exists()
@@ -592,7 +685,7 @@ async fn push_file(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let vault_path = state.vault_path.lock().unwrap().clone().unwrap_or_default();
-    let abs_path = PathBuf::from(vault_path).join(&path);
+    let abs_path = safe_join(&PathBuf::from(vault_path), &path)?;
 
     // Save to local disk
     if let Some(parent) = abs_path.parent() {
@@ -601,7 +694,7 @@ async fn push_file(
     fs::write(&abs_path, &content).map_err(|e| format!("Disk error: {}", e))?;
 
     // Update local DB to PendingUpload
-    let new_hash = compute_hash(&abs_path).unwrap_or_default();
+    let new_hash = compute_hash(&abs_path).map_err(|e| format!("Hash error: {}", e))?;
     {
         let db_guard = state.db.lock().unwrap();
         if let Some(conn) = db_guard.as_ref() {
@@ -711,6 +804,7 @@ pub fn run() {
             token: Mutex::new(None),
             watcher: Mutex::new(None),
             sync_loop_id: Mutex::new(0),
+            syncing: AtomicBool::new(false),
         })
         .invoke_handler(tauri::generate_handler![
             init_db,
