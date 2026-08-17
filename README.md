@@ -1,5 +1,8 @@
-<!-- markdownlint-disable MD033 MD041 -->
 <div align="center">
+
+<div align="center">
+  <img src="img/banner.svg" alt="synap.md — plain files, your server, no lock-in" width="100%" />
+</div>
 
 # synap.md
 
@@ -8,6 +11,7 @@
 [![CI](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml/badge.svg)](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/BungeeDEV/synap-monorepo)](https://github.com/BungeeDEV/synap-monorepo/releases)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 </div>
 
@@ -32,6 +36,8 @@ file format.
 - 🗑️ **Trash & archive** with configurable retention, instead of permanent
   deletes
 - 📝 **Templates** and daily notes
+- 🌐 **Multi-language UI** — German and English, switchable in Settings
+- 🎨 **Customizable theme** — light/dark plus a configurable accent color
 - 🔒 **Self-hosted & single-user** — your data never leaves your server
 - 🐳 **One container, one volume** — deploy with Docker Compose or
   [Dokploy](https://dokploy.com) in minutes
@@ -50,27 +56,28 @@ file format.
 
 This is a [Turborepo](https://turborepo.com)/pnpm monorepo:
 
-| Path | Description |
-|---|---|
-| [`apps/web`](apps/web) | Nuxt 4 web app + Nitro backend — the synap.md server |
-| [`apps/desktop`](apps/desktop) | Tauri 2 + Vue 3 desktop client |
-| [`packages/store`](packages/store) | Shared Pinia stores & API client, used by both apps |
-| [`packages/editor-core`](packages/editor-core) | Shared Tiptap editor extensions (slash commands, wikilinks, uploads) |
-| [`packages/ui-vue`](packages/ui-vue) | Shared Vue component library, including the editor UI |
-| [`packages/design-tokens`](packages/design-tokens) | Shared design tokens (CSS/Tailwind) |
-| [`packages/config-tailwind`](packages/config-tailwind) | Shared Tailwind config |
-| [`docs`](docs) | Architecture docs (e.g. the web ↔ desktop sync design) |
+| Path                                                   | Description                                                          |
+| ------------------------------------------------------ | -------------------------------------------------------------------- |
+| [`apps/web`](apps/web)                                 | Nuxt 4 web app + Nitro backend — the synap.md server                 |
+| [`apps/desktop`](apps/desktop)                         | Tauri 2 + Vue 3 desktop client                                       |
+| [`packages/store`](packages/store)                     | Shared Pinia stores & API client, used by both apps                  |
+| [`packages/editor-core`](packages/editor-core)         | Shared Tiptap editor extensions (slash commands, wikilinks, uploads) |
+| [`packages/ui-vue`](packages/ui-vue)                   | Shared Vue component library, including the editor UI                |
+| [`packages/i18n`](packages/i18n)                       | Shared vue-i18n setup & DE/EN translation catalog, used by both apps |
+| [`packages/design-tokens`](packages/design-tokens)     | Shared design tokens (CSS/Tailwind)                                  |
+| [`packages/config-tailwind`](packages/config-tailwind) | Shared Tailwind config                                               |
+| [`docs`](docs)                                         | Architecture docs (e.g. the web ↔ desktop sync design)               |
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Web frontend | Nuxt 4, Vue 3, TypeScript, Tailwind CSS v4 |
-| Web backend | Nitro server routes (no separate backend service), better-sqlite3 |
-| Desktop shell | Tauri 2 (Rust) |
-| Desktop sync engine | `rusqlite`, `notify` (filesystem watcher), `reqwest` |
-| Editor | Tiptap 3, shared byte-for-byte between web and desktop |
-| Tooling | Turborepo, pnpm workspaces, Vitest, ESLint |
+| Layer               | Technology                                                        |
+| ------------------- | ----------------------------------------------------------------- |
+| Web frontend        | Nuxt 4, Vue 3, TypeScript, Tailwind CSS v4                        |
+| Web backend         | Nitro server routes (no separate backend service), better-sqlite3 |
+| Desktop shell       | Tauri 2 (Rust)                                                    |
+| Desktop sync engine | `rusqlite`, `notify` (filesystem watcher), `reqwest`              |
+| Editor              | Tiptap 3, shared byte-for-byte between web and desktop            |
+| Tooling             | Turborepo, pnpm workspaces, Vitest, ESLint                        |
 
 ## Getting started
 
@@ -132,10 +139,30 @@ feature/*  →  develop  →  main (tagged vX.Y.Z)
 - **Releases** — once `develop` is in a releasable state, it's merged into
   `main` and tagged there.
 
+## Roadmap
+
+There's no formal roadmap doc yet — planned work and open questions are
+tracked in [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues).
+Feel free to open one if you have an idea, or weigh in on an existing one.
+
 ## Contributing
 
-This is currently a personal project without a formal contribution process.
-Issues and discussion are welcome via [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues).
+Contributions are welcome — bug fixes, features, docs, or just opening an
+issue to discuss an idea.
+
+- Not sure where to start? Check issues labeled
+  [`good first issue`](https://github.com/BungeeDEV/synap-monorepo/labels/good%20first%20issue)
+- For anything bigger, open an issue first so we can align on the approach
+  before you sink time into it
+- Dev setup is the same as [Local development](#local-development) above;
+  see [`CONTRIBUTING.md`](CONTRIBUTING.md) for PR conventions and the
+  branching model in more detail
+
+**Why contribute?** The most interesting open problem in synap.md right now
+is the web ↔ desktop sync engine — keeping a local Tauri vault and a
+server-backed vault consistent, offline-first, without pulling in a full
+CRDT stack. If you're into local-first software, sync engines, or Rust,
+[`docs/sync-plan.md`](docs/sync-plan.md) is a good place to start reading.
 
 ## License
 
