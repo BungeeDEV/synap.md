@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Archive, Check, ChevronDown, Folder, LayoutTemplate, List, Search, Settings, Star, Trash2 } from '@lucide/vue'
 import { flattenFilesAndFolders } from '~/utils/fuzzyMatch'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const sidebarPanel = useSidebarPanelStore()
 const vaultTree = useVaultTreeStore()
 const mobileNav = useMobileNavStore()
@@ -103,7 +105,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             class="absolute top-full left-0 z-50 mt-1 min-w-44 origin-top-left rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
           >
             <p class="px-3.5 pt-1.5 pb-1 text-xs font-medium tracking-wider text-content-tertiary uppercase">
-              Ansicht
+              {{ t('sidebar.view') }}
             </p>
             <button
               type="button"
@@ -111,7 +113,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
               @click="selectPanel('explorer')"
             >
               <Folder class="h-4 w-4 shrink-0" stroke-width="1.5" />
-              <span class="flex-1">Explorer</span>
+              <span class="flex-1">{{ t('sidebar.explorer') }}</span>
               <Check v-if="sidebarPanel.activePanel === 'explorer'" class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" />
             </button>
             <button
@@ -120,7 +122,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
               @click="selectPanel('outline')"
             >
               <List class="h-4 w-4 shrink-0" stroke-width="1.5" />
-              <span class="flex-1">Gliederung</span>
+              <span class="flex-1">{{ t('sidebar.outline') }}</span>
               <Check v-if="sidebarPanel.activePanel === 'outline'" class="h-4 w-4 shrink-0 text-accent" stroke-width="1.5" />
             </button>
           </div>
@@ -131,7 +133,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center rounded-lg text-content-tertiary transition-colors duration-150 hover:bg-white/[0.08] hover:text-content-primary active:scale-95"
-          title="Suche (⌘K)"
+          :title="t('sidebar.search')"
           @click="openCommandPalette()"
         >
           <Search class="h-5 w-5" stroke-width="1.5" />
@@ -139,7 +141,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center rounded-lg text-content-tertiary transition-colors duration-150 hover:bg-white/[0.08] hover:text-content-primary active:scale-95"
-          title="Einstellungen"
+          :title="t('sidebar.settings')"
           @click="navigateTo('/settings')"
         >
           <Settings class="h-5 w-5" stroke-width="1.5" />
@@ -152,7 +154,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       class="shrink-0 touch-manipulation select-none border-b border-border p-1"
     >
       <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-medium tracking-wider text-content-tertiary uppercase">
-        Favoriten
+        {{ t('sidebar.favorites') }}
       </p>
       <ul class="space-y-0.5 pb-1">
         <li v-for="entry in favoriteEntries" :key="entry.path">
@@ -187,7 +189,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
     -->
     <div class="shrink-0 touch-manipulation select-none border-t border-border p-1">
       <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-medium tracking-wider text-content-tertiary uppercase">
-        Bibliothek
+        {{ t('sidebar.library') }}
       </p>
       <button
         type="button"
@@ -195,7 +197,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         @click="navigateTo('/settings?tab=templates')"
       >
         <LayoutTemplate class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
-        Vorlagen
+        {{ t('sidebar.templates') }}
       </button>
       <button
         type="button"
@@ -203,7 +205,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         @click="navigateTo('/settings?tab=archive')"
       >
         <Archive class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
-        Archiv
+        {{ t('sidebar.archive') }}
       </button>
       <button
         type="button"
@@ -211,12 +213,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         @click="navigateTo('/settings?tab=trash')"
       >
         <Trash2 class="h-4 w-4 shrink-0 text-content-tertiary/60" stroke-width="1.5" />
-        Papierkorb
+        {{ t('sidebar.trash') }}
       </button>
     </div>
 
     <div class="shrink-0 touch-manipulation select-none border-t border-border px-3 py-2 pb-safe-b text-xs text-content-tertiary/50">
-      {{ vaultTree.stats.files }} Dateien &middot; {{ vaultTree.stats.folders }} Ordner
+      {{ t('sidebar.files', { count: vaultTree.stats.files }) }} &middot; {{ t('sidebar.folders', { count: vaultTree.stats.folders }) }}
     </div>
   </aside>
 </template>

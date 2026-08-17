@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
+import { X, Folder, FileText, Activity } from '@lucide/vue'
 import type { VaultTreeNode } from '@synap/store'
 import { formatDate } from '#shared/formatDate'
 import { formatBytes } from '~/utils/formatBytes'
 import { countChars, countWords } from '~/utils/textStats'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{ node: VaultTreeNode }>()
 const emit = defineEmits<{ close: [] }>()
 
@@ -55,7 +57,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <div class="w-full max-w-sm rounded-xl border border-border-strong bg-surface-1 p-6 text-base text-content-primary shadow-float" @click.stop>
           <div class="mb-4 flex items-start justify-between gap-2">
             <h2 class="font-semibold text-content-primary">
-              Details
+              {{ t('actions.details') }}
             </h2>
             <button
               type="button"
@@ -71,13 +73,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           </p>
 
           <p v-if="loading" class="text-sm text-content-tertiary">
-            Lädt…
+            {{ t('common.loading') }}
           </p>
 
           <dl v-else-if="details?.kind === 'file'" class="space-y-2.5 text-sm">
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Erstellt
+                {{ t('actions.createdAt') }}
               </dt>
               <dd class="text-content-primary">
                 {{ formatTimestamp(details.createdAt) }}
@@ -85,7 +87,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Zuletzt geändert
+                {{ t('actions.lastModified') }}
               </dt>
               <dd class="text-content-primary">
                 {{ formatTimestamp(details.mtime) }}
@@ -93,7 +95,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Wörter
+                {{ t('actions.words') }}
               </dt>
               <dd class="text-content-primary">
                 {{ details.words }}
@@ -101,7 +103,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Zeichen
+                {{ t('actions.chars') }}
               </dt>
               <dd class="text-content-primary">
                 {{ details.chars }}
@@ -112,7 +114,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <dl v-else-if="details?.kind === 'folder'" class="space-y-2.5 text-sm">
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Notizen
+                {{ t('sidebar.files', { count: '' }).trim() }}
               </dt>
               <dd class="text-content-primary">
                 {{ details.noteCount }}
@@ -120,7 +122,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-content-tertiary">
-                Unterordner
+                {{ t('actions.subfolders') }}
               </dt>
               <dd class="text-content-primary">
                 {{ details.folderCount }}

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { ChevronRight, FilePlus, FileText } from '@lucide/vue'
 
 const { user, fetch: refreshSession } = useUserSession()
@@ -69,17 +71,13 @@ const headerSegments = computed(() => {
         <LazyNoteEditor v-if="tabs.activeTab" :key="tabs.activeTab.path" :path="tabs.activeTab.path" />
         <div v-else class="flex h-full flex-col items-center justify-center gap-3 text-content-tertiary">
           <FileText class="h-10 w-10" stroke-width="1.5" />
-          <p class="text-base">
-            Keine Note geöffnet
-          </p>
+          <p class="text-base">{{ t('editor.noNoteOpen') }}</p>
           <button
             type="button"
             class="flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm text-white transition duration-150 hover:bg-accent/90 active:scale-95 focus:outline-none focus:ring-1 focus:ring-accent/50"
             @click="triggerNewNote"
           >
-            <FilePlus class="h-4 w-4" stroke-width="1.5" />
-            Neue Notiz erstellen
-          </button>
+            <FilePlus class="h-4 w-4" stroke-width="1.5" />{{ t('tree.createNewNote') }}</button>
         </div>
       </div>
     </main>

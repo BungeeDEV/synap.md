@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 const { user, fetch: refreshSession } = useUserSession()
 const { show } = useToast()
 
@@ -72,13 +74,9 @@ async function savePassword(): Promise<void> {
 <template>
   <div class="space-y-8">
     <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Benutzername
-      </h2>
+      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">{{ t('settings.usernameLabel') }}</h2>
       <form class="flex flex-col gap-4 p-4 md:max-w-sm md:gap-2 md:p-0" @submit.prevent="saveUsername">
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Username
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.usernamePlaceholder') }}<input
             v-model="newUsername"
             type="text"
             class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
@@ -91,20 +89,14 @@ async function savePassword(): Promise<void> {
           type="submit"
           :disabled="usernameSaving"
           class="min-h-12 w-full rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:self-start"
-        >
-          Speichern
-        </button>
+        >{{ t('settings.save') }}</button>
       </form>
     </section>
 
     <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Passwort ändern
-      </h2>
+      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">{{ t('settings.changePassword') }}</h2>
       <form class="flex flex-col gap-4 p-4 md:max-w-sm md:gap-2 md:p-0" @submit.prevent="savePassword">
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Aktuelles Passwort
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.currentPassword') }}<input
             v-model="currentPassword"
             type="password"
             autocomplete="current-password"
@@ -115,9 +107,7 @@ async function savePassword(): Promise<void> {
           {{ currentPasswordError }}
         </p>
 
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Neues Passwort
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.newPassword') }}<input
             v-model="newPassword"
             type="password"
             autocomplete="new-password"
@@ -128,9 +118,7 @@ async function savePassword(): Promise<void> {
           {{ newPasswordError }}
         </p>
 
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Neues Passwort wiederholen
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.repeatNewPassword') }}<input
             v-model="repeatPassword"
             type="password"
             autocomplete="new-password"
@@ -142,9 +130,7 @@ async function savePassword(): Promise<void> {
           type="submit"
           :disabled="passwordSaving"
           class="min-h-12 w-full rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:self-start"
-        >
-          Passwort ändern
-        </button>
+        >{{ t('settings.changePassword') }}</button>
       </form>
     </section>
   </div>

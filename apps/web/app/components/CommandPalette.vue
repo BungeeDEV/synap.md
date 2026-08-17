@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { File, FileQuestion, SearchX } from '@lucide/vue'
 import { flattenFiles, fuzzyMatchFiles } from '~/utils/fuzzyMatch'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface ContentResult {
   path: string
@@ -150,7 +153,7 @@ onBeforeUnmount(() => {
             ref="inputRef"
             v-model="query"
             type="text"
-            placeholder="Notizen durchsuchen…"
+            :placeholder="t('palette.searchNotes')"
             class="w-full border-b border-border bg-transparent px-4 py-4 text-xl text-content-primary placeholder:text-content-tertiary focus:outline-none md:py-3.5 md:text-lg"
           >
 

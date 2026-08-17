@@ -8,6 +8,8 @@ useGlobalHotkeys()
 const { loggedIn } = useUserSession()
 const preferences = usePreferencesStore()
 
+import { useI18n } from 'vue-i18n'
+
 // import.meta.client guard: this runs during SSR too (top-level watch with
 // immediate:true in <script setup>), where an internal $fetch wouldn't carry
 // the incoming request's session cookie and would 401 pointlessly - see
@@ -15,6 +17,34 @@ const preferences = usePreferencesStore()
 // mount) anyway, so there's nothing SSR needs this for.
 watch(loggedIn, (isLoggedIn) => {
   if (isLoggedIn && import.meta.client) void preferences.load()
+}, { immediate: true })
+
+const { locale } = useI18n()
+watch(() => preferences.preferences.locale, (newLocale) => {
+  if (newLocale) locale.value = newLocale
+}, { immediate: true })
+
+watch(() => [preferences.preferences.theme, preferences.preferences.accentColor], async () => {
+  if (!import.meta.client) return
+  
+  const theme = preferences.preferences.theme
+  const accentColor = preferences.preferences.accentColor
+
+  document.documentElement.dataset.theme = theme || 'dark'
+
+  if (accentColor) {
+    document.documentElement.style.setProperty('--color-accent', accentColor)
+    const { computeAccentVariations } = await import('@synap/design-tokens')
+    const vars = computeAccentVariations(accentColor)
+    if (vars) {
+      document.documentElement.style.setProperty('--color-accent-soft', vars.soft)
+      document.documentElement.style.setProperty('--color-accent-strong', vars.strong)
+    }
+  } else {
+    document.documentElement.style.removeProperty('--color-accent')
+    document.documentElement.style.removeProperty('--color-accent-soft')
+    document.documentElement.style.removeProperty('--color-accent-strong')
+  }
 }, { immediate: true })
 </script>
 

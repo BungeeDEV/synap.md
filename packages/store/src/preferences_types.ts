@@ -7,6 +7,9 @@ export interface DailyNotesPreferences {
 export interface EditorPreferences {
   defaultViewMode: 'editor' | 'reader'
   editorFontSize: number
+  theme: 'dark' | 'light'
+  accentColor: string | null
+  locale: 'de' | 'en'
   dailyNotes: DailyNotesPreferences
   // Vault-relative file paths, independent of folder location - the
   // sidebar's Favoriten section lists these flat, unlike the tree view.
@@ -24,6 +27,9 @@ export interface EditorPreferences {
 export const DEFAULT_PREFERENCES: EditorPreferences = {
   defaultViewMode: 'editor',
   editorFontSize: 14,
+  theme: 'dark',
+  accentColor: null,
+  locale: 'de',
   dailyNotes: {
     folder: 'Tagesplanung',
     dateFormat: 'YYYY-MM-DD',

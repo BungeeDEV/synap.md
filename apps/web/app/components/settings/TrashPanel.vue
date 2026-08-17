@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { RotateCcw, Trash2 } from '@lucide/vue'
 
 interface TrashEntry {
@@ -66,9 +68,7 @@ async function confirmDeletePermanent(): Promise<void> {
 
 <template>
   <div>
-    <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-      Papierkorb
-    </h2>
+    <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">{{ t('settings.trashTitle') }}</h2>
 
     <p v-if="loading" class="text-sm text-content-tertiary">
       Lädt…
@@ -76,9 +76,7 @@ async function confirmDeletePermanent(): Promise<void> {
 
     <div v-else-if="entries.length === 0" class="flex flex-col items-center gap-2 py-12 text-center">
       <Trash2 class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
-      <p class="text-base text-content-tertiary">
-        Der Papierkorb ist leer.
-      </p>
+      <p class="text-base text-content-tertiary">{{ t('settings.trashEmpty') }}</p>
     </div>
 
     <ul v-else class="divide-y divide-border">

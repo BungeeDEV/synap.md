@@ -37,6 +37,9 @@ export const appState = reactive({
   editorFontSize: 16,
   editorFontFamily: 'sans' as 'sans' | 'serif' | 'mono',
   editorLineHeight: 1.7,
+  theme: 'dark' as 'dark' | 'light',
+  accentColor: null as string | null,
+  locale: 'de' as 'de' | 'en',
   
   // Settings & Sync State
   serverUrl: '',
@@ -68,6 +71,9 @@ export function resetAppState() {
   appState.editorFontSize = 16;
   appState.editorFontFamily = 'sans';
   appState.editorLineHeight = 1.7;
+  appState.theme = 'dark';
+  appState.accentColor = null;
+  appState.locale = 'de';
   appState.serverUrl = '';
   appState.token = '';
   appState.isAutoSyncEnabled = true;

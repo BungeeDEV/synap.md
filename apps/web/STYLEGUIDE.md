@@ -47,6 +47,9 @@ Ziel: jede Design-Entscheidung ist an genau einer Stelle
 (`tailwind.config.ts`) nachvollziehbar und wird nicht in 30 Komponenten
 unterschiedlich neu erfunden.
 
+**Ausnahme für dynamische Benutzerpräferenzen:**
+Die einzige Ausnahme von diesem Verbot ist die dynamische Akzentfarbe (vom Benutzer gewählt). Da Tailwind keine Utilities für Hex-Werte zur Laufzeit generieren kann, wird hierbei imperativ auf dem Root-Element manipuliert (`document.documentElement.style.setProperty('--color-accent', hex)`). Ein Template-Binding mit `:style="..."` bleibt weiterhin in allen Komponenten verboten.
+
 ---
 
 ## 2. Design-Tokens (Tailwind-Config)
@@ -328,6 +331,54 @@ zentriert
 ```
 
 ---
+
+## 5b. Form Controls (zwingend, globale Basis-Styles)
+
+Alle nativen Form-Elemente (`<input type="checkbox">`, `<input type="radio">`,
+`<select>`) werden **global** in `@layer base` der `main.css` / `styles.css`
+gestylt. Das bedeutet:
+
+- **Neue Checkboxen brauchen KEINE eigenen Klassen** – sie sehen automatisch
+  korrekt aus. Einfach `<input type="checkbox">` schreiben.
+- **Neue Selects brauchen KEINE eigenen Klassen** – der native `<select>`
+  bekommt automatisch das Design-Token-Styling (Surface-2-Background,
+  Border-Default, Custom-Chevron-Arrow).
+- **Neue Radios brauchen KEINE eigenen Klassen** – runder Border mit Accent-Dot
+  bei `:checked`.
+
+### Regeln
+
+1. **Verwende keine ad-hoc Tailwind-Klassen auf Form-Controls für Styling.**
+   Falsch: `class="h-4 w-4 rounded border-border text-accent"` auf einer
+   Checkbox. Richtig: kein `class` nötig, oder nur Layout-Klassen wie
+   `class="mt-2"`.
+
+2. **Die globalen Styles verwenden CSS-Variablen** (`var(--color-accent)` etc.),
+   damit Theme-Wechsel (dark/light) und dynamische Akzentfarben automatisch
+   greifen.
+
+3. **Ausnahmen**: Tailwind-peer-basierte Toggle-Switches (`.peer` + Pseudo-div)
+   und die Task-List-Checkboxen im Editor (höhere Spezifität) bleiben wie sie
+   sind.
+
+### Checkbox-Look
+- **Unchecked**: transparenter Hintergrund, `border-strong` (subtiler Rand),
+  `rounded-[4px]`
+- **Hover**: Border wird zu `content-tertiary`
+- **Checked**: `bg-accent`, `border-accent`, mit einem weißen Häkchen
+  (clip-path Polygon, animiert via scale bounce)
+- **Focus**: `accent-soft` Ring (2px)
+
+### Select-Look
+- **Default**: `bg-surface-2`, `border-default`, Custom-Chevron-SVG rechts,
+  `rounded-md` (6px)
+- **Hover**: Border wird zu `border-strong`
+- **Focus**: `accent`-Border + `accent-soft`-Ring
+- **Options**: `bg-surface-1` (für Dark-Mode-kompatibles Dropdown)
+
+### Radio-Look
+- **Unchecked**: transparent, `border-strong`, `rounded-full`
+- **Checked**: `border-accent` + innerer gefüllter Accent-Dot (8px, animiert)
 
 ## 6. Icons
 

@@ -1,14 +1,19 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
+import { onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+interface Props {
   title: string
   message: string
   confirmLabel?: string
   cancelLabel?: string
   destructive?: boolean
-}>(), {
-  confirmLabel: 'Löschen',
-  cancelLabel: 'Abbrechen',
-  destructive: true
+}
+
+withDefaults(defineProps<Props>(), {
+  destructive: false
 })
 
 const emit = defineEmits<{ confirm: [], cancel: [] }>()
@@ -40,18 +45,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <div class="flex justify-end gap-2">
             <button
               type="button"
-              class="rounded-md border border-border-strong px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-accent/50"
+              class="rounded-md border border-border bg-surface-1 px-4 py-2 text-sm font-medium text-content-primary hover:bg-surface-2 focus:ring-2 focus:ring-accent-soft focus:outline-none"
               @click="emit('cancel')"
             >
-              {{ cancelLabel }}
+              {{ cancelLabel || t('dialogs.cancel') }}
             </button>
             <button
               type="button"
-              class="rounded-md px-4 py-2 text-white transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
-              :class="destructive ? 'bg-danger hover:bg-danger/90' : 'bg-accent hover:bg-accent/90'"
+              class="rounded-md px-4 py-2 text-sm font-medium text-white focus:ring-2 focus:outline-none"
+              :class="destructive ? 'bg-danger hover:bg-danger/90 focus:ring-danger/20' : 'bg-accent hover:bg-accent/90 focus:ring-accent-soft'"
               @click="emit('confirm')"
             >
-              {{ confirmLabel }}
+              {{ confirmLabel || t('dialogs.deleteFolder') }}
             </button>
           </div>
         </div>

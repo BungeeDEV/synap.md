@@ -14,6 +14,11 @@ const require = createRequire(import.meta.url)
 export default defineNuxtConfig({
   compatibilityDate: '2026-07-15',
 
+  alias: {
+    '@synap/design-tokens': fileURLToPath(new URL('../../packages/design-tokens/src/index.ts', import.meta.url)),
+    '@synap/i18n': fileURLToPath(new URL('../../packages/i18n/src/index.ts', import.meta.url)),
+  },
+
   devtools: {enabled: true},
 
   modules: ['@nuxt/eslint', 'nuxt-auth-utils', '@pinia/nuxt', '@vite-pwa/nuxt'],
@@ -88,6 +93,14 @@ export default defineNuxtConfig({
         {
           find: '@synap/store',
           replacement: fileURLToPath(new URL('../../packages/store/src/index.ts', import.meta.url))
+        },
+        {
+          find: '@synap/design-tokens',
+          replacement: fileURLToPath(new URL('../../packages/design-tokens/src/index.ts', import.meta.url))
+        },
+        {
+          find: '@synap/i18n',
+          replacement: fileURLToPath(new URL('../../packages/i18n/src/index.ts', import.meta.url))
         },
         // pinia and vue each end up with two separate physical instances in
         // node_modules because apps/web pins typescript@5.9.x while

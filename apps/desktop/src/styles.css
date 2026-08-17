@@ -2,6 +2,67 @@
 @config "../tailwind.config.ts";
 
 @layer base {
+  :root[data-theme="dark"] {
+    --color-base: #141414;
+    --color-surface-1: #1a1a1a;
+    --color-surface-2: #232323;
+    --color-border-default: rgba(255,255,255,0.05);
+    --color-border-strong: rgba(255,255,255,0.10);
+    --color-content-primary: #EDEDEC;
+    --color-content-secondary: #a3a3a3;
+    --color-content-tertiary: #737373;
+    --color-accent: #F5A623;
+    --color-accent-soft: rgba(245, 166, 35, 0.5);
+    --color-success: #4ADE80;
+    --color-danger: #F87171;
+    --color-accent-strong: #D97706;
+    --color-success-strong: #15803D;
+    --color-danger-strong: #DC2626;
+    --color-overlay-1: rgba(255,255,255,0.02);
+    --color-overlay-2: rgba(255,255,255,0.06);
+  }
+
+  :root[data-theme="light"] {
+    --color-base: #ffffff;
+    --color-surface-1: #f4f4f5;
+    --color-surface-2: #e4e4e7;
+    --color-border-default: rgba(0,0,0,0.05);
+    --color-border-strong: rgba(0,0,0,0.10);
+    --color-content-primary: #18181b;
+    --color-content-secondary: #52525b;
+    --color-content-tertiary: #a1a1aa;
+    --color-accent: #F5A623;
+    --color-accent-soft: rgba(245, 166, 35, 0.2);
+    --color-success: #16a34a;
+    --color-danger: #dc2626;
+    --color-accent-strong: #b45309;
+    --color-success-strong: #15803d;
+    --color-danger-strong: #991b1b;
+    --color-overlay-1: rgba(0,0,0,0.03);
+    --color-overlay-2: rgba(0,0,0,0.06);
+  }
+
+  /* Default to dark if no attribute is set yet to prevent flash */
+  :root {
+    --color-base: #141414;
+    --color-surface-1: #1a1a1a;
+    --color-surface-2: #232323;
+    --color-border-default: rgba(255,255,255,0.05);
+    --color-border-strong: rgba(255,255,255,0.10);
+    --color-content-primary: #EDEDEC;
+    --color-content-secondary: #a3a3a3;
+    --color-content-tertiary: #737373;
+    --color-accent: #F5A623;
+    --color-accent-soft: rgba(245, 166, 35, 0.5);
+    --color-success: #4ADE80;
+    --color-danger: #F87171;
+    --color-accent-strong: #D97706;
+    --color-success-strong: #15803D;
+    --color-danger-strong: #DC2626;
+    --color-overlay-1: rgba(255,255,255,0.02);
+    --color-overlay-2: rgba(255,255,255,0.06);
+  }
+
   /* Global border-color reset — ensures NO white borders leak anywhere */
   *,
   *::before,
@@ -34,6 +95,126 @@
   :focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px theme('colors.accent.soft');
+  }
+
+  /*
+   * ── Global Form Controls ──────────────────────────────────────────────
+   * Branded base styles for all native form elements.
+   * More specific component selectors (task-list checkboxes, .custom-select,
+   * .toggle-switch) override these defaults where needed.
+   */
+
+  /* Checkbox ─ custom appearance with accent check-mark */
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer) {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    margin: 0;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: 4px;
+    background: transparent;
+    display: inline-grid;
+    place-content: center;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+    vertical-align: middle;
+  }
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer):hover {
+    border-color: var(--color-content-tertiary);
+  }
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer):checked {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer)::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: var(--color-base);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transform: scale(0);
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer):checked::before {
+    transform: scale(1);
+  }
+  input[type="checkbox"]:not([role="switch"]):not(.toggle-switch):not(.peer):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-soft);
+  }
+
+  /* Radio ─ circle with filled dot on select */
+  input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    margin: 0;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: 50%;
+    background: transparent;
+    display: inline-grid;
+    place-content: center;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+    vertical-align: middle;
+  }
+  input[type="radio"]:hover {
+    border-color: var(--color-content-tertiary);
+  }
+  input[type="radio"]:checked {
+    border-color: var(--color-accent);
+  }
+  input[type="radio"]::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    transform: scale(0);
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  input[type="radio"]:checked::before {
+    transform: scale(1);
+  }
+  input[type="radio"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-soft);
+  }
+
+  /* Select ─ custom dropdown arrow, themed background
+     (supplements the existing .custom-select component class) */
+  select:not(.custom-select) {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-content-primary);
+    border-radius: 6px;
+    padding: 8px 36px 8px 12px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23737373'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+  select:not(.custom-select):hover {
+    border-color: var(--color-border-strong);
+  }
+  select:not(.custom-select):focus {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-accent-soft);
+    border-color: var(--color-accent);
+  }
+  select option {
+    background-color: var(--color-surface-1);
+    color: var(--color-content-primary);
   }
 
   /* Keyboard Shortcuts */
@@ -70,7 +251,7 @@
     }
     *:hover,
     *:focus-within {
-      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+      scrollbar-color: var(--color-border-strong) transparent;
     }
     ::-webkit-scrollbar {
       width: 8px;

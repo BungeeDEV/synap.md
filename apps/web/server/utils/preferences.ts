@@ -1,4 +1,6 @@
 import { DEFAULT_PREFERENCES, type DailyNotesPreferences, type EditorPreferences } from '@synap/store/preferences_types'
+import { themeIds } from '@synap/design-tokens'
+import { LOCALE_IDS } from '@synap/i18n'
 
 const VIEW_MODES: EditorPreferences['defaultViewMode'][] = ['editor', 'reader']
 
@@ -42,6 +44,15 @@ export function parsePreferences(json: string): EditorPreferences {
     editorFontSize: typeof parsed.editorFontSize === 'number' && parsed.editorFontSize >= 10 && parsed.editorFontSize <= 24
       ? parsed.editorFontSize
       : DEFAULT_PREFERENCES.editorFontSize,
+    theme: themeIds.includes(parsed.theme as EditorPreferences['theme'])
+      ? parsed.theme as EditorPreferences['theme']
+      : DEFAULT_PREFERENCES.theme,
+    accentColor: typeof parsed.accentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)
+      ? parsed.accentColor
+      : DEFAULT_PREFERENCES.accentColor,
+    locale: LOCALE_IDS.includes(parsed.locale as EditorPreferences['locale'])
+      ? parsed.locale as EditorPreferences['locale']
+      : DEFAULT_PREFERENCES.locale,
     dailyNotes: parseDailyNotes(parsed.dailyNotes),
     favorites: parseStringArray(parsed.favorites, DEFAULT_PREFERENCES.favorites),
     expandedFolders: parseStringArray(parsed.expandedFolders, DEFAULT_PREFERENCES.expandedFolders),

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 const props = defineProps<{ path: string }>()
 
 const tabs = useTabsStore()
@@ -58,9 +60,7 @@ function onClick(event: MouseEvent): void {
 
     <div ref="scrollContainer" class="flex min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div class="min-w-0 flex-1 px-6 py-6">
-        <p v-if="loading && !html" class="text-sm text-content-tertiary">
-          Lädt…
-        </p>
+        <p v-if="loading && !html" class="text-sm text-content-tertiary">{{ t('editor.loading') }}</p>
         <template v-else>
           <DocumentHeader :path="props.path" :title="title" :mtime="mtime" />
           <div ref="container" class="prose prose-sm mx-auto max-w-3xl" @click="onClick" v-html="html" />
