@@ -7,9 +7,9 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::RecvTimeoutError;
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 use tauri::{Emitter, Manager, State};
 
 struct AppState {
@@ -19,7 +19,7 @@ struct AppState {
     server_url: Mutex<Option<String>>,
     token: Mutex<Option<String>>,
     watcher: Mutex<Option<notify::RecommendedWatcher>>,
-    sync_loop_id: Mutex<u64>,
+    sync_loop_id: AtomicU64,
     syncing: AtomicBool,
 }
 
@@ -208,6 +208,27 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     // 3. Also update hashes for existing files that may have changed on disk
     for rel_path in &disk_files {
         let abs_path = vault_root.join(rel_path);
+        let mtime_ms = fs::metadata(&abs_path)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0);
+
+        let stored_mtime: Option<i64> = tx
+            .query_row(
+                "SELECT local_mtime FROM sync_state WHERE path = ?",
+                params![rel_path],
+                |row| row.get(0),
+            )
+            .optional()
+            .unwrap_or(None)
+            .unwrap_or(None);
+
+        if stored_mtime == Some(mtime_ms) {
+            continue;
+        }
+
         let hash = match compute_hash(&abs_path) {
             Ok(h) => h,
             Err(e) => {
@@ -217,29 +238,17 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
         };
 
         tx.execute(
-            "INSERT OR IGNORE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, NULL, 0, 'local')",
-            params![rel_path, hash],
+            "INSERT INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status)
+             VALUES (?, ?, ?, NULL, 0, 'local')
+             ON CONFLICT(path) DO UPDATE SET
+                local_hash = excluded.local_hash,
+                local_mtime = excluded.local_mtime,
+                status = CASE WHEN sync_state.local_hash != excluded.local_hash
+            THEN 'modified'
+            ELSE sync_state.status
+            END",
+            params![rel_path, hash, mtime_ms],
         ).ok();
-        // Check if hash differs from what's in DB
-        let db_hash: Option<String> = tx
-            .query_row(
-                "SELECT local_hash FROM sync_state WHERE path = ?",
-                params![rel_path],
-                |row| row.get(0),
-            )
-            .optional()
-            .unwrap_or(None)
-            .unwrap_or(None);
-
-        if let Some(ref stored_hash) = db_hash
-            && stored_hash != &hash
-        {
-            tx.execute(
-                "UPDATE sync_state SET local_hash = ?, status = 'modified' WHERE path = ?",
-                params![hash, rel_path],
-            )
-            .ok();
-        }
     }
 
     // 4. Mark files that are in DB but no longer on disk
@@ -334,6 +343,7 @@ struct PulledUpdate {
     path: String,
     new_hash: String,
     remote_hash: String,
+    remote_mtime: i64,
 }
 
 struct PushedUpdate {
@@ -405,7 +415,7 @@ async fn perform_sync_inner(
                     && let Some(item) = wrapper.files.into_iter().next()
                 {
                     if let Some(parent) = abs_path.parent() {
-                        let _ = fs::create_dir_all(parent);
+                        fs::create_dir_all(parent).ok();
                     }
                     if let Err(e) = fs::write(&abs_path, item.content) {
                         log::warn!("Failed to write pulled file {}: {}", rel_path, e);
@@ -416,7 +426,8 @@ async fn perform_sync_inner(
                         Ok(new_hash) => pulled_updates.push(PulledUpdate {
                             path: rel_path.clone(),
                             new_hash,
-                            remote_hash: remote_hash.clone(),
+                            remote_hash,
+                            remote_mtime: remote.mtime.unwrap_or(0),
                         }),
                         Err(e) => log::warn!("Failed to hash pulled file {}: {}", rel_path, e),
                     }
@@ -432,8 +443,8 @@ async fn perform_sync_inner(
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         for u in &pulled_updates {
             tx.execute(
-                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                params![u.path, u.new_hash, u.remote_hash]
+                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, ?, 'Synced')",
+                params![u.path, u.new_hash, u.remote_hash, u.remote_mtime]
             ).ok();
         }
 
@@ -530,11 +541,7 @@ async fn start_background_sync(
     *state.server_url.lock().unwrap() = Some(url.clone());
     *state.token.lock().unwrap() = Some(token.clone());
 
-    let current_id = {
-        let mut id_guard = state.sync_loop_id.lock().unwrap();
-        *id_guard += 1;
-        *id_guard
-    };
+    let current_id = state.sync_loop_id.fetch_add(1, Ordering::SeqCst) + 1;
 
     let app_clone = app_handle.clone();
     tauri::async_runtime::spawn(async move {
@@ -544,20 +551,21 @@ async fn start_background_sync(
 
             let is_active = {
                 let state = app_clone.state::<AppState>();
-                let id = *state.sync_loop_id.lock().unwrap();
-                id == current_id
+                state.sync_loop_id.load(Ordering::SeqCst) == current_id
             };
 
             if !is_active {
                 break;
             }
 
-            let _ = app_clone.emit("sync-started", ());
+            app_clone.emit("sync-started", ()).ok();
             let result = perform_sync(&app_clone, &url, &token).await;
-            let _ = app_clone.emit(
-                "sync-done",
-                serde_json::json!({ "ok": result.is_ok(), "error": result.err() }),
-            );
+            app_clone
+                .emit(
+                    "sync-done",
+                    serde_json::json!({ "ok": result.is_ok(), "error": result.err() }),
+                )
+                .ok();
         }
     });
 
@@ -602,7 +610,7 @@ async fn wipe_sync_db(state: State<'_, AppState>) -> Result<(), String> {
 
 #[tauri::command]
 async fn stop_background_sync(state: State<'_, AppState>) -> Result<(), String> {
-    *state.sync_loop_id.lock().unwrap() += 1;
+    state.sync_loop_id.fetch_add(1, Ordering::SeqCst);
     Ok(())
 }
 
@@ -697,7 +705,7 @@ async fn push_file(
 
     // Save to local disk
     if let Some(parent) = abs_path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent).ok();
     }
     fs::write(&abs_path, &content).map_err(|e| format!("Disk error: {}", e))?;
 
@@ -706,10 +714,11 @@ async fn push_file(
     {
         let db_guard = state.db.lock().unwrap();
         if let Some(conn) = db_guard.as_ref() {
-            let _ = conn.execute(
+            conn.execute(
                 "UPDATE sync_state SET local_hash = ?, status = 'PendingUpload' WHERE path = ?",
                 params![new_hash, &path],
-            );
+            )
+            .ok();
         }
     }
 
@@ -742,7 +751,7 @@ async fn push_file(
             }
             if !parsed.conflicts.is_empty() {
                 use tauri_plugin_notification::NotificationExt;
-                let _ = app_handle
+                app_handle
                     .notification()
                     .builder()
                     .title("Sync-Konflikt erkannt")
@@ -750,11 +759,11 @@ async fn push_file(
                         "Es gab {} Konflikt(e) beim Synchronisieren.",
                         parsed.conflicts.len()
                     ))
-                    .show();
-                // Structured counterpart to the OS notification above, for
-                // the in-app persistent conflict notice (appState.syncStatus
-                // .lastConflictPath in App.vue).
-                let _ = app_handle.emit("sync-conflict", serde_json::json!({ "path": path }));
+                    .show()
+                    .ok();
+                app_handle
+                    .emit("sync-conflict", serde_json::json!({ "path": path }))
+                    .ok();
                 return Err(format!("Server Conflict: {:?}", parsed.conflicts));
             }
             if parsed.successes.is_empty() {
@@ -769,10 +778,11 @@ async fn push_file(
 
         let db_guard = state.db.lock().unwrap();
         if let Some(conn) = db_guard.as_ref() {
-            let _ = conn.execute(
+            conn.execute(
                 "UPDATE sync_state SET status = 'Synced', remote_hash = ? WHERE path = ?",
                 params![new_hash, path],
-            );
+            )
+            .ok();
         }
         Ok(())
     } else {
@@ -796,7 +806,7 @@ fn get_secure_token() -> Result<String, String> {
 #[tauri::command]
 fn delete_secure_token() -> Result<(), String> {
     let entry = keyring::Entry::new("synap_desktop", "auth_token").map_err(|e| e.to_string())?;
-    let _ = entry.delete_credential();
+    entry.delete_credential().ok();
     Ok(())
 }
 
@@ -815,7 +825,7 @@ pub fn run() {
             server_url: Mutex::new(None),
             token: Mutex::new(None),
             watcher: Mutex::new(None),
-            sync_loop_id: Mutex::new(0),
+            sync_loop_id: AtomicU64::new(0),
             syncing: AtomicBool::new(false),
         })
         .invoke_handler(tauri::generate_handler![
@@ -847,8 +857,8 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
+                            window.show().ok();
+                            window.set_focus().ok();
                         }
                     }
                     "quit" => app.exit(0),
@@ -864,8 +874,8 @@ pub fn run() {
                         && button_state == MouseButtonState::Up
                         && let Some(window) = tray.app_handle().get_webview_window("main")
                     {
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                        window.show().ok();
+                        window.set_focus().ok();
                     }
                 })
                 .build(app)?;
@@ -875,7 +885,7 @@ pub fn run() {
                 let window_clone = window.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        let _ = window_clone.hide();
+                        window_clone.hide().ok();
                         api.prevent_close();
                     }
                 });
