@@ -21,15 +21,30 @@ export interface ContextMenuState {
   initialSubmenu?: string;
 }
 
+export interface TabState {
+  path: string;
+  content: string;
+  dirty: boolean;
+}
+
+export interface SyncStatus {
+  state: 'idle' | 'syncing' | 'error';
+  pendingCount: number;
+  lastError: string | null;
+  lastConflictPath: string | null;
+}
+
 export const appState = reactive({
   vaultPath: null as string | null,
   localFiles: [] as FileItem[],
-  
-  // Tabs & Editor State
+
+  // Tabs & Editor State - each tab carries its own in-memory content/dirty
+  // flag (mirrors the web app's Pinia tabs store) so switching the active
+  // tab never re-reads the file from disk; App.vue's `activeContent`
+  // computed and `saveTimeouts` map key off `activeFile`/tab.path instead
+  // of a single global content field.
   activeFile: null as string | null,
-  activeContent: '',
-  lastLoadedContent: '',
-  tabs: [] as string[],
+  tabs: [] as TabState[],
   isReaderMode: false,
   
   // Editor Settings
@@ -48,6 +63,18 @@ export const appState = reactive({
   isAutoSyncEnabled: true,
   statusMsg: 'Bereit',
   justSaved: false,
+
+  // Structured sync status - distinguishes "syncing now" / "N files
+  // pending" / "error" instead of overloading statusMsg's single string
+  // for everything. lastConflictPath is set when a push reports a real
+  // conflict (server content kept as a local conflict copy); see App.vue's
+  // `sync-conflict` listener.
+  syncStatus: {
+    state: 'idle',
+    pendingCount: 0,
+    lastError: null,
+    lastConflictPath: null,
+  } as SyncStatus,
   isSettingsOpen: false,
   isSidebarOpen: true,
   isSearchOpen: false,
@@ -59,8 +86,6 @@ export function resetAppState() {
   appState.vaultPath = null;
   appState.localFiles = [];
   appState.activeFile = null;
-  appState.activeContent = '';
-  appState.lastLoadedContent = '';
   appState.tabs = [];
   appState.isReaderMode = false;
   appState.isSidebarOpen = true;
@@ -78,6 +103,7 @@ export function resetAppState() {
   appState.token = '';
   appState.isAutoSyncEnabled = true;
   appState.statusMsg = 'Bereit';
+  appState.syncStatus = { state: 'idle', pendingCount: 0, lastError: null, lastConflictPath: null };
   appState.isSettingsOpen = false;
   fileTree.value = [];
   openFolders.clear();

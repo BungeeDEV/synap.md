@@ -93,6 +93,10 @@ export interface TreeEditState {
   // routes submitEdit to note-from-template.post.ts instead of the plain
   // empty-file PUT. Absent (not just falsy) for every other create/rename.
   templateName?: string
+  // True while submitEdit()'s request is in flight - guards against a
+  // second Enter press (or a slow network) firing a duplicate request for
+  // the same rename/create, and lets TreeInlineInput show a busy state.
+  submitting: boolean
 }
 
 // Only one inline create/rename can be active at a time, and the folder it
@@ -401,7 +405,7 @@ async function confirmDelete(): Promise<void> {
 
   await $fetch('/api/vault/file', { method: 'DELETE', query: { path: node.path } })
   tabs.closeTab(node.path)
-  await vaultTree.refresh()
+  vaultTree.removeNode(node.path)
   toast.show(t('tree.movedToTrash', { name: node.name }))
 }
 
@@ -419,7 +423,7 @@ async function confirmFolderDelete(): Promise<void> {
         tabs.closeTab(tab.path)
       }
     }
-    await vaultTree.refresh()
+    vaultTree.removeNode(node.path)
     toast.show(t('tree.folderDeleted', { name: node.name }))
   } catch (err) {
     toast.show(errorMessageOf(err, t('tree.deleteFailed')), 'error')
@@ -431,7 +435,7 @@ async function archiveNode(node: VaultTreeNode): Promise<void> {
   try {
     await $fetch('/api/vault/archive', { method: 'POST', body: { path: node.path } })
     tabs.closeTab(node.path)
-    await vaultTree.refresh()
+    vaultTree.removeNode(node.path)
     toast.show(t('tree.archivedToast', { name: node.name }))
   } catch {
     toast.show(t('tree.archiveFailed'), 'error')
@@ -453,8 +457,13 @@ async function openInNewTab(node: VaultTreeNode): Promise<void> {
 async function duplicateNode(node: VaultTreeNode): Promise<void> {
   closeContextMenu()
   try {
-    const response = await $fetch<{ path: string }>('/api/vault/duplicate', { method: 'POST', body: { path: node.path } })
-    await vaultTree.refresh()
+    const response = await $fetch<{ path: string, mtime: string }>('/api/vault/duplicate', { method: 'POST', body: { path: node.path } })
+    // Duplicates always land as a sibling file next to the original, and the
+    // server resolves the "(Kopie [N])" name collision itself and returns
+    // the final path/mtime - enough to build the node locally without a
+    // full-tree refetch (duplicate only ever targets files, see fileMenuGroups).
+    const parentPath = parentFolderOf(node.path)
+    vaultTree.insertNode({ name: response.path.split('/').pop()!, path: response.path, type: 'file', mtime: new Date(response.mtime).getTime() }, parentPath)
     await tabs.openTab(response.path)
     toast.show(t('tree.duplicatedToast', { name: node.name }))
   } catch (err) {
@@ -598,12 +607,12 @@ function collidesWithSibling(candidatePath: string, parentPath: string, excludeP
 function startCreate(kind: 'create-file' | 'create-folder', parentPath: string): void {
   closeContextMenu()
   if (parentPath) vaultTree.expand(parentPath)
-  editState.value = { kind, parentPath, value: t('desktopApp.untitledNote'), error: null }
+  editState.value = { kind, parentPath, value: t('desktopApp.untitledNote'), error: null, submitting: false }
 }
 
 function startRename(node: VaultTreeNode): void {
   closeContextMenu()
-  editState.value = { kind: 'rename', parentPath: parentFolderOf(node.path), node, value: baseNameOf(node), error: null }
+  editState.value = { kind: 'rename', parentPath: parentFolderOf(node.path), node, value: baseNameOf(node), error: null, submitting: false }
 }
 
 function cancelEdit(): void {
@@ -622,7 +631,7 @@ function errorMessageOf(err: unknown, fallback: string): string {
 
 async function submitEdit(): Promise<void> {
   const state = editState.value
-  if (!state) return
+  if (!state || state.submitting) return
 
   const rawError = validateRawName(state.value)
   if (rawError) {
@@ -644,14 +653,19 @@ async function submitEdit(): Promise<void> {
       return
     }
 
+    editState.value = { ...state, submitting: true, error: null }
     try {
       const response = await $fetch<RenameResponse>('/api/vault/rename', { method: 'POST', body: { oldPath: node.path, newPath } })
       tabs.renameTab(node.path, newPath)
       editState.value = null
       await applyRenameResponse(response)
-      await vaultTree.refresh()
+      // Not response.mtime here: rename.post.ts returns it as an ISO string
+      // while VaultTreeNode.mtime is the epoch-ms number tree.get.ts's
+      // stat().mtimeMs produces, and a plain fs rename doesn't touch a
+      // file's mtime anyway - so the node's existing mtime is still correct.
+      vaultTree.relocateNode(node.path, newPath)
     } catch (err) {
-      editState.value = { ...state, error: errorMessageOf(err, t('tree.renameFailed')) }
+      editState.value = { ...state, submitting: false, error: errorMessageOf(err, t('tree.renameFailed')) }
     }
     return
   }
@@ -664,20 +678,30 @@ async function submitEdit(): Promise<void> {
     return
   }
 
+  editState.value = { ...state, submitting: true, error: null }
   try {
+    // Both file-creating branches return { path, mtime } (mtime as an ISO
+    // string - converted to epoch ms to match VaultTreeNode.mtime, same as
+    // tree.get.ts's stat().mtimeMs), which combined with the already-known
+    // `path` is enough to build the node locally. The folder branch returns
+    // no mtime, but folders don't carry one anyway.
+    let mtime: number | undefined
     if (isFile && state.templateName) {
-      await $fetch('/api/vault/note-from-template', { method: 'POST', body: { path, templateName: state.templateName } })
+      const response = await $fetch<{ path: string, mtime: string }>('/api/vault/note-from-template', { method: 'POST', body: { path, templateName: state.templateName } })
+      mtime = new Date(response.mtime).getTime()
       toast.show(t('tree.noteCreatedFromTemplate'))
     } else if (isFile) {
-      await $fetch('/api/vault/file', { method: 'PUT', body: { path, content: '' } })
+      const response = await $fetch<{ path: string, mtime: string }>('/api/vault/file', { method: 'PUT', body: { path, content: '' } })
+      mtime = new Date(response.mtime).getTime()
     } else {
       await $fetch('/api/vault/folder', { method: 'POST', body: { path } })
     }
     editState.value = null
-    await vaultTree.refresh()
+    const name = path.split('/').pop()!
+    vaultTree.insertNode(isFile ? { name, path, type: 'file', mtime } : { name, path, type: 'folder', children: [] }, state.parentPath)
     if (isFile) await tabs.openTab(path)
   } catch (err) {
-    editState.value = { ...state, error: errorMessageOf(err, t('tree.createFailed')) }
+    editState.value = { ...state, submitting: false, error: errorMessageOf(err, t('tree.createFailed')) }
   }
 }
 
@@ -727,7 +751,7 @@ function pickTemplate(template: TemplateOption): void {
   closeTemplateMenu()
   const parentPath = vaultTree.selectedFolder
   if (parentPath) vaultTree.expand(parentPath)
-  editState.value = { kind: 'create-file', parentPath, value: t('desktopApp.untitledNote'), error: null, templateName: template.name }
+  editState.value = { kind: 'create-file', parentPath, value: t('desktopApp.untitledNote'), error: null, templateName: template.name, submitting: false }
 }
 
 // --- Import .md files from the OS (native file picker) ---
@@ -784,9 +808,13 @@ async function moveNode(source: DragDescriptor, targetFolderPath: string): Promi
 
     await applyRenameResponse(response)
     if (targetFolderPath) vaultTree.expand(targetFolderPath)
-    await vaultTree.refresh()
+    vaultTree.relocateNode(source.path, newPath)
     return true
   } catch {
+    // Unlike the success path, this stays a full refresh() rather than a
+    // local patch: rename.post.ts can throw *after* the disk rename already
+    // succeeded (e.g. the index-update step failing), in which case the
+    // local tree would otherwise silently drift from what's actually on disk.
     await vaultTree.refresh()
     return false
   }
@@ -1060,12 +1088,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         </div>
       </Transition>
 
-      <div v-if="vaultTree.loading" class="space-y-1 p-1">
-        <div v-for="i in 8" :key="i" class="flex items-center gap-2 px-1.5 py-2">
-          <div class="h-5 w-5 shrink-0 animate-pulse rounded bg-white/5" />
-          <div class="h-4 animate-pulse rounded bg-white/5" :class="i % 3 === 0 ? 'w-20' : i % 2 === 0 ? 'w-32' : 'w-24'" />
-        </div>
-      </div>
+      <SkeletonList v-if="vaultTree.loading" :rows="8" />
 
       <p v-else-if="vaultTree.error" class="p-2 text-danger">
         {{ vaultTree.error }}
@@ -1197,6 +1220,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         <TreeInlineInput
           :model-value="editState.value"
           :error="editState.error"
+          :submitting="editState.submitting"
           @update:model-value="updateEditValue"
           @submit="submitEdit"
           @cancel="cancelEdit"
@@ -1221,6 +1245,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         <TreeInlineInput
           :model-value="editState.value"
           :error="editState.error"
+          :submitting="editState.submitting"
           @update:model-value="updateEditValue"
           @submit="submitEdit"
           @cancel="cancelEdit"

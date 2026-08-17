@@ -19,7 +19,7 @@ const { toasts, dismiss } = useToast()
       :class="toast.variant === 'error' ? 'text-danger' : 'text-content-primary'"
       @click="dismiss(toast.id)"
     >
-      {{ toast.message }}
+      {{ toast.message }}<span v-if="toast.count > 1" class="text-content-tertiary"> ({{ toast.count }}×)</span>
       <button
         v-if="toast.action"
         type="button"

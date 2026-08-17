@@ -62,7 +62,21 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
-      ]
+      ],
+      // Applies the last-known theme/accent from localStorage synchronously,
+      // before Vue mounts/hydrates - app.vue's own theme watch can't run
+      // early enough to prevent a flash of the CSS default, since it's
+      // gated behind an async preferences.load() that only starts after
+      // login resolves. This is a best guess only; app.vue's watch persists
+      // the cache (see synap:theme below) and always corrects it once the
+      // real preferences fetch resolves. Duplicates computeAccentVariations
+      // from @synap/design-tokens in plain JS rather than importing it,
+      // since this has to run as inert HTML-embedded script with no bundler
+      // access.
+      script: [{
+        innerHTML: `(function(){try{var raw=localStorage.getItem('synap:theme');if(!raw)return;var cached=JSON.parse(raw);var root=document.documentElement;if(cached.theme)root.dataset.theme=cached.theme;var hex=cached.accentColor;if(hex){root.style.setProperty('--color-accent',hex);var m=/^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);if(m){var r=parseInt(m[1],16),g=parseInt(m[2],16),b=parseInt(m[3],16);root.style.setProperty('--color-accent-soft','rgba('+r+','+g+','+b+',0.5)');root.style.setProperty('--color-accent-strong','rgba('+Math.round(r*0.8)+','+Math.round(g*0.8)+','+Math.round(b*0.8)+',1)')}}}catch(e){}})();`,
+        tagPosition: 'head'
+      }]
     }
   },
 

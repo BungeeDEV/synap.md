@@ -177,11 +177,23 @@ function replacePlaceholder(id: string, content: Record<string, unknown> | null)
   if (editor.value) replaceUploadPlaceholder(editor.value, id, content)
 }
 
-defineExpose({ replacePlaceholder })
+const scrollContainer = ref<HTMLElement | null>(null)
+
+/** Lets a parent that remounts this component per document (e.g. on tab switch) save/restore scroll position across that remount, instead of every switch resetting to the top. */
+function getScrollTop(): number {
+  return scrollContainer.value?.scrollTop ?? 0
+}
+
+function setScrollTop(value: number): void {
+  if (scrollContainer.value) scrollContainer.value.scrollTop = value
+}
+
+defineExpose({ replacePlaceholder, getScrollTop, setScrollTop })
 </script>
 
 <template>
   <div
+    ref="scrollContainer"
     class="h-full min-h-0 w-full flex-1 overflow-y-auto overscroll-contain bg-base"
   >
     <div

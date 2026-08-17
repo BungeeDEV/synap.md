@@ -51,6 +51,15 @@ export default {
         collapsed: '0fr',
         expanded: '1fr'
       },
+      keyframes: {
+        'indeterminate-progress': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(300%)' }
+        }
+      },
+      animation: {
+        'indeterminate-progress': 'indeterminate-progress 1.1s ease-in-out infinite'
+      },
       spacing: {
         'safe-t': 'env(safe-area-inset-top)',
         'safe-b': 'env(safe-area-inset-bottom)',

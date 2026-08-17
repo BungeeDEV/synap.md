@@ -177,9 +177,7 @@ const templateDropdownOptions = computed(() => templates.value)
           <FilePlus class="h-5 w-5" stroke-width="1.5" />{{ t('settings.newTemplate') }}</button>
       </h2>
 
-      <p v-if="loadingTemplates" class="text-sm text-content-tertiary">
-        {{ t('common.loading') }}
-      </p>
+      <SkeletonList v-if="loadingTemplates" :rows="4" />
 
       <ul v-else class="divide-y divide-border">
         <li v-if="creatingTemplate" class="flex items-center gap-1.5 py-2">

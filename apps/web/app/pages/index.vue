@@ -36,6 +36,27 @@ const headerSegments = computed(() => {
 // Global keyboard shortcuts (Cmd/Ctrl+K, +F, +Alt+N, +\) live in
 // useGlobalHotkeys.ts, registered once from app.vue - active on every route,
 // not just this page.
+
+// LazyNoteEditor below defers the editor's JS chunk (Tiptap + extensions)
+// to first use, so the very first note a user opens in a session pays for
+// a chunk download+parse on top of the file fetch, with no loading
+// indicator for either. Warming it during idle time once the shell has
+// settled means that cost is usually already paid by the time the user
+// clicks a file. Importing the exact same module specifier Nuxt's `Lazy`
+// wrapper resolves to shares its module cache entry, so the later "real"
+// dynamic import just resolves the already-fetched module instead of
+// fetching again.
+function prefetchEditorChunk(): void {
+  void import('~/components/NoteEditor.vue')
+}
+
+onMounted(() => {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(prefetchEditorChunk)
+  } else {
+    setTimeout(prefetchEditorChunk, 1000)
+  }
+})
 </script>
 
 <template>

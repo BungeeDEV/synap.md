@@ -10,12 +10,18 @@ function selectTab(path: string): void {
   tabs.setActiveTab(path)
 }
 
-function closeTab(path: string, event: MouseEvent): void {
+async function closeTab(path: string, event: MouseEvent): Promise<void> {
   event.stopPropagation()
   const tab = tabs.tabs.find((t) => t.path === path)
   if (tab?.dirty) {
-    pendingClosePath.value = path
-    return
+    // Try to save first - the debounced autosave may simply not have fired
+    // yet. Only fall back to the discard-confirmation dialog if the save
+    // itself actually failed (network error or a save conflict).
+    const saved = await saveTabImmediately(path)
+    if (!saved) {
+      pendingClosePath.value = path
+      return
+    }
   }
   tabs.closeTab(path)
 }

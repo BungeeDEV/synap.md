@@ -26,7 +26,8 @@ export function useNoteCreation() {
       kind: 'create-file',
       parentPath: vaultTree.selectedFolder,
       value: t('desktopApp.untitledNote'),
-      error: null
+      error: null,
+      submitting: false
     }
   }
 

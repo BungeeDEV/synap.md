@@ -32,8 +32,31 @@ export const usePreferencesStore = defineStore('preferences', () => {
     }
   }
 
+  // Bumped on every update() call; a response only gets applied if it's
+  // still the newest one in flight, so an older request that happens to
+  // resolve after a newer one (e.g. rapid theme toggling) can't clobber it.
+  let updateToken = 0
+
   async function update(patch: PreferencesPatch): Promise<void> {
-    preferences.value = await useSynapApi().updatePreferences(patch)
+    const previous = preferences.value
+    const token = ++updateToken
+
+    // Apply optimistically, mirroring the server's merge shape (see
+    // preferences.put.ts) - a theme toggle or font-size drag should reflect
+    // immediately instead of waiting for the round trip.
+    preferences.value = {
+      ...previous,
+      ...patch,
+      dailyNotes: patch.dailyNotes ? { ...previous.dailyNotes, ...patch.dailyNotes } : previous.dailyNotes
+    }
+
+    try {
+      const result = await useSynapApi().updatePreferences(patch)
+      if (token === updateToken) preferences.value = result
+    } catch (err) {
+      if (token === updateToken) preferences.value = previous
+      throw err
+    }
   }
 
   return { preferences, loaded, load, update }

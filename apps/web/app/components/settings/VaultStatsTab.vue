@@ -30,9 +30,7 @@ void load()
   <div class="space-y-8">
     <h2 class="border-b border-border pb-2 text-xl font-semibold">{{ t('settings.vaultStatsTitle') }}</h2>
 
-    <p v-if="loading" class="text-sm text-content-tertiary">
-      {{ t('common.loading') }}
-    </p>
+    <SkeletonList v-if="loading" :rows="5" variant="stats" />
 
     <div v-else-if="stats" class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
       <div>

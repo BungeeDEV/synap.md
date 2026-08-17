@@ -25,6 +25,12 @@ export const useTabsStore = defineStore('tabs', () => {
 
   const activeTab = computed(() => tabs.value.find((tab) => tab.path === activePath.value) ?? null)
 
+  // Tracks fetchFile() calls that haven't resolved yet, keyed by path - a
+  // second openTab() for the same path while the first is still loading
+  // (e.g. an impatient double-click) awaits the same in-flight request
+  // instead of firing a redundant fetch and pushing a duplicate tab.
+  const pendingOpens = new Map<string, Promise<void>>()
+
   /** `activate: false` opens/loads a background tab (e.g. "Öffnen in neuem Tab" from the context menu) without switching focus away from the currently active one. */
   async function openTab(path: string, options?: { activate?: boolean }): Promise<void> {
     const activate = options?.activate ?? true
@@ -34,17 +40,38 @@ export const useTabsStore = defineStore('tabs', () => {
       return
     }
 
-    const file = await useSynapApi().fetchFile(path)
-
-    tabs.value.push({
-      path,
-      title: titleFromPath(path),
-      content: file.content,
-      dirty: false,
-      lastKnownMtime: file.mtime,
-      viewMode: usePreferencesStore().preferences.defaultViewMode
-    })
+    // Set optimistically, before the fetch resolves, so the vault tree's
+    // active-row highlight reacts to the click immediately instead of only
+    // once the round-trip completes - the lack of that feedback is what
+    // invited the double-click that caused the duplicate-tab race below.
     if (activate) activePath.value = path
+
+    const inFlight = pendingOpens.get(path)
+    if (inFlight) return inFlight
+
+    const openPromise = (async () => {
+      try {
+        const file = await useSynapApi().fetchFile(path)
+        // Re-check: another call could have completed and pushed this tab
+        // while we were awaiting (shouldn't happen given the guard above,
+        // but keeps this function safe to call concurrently regardless).
+        if (!tabs.value.some((tab) => tab.path === path)) {
+          tabs.value.push({
+            path,
+            title: titleFromPath(path),
+            content: file.content,
+            dirty: false,
+            lastKnownMtime: file.mtime,
+            viewMode: usePreferencesStore().preferences.defaultViewMode
+          })
+        }
+      } finally {
+        pendingOpens.delete(path)
+      }
+    })()
+
+    pendingOpens.set(path, openPromise)
+    return openPromise
   }
 
   function closeTab(path: string): void {
@@ -102,11 +129,11 @@ export const useTabsStore = defineStore('tabs', () => {
    * doesn't clobber the rewrite with stale in-memory content.
    */
   async function reconcileExternalContent(paths: string[]): Promise<void> {
-    for (const path of paths) {
-      if (!tabs.value.some((tab) => tab.path === path)) continue
+    await Promise.all(paths.map(async (path) => {
+      if (!tabs.value.some((tab) => tab.path === path)) return
       const file = await useSynapApi().fetchFile(path)
       loadExternalVersion(path, file.content, file.mtime)
-    }
+    }))
   }
 
   function renameTab(oldPath: string, newPath: string): void {

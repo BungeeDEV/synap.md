@@ -18,11 +18,12 @@ const emit = defineEmits<{
 // Simple Tab operations
 function closeTab(path: string, e: Event) {
   e.stopPropagation();
-  const index = appState.tabs.indexOf(path);
+  const index = appState.tabs.findIndex(tab => tab.path === path);
   if (index > -1) {
     appState.tabs.splice(index, 1);
     if (appState.activeFile === path) {
-      appState.activeFile = appState.tabs.length > 0 ? appState.tabs[appState.tabs.length - 1] : null;
+      const fallback = appState.tabs[index] ?? appState.tabs[index - 1];
+      appState.activeFile = fallback?.path ?? null;
     }
   }
 }
@@ -36,6 +37,22 @@ const breadcrumbs = computed(() => {
   const parts = appState.activeFile.split('/');
   return parts.map(p => p.replace(/\.md$/i, ''));
 });
+
+// Structured sync-status pill (replaces overloading statusMsg for sync
+// state too): distinguishes syncing / error / N-files-pending / fully
+// synced instead of one string that only ever shows the last message.
+const syncStatusLabel = computed(() => {
+  if (appState.syncStatus.state === 'syncing') return t('desktopApp.syncStateSyncing');
+  if (appState.syncStatus.state === 'error') return t('desktopApp.syncStateError');
+  if (appState.syncStatus.pendingCount > 0) return t('desktopApp.syncStatePending', { count: appState.syncStatus.pendingCount });
+  return t('desktopApp.syncStateIdle');
+});
+const syncDotClass = computed(() => {
+  if (appState.syncStatus.state === 'error') return 'bg-danger';
+  if (appState.syncStatus.state === 'syncing') return 'bg-accent animate-pulse';
+  if (appState.syncStatus.pendingCount > 0) return 'bg-content-tertiary';
+  return 'bg-success';
+});
 </script>
 
 <template>
@@ -43,22 +60,22 @@ const breadcrumbs = computed(() => {
     
     <!-- Tab Bar -->
     <div v-if="appState.tabs.length > 0" class="flex items-end h-9 shrink-0 bg-surface-1 px-2 overflow-x-auto gap-0.5">
-      <div 
-        v-for="tab in appState.tabs" 
-        :key="tab"
-        @click="selectTab(tab)"
-        @auxclick="(e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab, e); } }"
+      <div
+        v-for="tab in appState.tabs"
+        :key="tab.path"
+        @click="selectTab(tab.path)"
+        @auxclick="(e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab.path, e); } }"
         @mousedown.middle.prevent
         :class="[
           'group flex items-center gap-2 h-[30px] px-3 rounded-t-md text-[13px] cursor-pointer max-w-[200px] shrink-0 transition-colors',
-          appState.activeFile === tab 
-            ? 'bg-base text-content-primary' 
+          appState.activeFile === tab.path
+            ? 'bg-base text-content-primary'
             : 'text-content-tertiary hover:text-content-secondary hover:bg-[rgba(255,255,255,0.03)]'
         ]"
       >
-        <span class="truncate">{{ tab.split('/').pop()?.replace(/\.md$/i, '') }}</span>
-        <button 
-          @click="closeTab(tab, $event)" 
+        <span class="truncate">{{ tab.path.split('/').pop()?.replace(/\.md$/i, '') }}</span>
+        <button
+          @click="closeTab(tab.path, $event)"
           class="w-4 h-4 rounded-sm flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(255,255,255,0.08)] shrink-0 transition-opacity"
         >
           <X class="w-3 h-3" stroke-width="2" />
@@ -121,6 +138,11 @@ const breadcrumbs = computed(() => {
     <div class="statusbar shadow-float z-50">
       <span v-if="appState.statusMsg" class="truncate max-w-[200px]">{{ appState.statusMsg }}</span>
       <span v-else>{{ t('desktopApp.ready') }}</span>
+      <div class="w-px h-4 bg-divider-strong mx-1"></div>
+      <div class="flex items-center gap-1.5">
+        <div :class="['w-2 h-2 rounded-full shrink-0', syncDotClass]"></div>
+        <span class="whitespace-nowrap">{{ syncStatusLabel }}</span>
+      </div>
       <div class="w-px h-4 bg-divider-strong mx-1"></div>
       <div :class="['save-dot', appState.justSaved ? 'just-saved' : '']"></div>
     </div>

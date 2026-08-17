@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { Plus, Trash2, Key, AlertCircle } from '@lucide/vue'
+import { Plus, Trash2, Key, AlertCircle, Loader2 } from '@lucide/vue'
 
 const { data, refresh } = await useFetch('/api/settings/token')
 const tokens = computed(() => data.value?.tokens ?? [])
+const { show } = useToast()
 
 const newName = ref('')
 const createdToken = ref<string | null>(null)
 const errorMsg = ref('')
+const creating = ref(false)
+const pendingDeleteId = ref<number | null>(null)
+const deletingId = ref<number | null>(null)
 
 async function createToken() {
-  if (!newName.value.trim()) return
+  if (!newName.value.trim() || creating.value) return
+  creating.value = true
   try {
     errorMsg.value = ''
     const res = await $fetch('/api/settings/token', {
@@ -23,16 +28,23 @@ async function createToken() {
     await refresh()
   } catch (err: any) {
     errorMsg.value = err.message || t('settings.tokenCreateError')
+  } finally {
+    creating.value = false
   }
 }
 
-async function deleteToken(id: number) {
-  if (!confirm(t('settings.deleteTokenConfirm'))) return
+async function confirmDeleteToken() {
+  if (pendingDeleteId.value === null) return
+  const id = pendingDeleteId.value
+  pendingDeleteId.value = null
+  deletingId.value = id
   try {
     await $fetch(`/api/settings/token/${id}`, { method: 'DELETE' })
     await refresh()
   } catch (err: any) {
-    alert(err.message || t('settings.tokenDeleteError'))
+    show(err.message || t('settings.tokenDeleteError'), 'error')
+  } finally {
+    deletingId.value = null
   }
 }
 </script>
@@ -72,10 +84,11 @@ async function deleteToken(id: number) {
         />
         <button
           type="submit"
-          :disabled="!newName.trim()"
+          :disabled="!newName.trim() || creating"
           class="flex shrink-0 items-center gap-2 rounded-md bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50"
         >
-          <Plus class="h-4 w-4" stroke-width="1.5" />{{ t('settings.createButton') }}</button>
+          <Loader2 v-if="creating" class="h-4 w-4 animate-spin" stroke-width="1.5" />
+          <Plus v-else class="h-4 w-4" stroke-width="1.5" />{{ t('settings.createButton') }}</button>
       </form>
       <p v-if="errorMsg && !createdToken" class="text-sm text-red-500">{{ errorMsg }}</p>
     </div>
@@ -102,15 +115,27 @@ async function deleteToken(id: number) {
             
             <button
               type="button"
-              class="rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-red-500/10 hover:text-red-500"
+              :disabled="deletingId === token.id"
+              class="rounded-md p-2 text-content-tertiary transition-colors duration-150 hover:bg-red-500/10 hover:text-red-500 disabled:pointer-events-none disabled:opacity-50"
               :title="t('settings.revokeToken')"
-              @click="deleteToken(token.id)"
+              @click="pendingDeleteId = token.id"
             >
-              <Trash2 class="h-5 w-5" stroke-width="1.5" />
+              <Loader2 v-if="deletingId === token.id" class="h-5 w-5 animate-spin" stroke-width="1.5" />
+              <Trash2 v-else class="h-5 w-5" stroke-width="1.5" />
             </button>
           </li>
         </ul>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-if="pendingDeleteId !== null"
+      :title="t('settings.revokeToken')"
+      :message="t('settings.deleteTokenConfirm')"
+      :confirm-label="t('settings.revokeToken')"
+      destructive
+      @confirm="confirmDeleteToken"
+      @cancel="pendingDeleteId = null"
+    />
   </div>
 </template>

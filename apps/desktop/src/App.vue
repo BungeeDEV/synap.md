@@ -7,9 +7,9 @@ import { load } from '@tauri-apps/plugin-store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
 import { readTextFile, writeTextFile, remove, rename, mkdir, copyFile } from '@tauri-apps/plugin-fs';
-import { 
-  Folder, ExternalLink, Copy, FilePlus, FolderPlus, Download, 
-  Trash2, Edit2, Star, Share, FolderOutput, Info, Palette, StickyNote
+import {
+  Folder, ExternalLink, Copy, FilePlus, FolderPlus, Download,
+  Trash2, Edit2, Star, Share, FolderOutput, Info, Palette, StickyNote, X
 } from '@lucide/vue';
 
 import { appState, rebuildFileTree, resetAppState } from './store';
@@ -175,11 +175,18 @@ onMounted(async () => {
         const payload = event.data;
         if (payload.senderId === myWindowId) return;
 
-        // Only update if it's the currently open file
-        if (payload.file === appState.activeFile && payload.content !== appState.activeContent) {
-            // Update the content without triggering the save/broadcast loop
-            appState.lastLoadedContent = payload.content;
-            appState.activeContent = payload.content;
+        // Update whichever open tab this applies to - not just the active
+        // one. Since tab switches no longer re-read from disk (see
+        // `loadFile`), a background tab's in-memory content would otherwise
+        // go stale relative to what another window just wrote, and the next
+        // edit in this window would silently overwrite that newer content.
+        const syncedTab = appState.tabs.find(tab => tab.path === payload.file);
+        if (syncedTab && payload.content !== syncedTab.content) {
+            // Mutate content directly (not through the `activeContent`
+            // computed setter) so this doesn't re-trigger the save/broadcast
+            // loop below.
+            syncedTab.content = payload.content;
+            syncedTab.dirty = false;
         }
     };
 });
@@ -226,7 +233,33 @@ async function startApp(path: string) {
         await refreshLocalFiles();
         appState.statusMsg = t('desktopApp.vaultSyncActive');
 
-        await listen('sync-done', () => refreshLocalFiles());
+        // Structured sync-state events emitted around every perform_sync()
+        // call in lib.rs (both the file-watcher-triggered sync and the
+        // periodic background loop) - the only signal available for syncs
+        // that aren't kicked off by an invoke() from this window, since
+        // those run purely on Rust-side timers/watchers.
+        await listen('sync-started', () => {
+            appState.syncStatus.state = 'syncing';
+        });
+        await listen('sync-done', (event: any) => {
+            const payload = event.payload as { ok: boolean; error?: string | null };
+            if (payload?.ok) {
+                appState.syncStatus.state = 'idle';
+                appState.syncStatus.lastError = null;
+            } else {
+                appState.syncStatus.state = 'error';
+                appState.syncStatus.lastError = payload?.error ?? null;
+            }
+            refreshLocalFiles();
+        });
+        // Emitted from push_file's existing conflict branch (kept-local +
+        // server-version-as-conflict-copy, per the Konfliktstrategie in
+        // docs/sync-plan.md). Surfaced as a persistent notice instead of
+        // only the OS notification that command already shows.
+        await listen('sync-conflict', (event: any) => {
+            const payload = event.payload as { path?: string };
+            if (payload?.path) appState.syncStatus.lastConflictPath = payload.path;
+        });
     } catch (e: any) {
         appState.statusMsg = t('desktopApp.appError', { error: e });
     }
@@ -236,6 +269,7 @@ async function refreshLocalFiles() {
     try {
         appState.localFiles = await invoke<any[]>('get_local_files');
         rebuildFileTree();
+        appState.syncStatus.pendingCount = appState.localFiles.filter(f => f.status !== 'Synced').length;
     } catch (e: any) {
         appState.statusMsg = t('desktopApp.errorLoadingFiles', { error: e });
     }
@@ -243,6 +277,7 @@ async function refreshLocalFiles() {
 
 async function manualSync() {
     appState.statusMsg = t('desktopApp.syncingWithServer');
+    appState.syncStatus.state = 'syncing';
     try {
         const store = await load('store.json', { autoSave: false });
         await store.set('serverUrl', appState.serverUrl);
@@ -255,8 +290,12 @@ async function manualSync() {
         await invoke('sync_now', { url: appState.serverUrl, token: appState.token });
         await refreshLocalFiles();
         appState.statusMsg = t('desktopApp.synced');
+        appState.syncStatus.state = 'idle';
+        appState.syncStatus.lastError = null;
     } catch (e: any) {
         appState.statusMsg = t('desktopApp.genericError', { error: e });
+        appState.syncStatus.state = 'error';
+        appState.syncStatus.lastError = String(e);
     }
 }
 
@@ -307,49 +346,81 @@ async function resetApp() {
 
 async function loadFile(path: string) {
     if (!appState.vaultPath) return;
+
+    // Already open: just switch which tab is active, no disk read - its
+    // content is already in memory (kept up to date by the syncChannel
+    // handler above and by the `activeContent` setter below).
+    const existing = appState.tabs.find(tab => tab.path === path);
+    if (existing) {
+        appState.activeFile = path;
+        appState.isReaderMode = appState.defaultView === 'reader';
+        return;
+    }
+
     try {
         const fullPath = `${appState.vaultPath}/${path}`;
         const content = await readTextFile(fullPath);
-        appState.lastLoadedContent = content;
-        appState.activeContent = content;
+        appState.tabs.push({ path, content, dirty: false });
         appState.activeFile = path;
         appState.isReaderMode = appState.defaultView === 'reader';
-
-        // Add to tabs if not present
-        if (!appState.tabs.includes(path)) {
-            appState.tabs.push(path);
-        }
     } catch (e: any) {
         appState.statusMsg = t('desktopApp.loadErrorPrefix', { error: e });
     }
 }
 
-let saveTimeout: any = null;
+function getActiveTab() {
+    return appState.tabs.find(tab => tab.path === appState.activeFile) ?? null;
+}
+
 const broadcastUpdate = debounce((file: string, content: string) => {
     syncChannel.postMessage({ file, content, senderId: myWindowId });
 }, 200);
 
-watch(() => appState.activeContent, async (newVal) => {
-    if (!appState.activeFile || !appState.vaultPath) return;
-    if (newVal === appState.lastLoadedContent) return; 
-    
-    appState.lastLoadedContent = newVal;
-    
-    // Broadcast immediately to other windows (debounced internally)
-    broadcastUpdate(appState.activeFile, newVal);
+// Per-tab debounced save timers, keyed by path. Each timer closes over its
+// own `path`/`content` at schedule time, so two tabs' pending saves can
+// never collide the way a single global timer could (see 640410f) - that
+// fix is now redundant (each tab owns its content, so a stale-timer write
+// can only ever land on its own file) and has been removed from loadFile
+// above in favor of this per-path map.
+const saveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-    if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
+function scheduleSave(path: string, content: string) {
+    const pending = saveTimeouts.get(path);
+    if (pending) clearTimeout(pending);
+
+    saveTimeouts.set(path, setTimeout(async () => {
+        saveTimeouts.delete(path);
+        if (!appState.vaultPath) return;
         try {
-            const fullPath = `${appState.vaultPath}/${appState.activeFile}`;
-            await writeTextFile(fullPath, newVal);
-            appState.statusMsg = t('desktopApp.saved');
-            appState.justSaved = true;
-            setTimeout(() => appState.justSaved = false, 500);
+            const fullPath = `${appState.vaultPath}/${path}`;
+            await writeTextFile(fullPath, content);
+            const tab = appState.tabs.find(t => t.path === path);
+            if (tab) tab.dirty = false;
+            if (appState.activeFile === path) {
+                appState.statusMsg = t('desktopApp.saved');
+                appState.justSaved = true;
+                setTimeout(() => appState.justSaved = false, 500);
+            }
         } catch (e: any) {
             appState.statusMsg = t('desktopApp.genericError', { error: e });
         }
-    }, 500);
+    }, 500));
+}
+
+// v-model target for EditorWorkspace: proxies to the active tab's content so
+// the editor component doesn't need to know about the tabs array shape.
+const activeContent = computed({
+    get: () => getActiveTab()?.content ?? '',
+    set: (newVal: string) => {
+        const tab = getActiveTab();
+        if (!tab || !appState.vaultPath) return;
+        tab.content = newVal;
+        tab.dirty = true;
+
+        // Broadcast immediately to other windows (debounced internally)
+        broadcastUpdate(tab.path, newVal);
+        scheduleSave(tab.path, newVal);
+    }
 });
 
 // -- Context Menu Logic --
@@ -366,6 +437,8 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
       try {
         await rename(oldPath, newFullPath);
         await refreshLocalFiles();
+        const renamedTab = appState.tabs.find(tab => tab.path === node.path);
+        if (renamedTab) renamedTab.path = newPathStr;
         if (appState.activeFile === node.path) {
           appState.activeFile = newPathStr;
         }
@@ -444,9 +517,24 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
              try {
                await remove(fp);
                await refreshLocalFiles();
-               if (appState.activeFile === node.path) {
-                 appState.activeFile = null;
-                 appState.activeContent = '';
+
+               // Cancel any pending debounced save for this file - it would
+               // otherwise fire after deletion and silently recreate the
+               // file with stale content. Keyed by path, so this can only
+               // ever touch the deleted file's own timer.
+               const pending = saveTimeouts.get(node.path);
+               if (pending) {
+                 clearTimeout(pending);
+                 saveTimeouts.delete(node.path);
+               }
+
+               const tabIndex = appState.tabs.findIndex(tab => tab.path === node.path);
+               if (tabIndex > -1) {
+                 appState.tabs.splice(tabIndex, 1);
+                 if (appState.activeFile === node.path) {
+                   const fallback = appState.tabs[tabIndex] ?? appState.tabs[tabIndex - 1];
+                   appState.activeFile = fallback?.path ?? null;
+                 }
                }
              } catch(e) { alert(t('desktopApp.deleteFileError', { error: e })); }
            }
@@ -476,7 +564,7 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
       <VaultSidebar v-if="appState.isSidebarOpen" @select="loadFile" @new-note="createNewNote" />
 
       <!-- Modular Workspace (flex-1, fills rest) -->
-      <EditorWorkspace v-model="appState.activeContent" />
+      <EditorWorkspace v-model="activeContent" />
     </div>
 
     <!-- Modals (fixed overlays, unaffected by layout) -->
@@ -510,5 +598,26 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
         </div>
       </template>
     </ContextMenu>
+
+    <!-- Persistent sync-conflict notice - stays until dismissed (not a
+         transient toast), since silently losing track of a conflict copy
+         is exactly the failure mode this is meant to prevent. -->
+    <div
+      v-if="appState.syncStatus.lastConflictPath"
+      class="fixed top-3 right-3 z-50 flex items-start gap-3 rounded-lg border border-border-strong bg-surface-1 px-4 py-3 shadow-float max-w-sm"
+    >
+      <div class="w-2 h-2 rounded-full bg-danger mt-1.5 shrink-0"></div>
+      <div class="min-w-0">
+        <p class="text-[13px] font-medium text-content-primary">{{ t('desktopApp.syncConflictTitle') }}</p>
+        <p class="text-[13px] text-content-secondary break-words">{{ t('desktopApp.syncConflictBody', { path: appState.syncStatus.lastConflictPath }) }}</p>
+      </div>
+      <button
+        @click="appState.syncStatus.lastConflictPath = null"
+        class="text-content-tertiary hover:text-content-primary shrink-0"
+        :aria-label="t('desktopApp.dismiss')"
+      >
+        <X class="w-4 h-4" stroke-width="2" />
+      </button>
+    </div>
   </div>
 </template>

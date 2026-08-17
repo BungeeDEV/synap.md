@@ -14,7 +14,28 @@ const tab = computed(() => tabs.tabs.find((t) => t.path === props.path))
 const mode = computed(() => tab.value?.viewMode ?? 'editor')
 
 const attachmentInputRef = ref<HTMLInputElement | null>(null)
-const editorRef = ref<{ replacePlaceholder: (id: string, content: Record<string, unknown> | null) => void } | null>(null)
+const editorRef = ref<{
+  replacePlaceholder: (id: string, content: Record<string, unknown> | null) => void
+  getScrollTop: () => number
+  setScrollTop: (value: number) => void
+} | null>(null)
+
+// index.vue keys this whole component by tab path, so switching tabs fully
+// remounts it (see decisions.md - needed for useAutosave's path binding and
+// to keep Tiptap's undo history from bleeding across documents). That
+// remount used to reset scroll position to the top on every switch, which
+// read as "the page just reloaded". Restoring it here keeps that same
+// remount-per-tab behavior but makes switching back to a tab land where you
+// left it.
+const scrollMemory = useEditorScrollMemory()
+
+onMounted(() => {
+  nextTick(() => editorRef.value?.setScrollTop(scrollMemory.get(props.path)))
+})
+
+onBeforeUnmount(() => {
+  if (editorRef.value) scrollMemory.set(props.path, editorRef.value.getScrollTop())
+})
 
 function errorMessageOf(err: unknown, fallback: string): string {
   const statusMessage = (err as { data?: { statusMessage?: string } })?.data?.statusMessage
@@ -54,14 +75,12 @@ async function handleAttachmentInsert(type: 'image' | 'file', handler: (file: Fi
   attachmentInputRef.value!.addEventListener('change', onFilePicked)
 }
 
-watch(
-  () => tabs.tabs.find((t) => t.path === props.path)?.content,
-  (newContent) => {
-    if (newContent !== undefined && tab.value) {
-      tab.value.content = newContent
-    }
-  }
-)
+/** The only writer of tab content: routes every edit through the store so `dirty` is set and the debounced autosave actually has something to fire. */
+function handleContentUpdate(value: string): void {
+  if (!tab.value) return
+  tabs.updateContent(props.path, value)
+  save()
+}
 </script>
 
 <template>
@@ -91,8 +110,9 @@ watch(
       <BaseNoteEditor
         v-if="tab"
         ref="editorRef"
-        v-model="tab.content"
+        :model-value="tab.content"
         :font-size="preferences.preferences.editorFontSize"
+        @update:model-value="handleContentUpdate"
         @save="saveNow"
         @wikilink-navigate="(target) => tabs.openTab(target)"
         @attachment-insert="(type, handler) => handleAttachmentInsert(type, handler)"

@@ -134,8 +134,12 @@ fn init_db(
                         if let (Some(u), Some(t)) = (url, token) {
                             let app_clone_async = app_clone.clone();
                             tauri::async_runtime::spawn(async move {
-                                perform_sync(&app_clone_async, &u, &t).await.ok();
-                                app_clone_async.emit("sync-done", ()).ok();
+                                let _ = app_clone_async.emit("sync-started", ());
+                                let result = perform_sync(&app_clone_async, &u, &t).await;
+                                let _ = app_clone_async.emit(
+                                    "sync-done",
+                                    serde_json::json!({ "ok": result.is_ok(), "error": result.err() }),
+                                );
                             });
                         }
                     }
@@ -548,8 +552,12 @@ async fn start_background_sync(
                 break;
             }
 
-            let _ = perform_sync(&app_clone, &url, &token).await;
-            let _ = app_clone.emit("sync-done", ());
+            let _ = app_clone.emit("sync-started", ());
+            let result = perform_sync(&app_clone, &url, &token).await;
+            let _ = app_clone.emit(
+                "sync-done",
+                serde_json::json!({ "ok": result.is_ok(), "error": result.err() }),
+            );
         }
     });
 
@@ -743,6 +751,10 @@ async fn push_file(
                         parsed.conflicts.len()
                     ))
                     .show();
+                // Structured counterpart to the OS notification above, for
+                // the in-app persistent conflict notice (appState.syncStatus
+                // .lastConflictPath in App.vue).
+                let _ = app_handle.emit("sync-conflict", serde_json::json!({ "path": path }));
                 return Err(format!("Server Conflict: {:?}", parsed.conflicts));
             }
             if parsed.successes.is_empty() {

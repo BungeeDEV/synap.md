@@ -75,7 +75,41 @@ export function useAutosave(path: string) {
     conflict.value = null
   }
 
-  onBeforeUnmount(() => clearTimer())
+  // A tab switch remounts NoteEditor (see index.vue's :key), which unmounts
+  // this composable's owner - clearing the timer alone would silently drop
+  // whatever was typed inside the debounce window. Flush instead.
+  onBeforeUnmount(() => {
+    const tab = tabs.tabs.find((t) => t.path === path)
+    const hadPendingSave = timer !== null
+    clearTimer()
+    if (hadPendingSave && tab?.dirty) void performSave(false)
+  })
 
   return { saving, conflict, save, saveNow, keepMine, loadTheirs }
+}
+
+/**
+ * One-shot immediate save for a tab that isn't (or may no longer be) backed
+ * by a live useAutosave() instance - used when closing a tab, where we want
+ * to try saving before asking "discard changes?" rather than reaching into
+ * whichever NoteEditor instance happens to own that tab. Returns false on
+ * any failure, network or 409 conflict alike: a close-tab flow isn't the
+ * place to surface conflict-resolution UI, so the caller falls back to the
+ * existing discard-confirmation dialog instead.
+ */
+export async function saveTabImmediately(path: string): Promise<boolean> {
+  const tabs = useTabsStore()
+  const tab = tabs.tabs.find((t) => t.path === path)
+  if (!tab || !tab.dirty) return true
+
+  try {
+    const response = await $fetch<{ path: string, mtime: string }>('/api/vault/file', {
+      method: 'PUT',
+      body: { path: tab.path, content: tab.content, lastKnownMtime: tab.lastKnownMtime }
+    })
+    tabs.markSaved(tab.path, response.mtime)
+    return true
+  } catch {
+    return false
+  }
 }

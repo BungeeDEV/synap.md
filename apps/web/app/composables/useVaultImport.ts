@@ -6,6 +6,7 @@ const PANEL_FILE_COUNT_THRESHOLD = 2
 const PANEL_LARGE_FILE_BYTES = 1 * 1024 * 1024
 const FLASH_DURATION_MS = 1600
 const AUTO_CLOSE_PANEL_MS = 4000
+const CONCURRENT_UPLOADS = 5
 
 export interface ImportDialogState {
   files: File[]
@@ -159,30 +160,44 @@ export function useVaultImport() {
     let skippedCount = 0
     let errorCount = 0
 
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i]!
+    // Small concurrency pool instead of one-at-a-time: each worker pulls the
+    // next not-yet-started index and races it against the others. Every
+    // worker only ever writes to its own current index's progress.files[i]
+    // slot and does simple synchronous +=1/.push() bookkeeping between
+    // awaits, so this stays race-free despite running concurrently - JS
+    // never interleaves mid-statement.
+    let nextIndex = 0
+    async function uploadNext(): Promise<void> {
+      for (;;) {
+        const i = nextIndex++
+        if (i >= entries.length) return
+        const entry = entries[i]!
 
-      if (progress.value?.cancelRequested) {
-        if (progress.value) progress.value.files[i] = { ...progress.value.files[i]!, status: 'cancelled' }
-        continue
-      }
+        if (progress.value?.cancelRequested) {
+          if (progress.value) progress.value.files[i] = { ...progress.value.files[i]!, status: 'cancelled' }
+          continue
+        }
 
-      if (progress.value) progress.value.files[i] = { ...progress.value.files[i]!, status: 'uploading' }
+        if (progress.value) progress.value.files[i] = { ...progress.value.files[i]!, status: 'uploading' }
 
-      const result = await uploadOne(entry.file, targetFolder, entry.onConflict)
+        const result = await uploadOne(entry.file, targetFolder, entry.onConflict)
 
-      if (progress.value) {
-        progress.value.files[i] = { ...progress.value.files[i]!, status: result.status, path: result.path, error: result.error }
-      }
-      if (result.status === 'imported' && result.path) {
-        importedPaths.push(result.path)
-        importedCount++
-      } else if (result.status === 'skipped') {
-        skippedCount++
-      } else if (result.status === 'error') {
-        errorCount++
+        if (progress.value) {
+          progress.value.files[i] = { ...progress.value.files[i]!, status: result.status, path: result.path, error: result.error }
+        }
+        if (result.status === 'imported' && result.path) {
+          importedPaths.push(result.path)
+          importedCount++
+        } else if (result.status === 'skipped') {
+          skippedCount++
+        } else if (result.status === 'error') {
+          errorCount++
+        }
       }
     }
+
+    const workerCount = Math.min(CONCURRENT_UPLOADS, entries.length)
+    await Promise.all(Array.from({ length: workerCount }, () => uploadNext()))
 
     if (progress.value) {
       progress.value.done = true

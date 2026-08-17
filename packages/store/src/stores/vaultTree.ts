@@ -21,6 +21,47 @@ function collectFolderPaths(nodes: VaultTreeNode[]): string[] {
   return paths
 }
 
+function findNode(nodes: VaultTreeNode[], path: string): VaultTreeNode | null {
+  for (const node of nodes) {
+    if (node.path === path) return node
+    if (node.type === 'folder' && node.children) {
+      const found = findNode(node.children, path)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/** Returns the live `children` array of the folder at `folderPath` (creating it if the folder had none yet), or the root `tree` array for `''`. Null only if `folderPath` doesn't resolve to a folder currently in the tree. */
+function childrenArrayOf(nodes: VaultTreeNode[], folderPath: string): VaultTreeNode[] | null {
+  if (!folderPath) return nodes
+  const folder = findNode(nodes, folderPath)
+  if (!folder || folder.type !== 'folder') return null
+  if (!folder.children) folder.children = []
+  return folder.children
+}
+
+/** Splices the node at `path` out of whichever array currently holds it and returns it (subtree intact), or null if not found locally. */
+function spliceNode(nodes: VaultTreeNode[], path: string): VaultTreeNode | null {
+  const index = nodes.findIndex((node) => node.path === path)
+  if (index !== -1) return nodes.splice(index, 1)[0] ?? null
+  for (const node of nodes) {
+    if (node.type === 'folder' && node.children) {
+      const removed = spliceNode(node.children, path)
+      if (removed) return removed
+    }
+  }
+  return null
+}
+
+/** A folder rename/move preserves every descendant's position relative to the moved root untouched - only the path prefix changes - so descendant paths can be rewritten by simple prefix substitution instead of needing the server to enumerate them. */
+function rewriteDescendantPaths(nodes: VaultTreeNode[], oldPrefix: string, newPrefix: string): void {
+  for (const node of nodes) {
+    node.path = newPrefix + node.path.slice(oldPrefix.length)
+    if (node.type === 'folder' && node.children) rewriteDescendantPaths(node.children, oldPrefix, newPrefix)
+  }
+}
+
 const EXPANDED_PERSIST_DEBOUNCE_MS = 1500
 
 export const useVaultTreeStore = defineStore('vaultTree', () => {
@@ -73,16 +114,77 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
   const folderPaths = computed(() => collectFolderPaths(tree.value))
   const allExpanded = computed(() => folderPaths.value.length > 0 && folderPaths.value.every((path) => expanded.value.has(path)))
 
+  /**
+   * Only shows the loading (skeleton) state on the true first load. Every
+   * later call - after a create/rename/delete/move/etc. - is a background
+   * refresh: the previous tree stays on screen and is swapped for the new
+   * one once it resolves, instead of the whole sidebar flashing to
+   * skeleton rows on every single mutation.
+   */
   async function refresh(): Promise<void> {
-    loading.value = true
+    const isFirstLoad = tree.value.length === 0
+    if (isFirstLoad) loading.value = true
     error.value = null
     try {
       tree.value = await useSynapApi().fetchTree()
     } catch {
       error.value = 'Vault-Struktur konnte nicht geladen werden'
     } finally {
-      loading.value = false
+      if (isFirstLoad) loading.value = false
     }
+  }
+
+  /**
+   * Local-patch counterpart to `refresh()` for mutations whose API response
+   * already carries everything needed to update the tree without a round
+   * trip to `GET /api/vault/tree` - inserts `node` into the folder at
+   * `parentPath` (`''` for vault root). Falls back to a full `refresh()`
+   * if that folder isn't present locally (shouldn't normally happen, but
+   * a stale/drifted local tree is worse than one extra fetch).
+   */
+  function insertNode(node: VaultTreeNode, parentPath: string): void {
+    const siblings = childrenArrayOf(tree.value, parentPath)
+    if (!siblings) {
+      void refresh()
+      return
+    }
+    siblings.push(node)
+  }
+
+  /** Local-patch counterpart to `refresh()` for delete/archive: removes the node at `path` (and its subtree) from wherever it currently lives in the tree. No-op if it isn't found locally. */
+  function removeNode(path: string): void {
+    spliceNode(tree.value, path)
+  }
+
+  /**
+   * Local-patch counterpart to `refresh()` for rename and move - both go
+   * through the same `POST /api/vault/rename` endpoint server-side (a
+   * rename-in-place is just a move within the same parent folder), so one
+   * function handles both: splice the node out of its current parent,
+   * rewrite its own path/name plus any descendants' paths (prefix swap -
+   * safe because a filesystem rename preserves the subtree untouched
+   * beneath the renamed root), then re-insert it under `newPath`'s parent.
+   * Falls back to `refresh()` if the node or its new parent folder can't
+   * be found locally.
+   */
+  function relocateNode(oldPath: string, newPath: string): void {
+    const node = spliceNode(tree.value, oldPath)
+    if (!node) {
+      void refresh()
+      return
+    }
+    if (node.type === 'folder' && node.children) {
+      rewriteDescendantPaths(node.children, oldPath, newPath)
+    }
+    node.name = newPath.split('/').pop() ?? newPath
+    node.path = newPath
+    const newParentPath = newPath.includes('/') ? newPath.slice(0, newPath.lastIndexOf('/')) : ''
+    const siblings = childrenArrayOf(tree.value, newParentPath)
+    if (!siblings) {
+      void refresh()
+      return
+    }
+    siblings.push(node)
   }
 
   function isExpanded(path: string): boolean {
@@ -120,6 +222,9 @@ export const useVaultTreeStore = defineStore('vaultTree', () => {
     stats,
     allExpanded,
     refresh,
+    insertNode,
+    removeNode,
+    relocateNode,
     isExpanded,
     toggleExpand,
     expand,

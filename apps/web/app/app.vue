@@ -24,9 +24,16 @@ watch(() => preferences.preferences.locale, (newLocale) => {
   if (newLocale) locale.value = newLocale
 }, { immediate: true })
 
-watch(() => [preferences.preferences.theme, preferences.preferences.accentColor], async () => {
+watch(() => [preferences.preferences.theme, preferences.preferences.accentColor, preferences.loaded], async () => {
   if (!import.meta.client) return
-  
+  // Until the real fetch resolves, preferences.preferences just holds
+  // DEFAULT_PREFERENCES (theme: 'dark', accentColor: null) - applying that
+  // here on this watch's own immediate first run would stomp the correct
+  // guess nuxt.config.ts's pre-hydration inline script already applied from
+  // the synap:theme localStorage cache, trading one flash for two. Leave
+  // the DOM alone until preferences.loaded is actually true.
+  if (!preferences.loaded) return
+
   const theme = preferences.preferences.theme
   const accentColor = preferences.preferences.accentColor
 
@@ -45,7 +52,36 @@ watch(() => [preferences.preferences.theme, preferences.preferences.accentColor]
     document.documentElement.style.removeProperty('--color-accent-soft')
     document.documentElement.style.removeProperty('--color-accent-strong')
   }
+
+  // Persist for nuxt.config.ts's pre-hydration script to apply synchronously
+  // on the next load, before this watch (or even preferences.load()) can run.
+  try {
+    localStorage.setItem('synap:theme', JSON.stringify({ theme, accentColor }))
+  } catch {
+    // Private-browsing/storage-disabled edge case - the FOUC guess just
+    // won't be available next load, nothing else depends on this.
+  }
 }, { immediate: true })
+
+// Best-effort backstop for what onBeforeUnmount can't cover: closing the
+// browser tab/window (or reloading) entirely, not just switching tabs
+// inside the app. beforeunload can't await a promise, so this fires the
+// requests and lets the browser's keepalive fetch carry them past
+// navigation instead of blocking the unload with a synchronous dialog.
+if (import.meta.client) {
+  const tabsStore = useTabsStore()
+  window.addEventListener('beforeunload', () => {
+    for (const tab of tabsStore.tabs) {
+      if (!tab.dirty) continue
+      void fetch('/api/vault/file', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ path: tab.path, content: tab.content, lastKnownMtime: tab.lastKnownMtime })
+      })
+    }
+  })
+}
 </script>
 
 <template>
