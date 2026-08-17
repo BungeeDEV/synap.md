@@ -1,4 +1,6 @@
 import type { EditorPreferences } from '@synap/store/preferences_types'
+import { themeIds } from '@synap/design-tokens'
+import { LOCALE_IDS } from '@synap/i18n'
 
 interface DailyNotesPutBody {
   folder?: unknown
@@ -9,6 +11,9 @@ interface DailyNotesPutBody {
 interface PreferencesPutBody {
   defaultViewMode?: unknown
   editorFontSize?: unknown
+  theme?: unknown
+  accentColor?: unknown
+  locale?: unknown
   dailyNotes?: DailyNotesPutBody
   favorites?: unknown
   expandedFolders?: unknown
@@ -36,6 +41,15 @@ export default defineEventHandler(async (event) => {
   if (body?.editorFontSize !== undefined
     && (typeof body.editorFontSize !== 'number' || body.editorFontSize < 10 || body.editorFontSize > 24)) {
     throw createError({ statusCode: 400, statusMessage: '"editorFontSize" must be a number between 10 and 24' })
+  }
+  if (body?.theme !== undefined && !themeIds.includes(body.theme as any)) {
+    throw createError({ statusCode: 400, statusMessage: '"theme" must be valid themeId' })
+  }
+  if (body?.accentColor !== undefined && body.accentColor !== null && (typeof body.accentColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(body.accentColor))) {
+    throw createError({ statusCode: 400, statusMessage: '"accentColor" must be null or hex string' })
+  }
+  if (body?.locale !== undefined && !LOCALE_IDS.includes(body.locale as any)) {
+    throw createError({ statusCode: 400, statusMessage: '"locale" must be valid locale' })
   }
   if (body?.dailyNotes?.folder !== undefined
     && (typeof body.dailyNotes.folder !== 'string' || body.dailyNotes.folder.trim().length === 0)) {
@@ -67,6 +81,9 @@ export default defineEventHandler(async (event) => {
     ...current,
     ...(body.defaultViewMode !== undefined && { defaultViewMode: body.defaultViewMode as EditorPreferences['defaultViewMode'] }),
     ...(body.editorFontSize !== undefined && { editorFontSize: body.editorFontSize as number }),
+    ...(body.theme !== undefined && { theme: body.theme as EditorPreferences['theme'] }),
+    ...(body.accentColor !== undefined && { accentColor: body.accentColor as string | null }),
+    ...(body.locale !== undefined && { locale: body.locale as EditorPreferences['locale'] }),
     ...(body.dailyNotes !== undefined && {
       dailyNotes: {
         ...current.dailyNotes,

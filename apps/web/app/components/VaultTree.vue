@@ -9,6 +9,7 @@ import { FOLDER_COLOR_OPTIONS, folderColorTextClass } from '~/utils/folderColors
 import { printHtmlDocument } from '~/utils/printHtmlDocument'
 import type { ContextMenuGroup } from '~/utils/contextMenuTypes'
 import { vibrateShort } from '~/utils/haptics'
+import { useI18n } from 'vue-i18n'
 import {
   ACTION_BUTTON_PX,
   LONG_PRESS_MS,
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<{ nodes?: VaultTreeNode[] | null, parentP
 
 const isRoot = props.nodes === null
 const vaultTree = useVaultTreeStore()
+const { t } = useI18n()
 const tabs = useTabsStore()
 const vaultSort = useVaultSort()
 const mobileNav = useMobileNavStore()
@@ -61,7 +63,7 @@ const displayNodes = computed(() => {
   return isRoot ? sortVaultTree(source, vaultSort.mode.value) : source
 })
 
-const sortTitle = computed(() => `Sortierung: ${VAULT_SORT_LABELS[vaultSort.mode.value]}`)
+const sortTitle = computed(() => t('tree.sortBy', { mode: t('tree.sortMode.' + vaultSort.mode.value.replace('-', '')) }))
 
 // Shared across every recursive VaultTree instance via useState - a plain
 // ref here would be local per-instance, so a right-click (or, on touch, a
@@ -919,11 +921,11 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
       <button
         type="button"
         class="flex items-center justify-center gap-1.5 rounded-xl bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors duration-150 hover:bg-accent/[0.15] active:scale-95 focus:outline-none"
-        title="Neue Notiz"
+        :title="t('tree.newNote')"
         @click="startCreate('create-file', vaultTree.selectedFolder)"
       >
         <FilePlus class="h-4 w-4 shrink-0" stroke-width="1.5" />
-        Neue Notiz
+        {{ t('tree.newNote') }}
       </button>
 
       <div class="flex items-center gap-4">
@@ -979,7 +981,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
                 @click="closeOverflowMenu(); openDailyNote()"
               >
                 <Calendar class="h-4 w-4 shrink-0" stroke-width="1.5" />
-                Tagesnotiz
+                {{ t('tree.dailyNote') }}
               </button>
               <button
                 type="button"
@@ -987,7 +989,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
                 @click="openTemplateFromOverflow"
               >
                 <LayoutTemplate class="h-4 w-4 shrink-0" stroke-width="1.5" />
-                Neu aus Vorlage
+                {{ t('tree.newFromTemplate') }}
               </button>
               <button
                 type="button"
@@ -995,7 +997,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
                 @click="triggerImportPicker(vaultTree.selectedFolder)"
               >
                 <Upload class="h-4 w-4 shrink-0" stroke-width="1.5" />
-                Importieren
+                {{ t('tree.import') }}
               </button>
               <button
                 type="button"
@@ -1004,7 +1006,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
               >
                 <ChevronsDownUp v-if="vaultTree.allExpanded" class="h-4 w-4 shrink-0" stroke-width="1.5" />
                 <ChevronsUpDown v-else class="h-4 w-4 shrink-0" stroke-width="1.5" />
-                {{ vaultTree.allExpanded ? 'Alles einklappen' : 'Alles ausklappen' }}
+                {{ vaultTree.allExpanded ? t('tree.collapseAll') : t('tree.expandAll') }}
               </button>
             </div>
           </Transition>
@@ -1020,10 +1022,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
               class="absolute top-full right-0 z-50 mt-1 min-w-40 origin-top-right rounded-lg border border-border-strong bg-surface-1 py-1 text-content-primary shadow-float"
             >
               <p v-if="loadingTemplates" class="px-3.5 py-2 text-sm text-content-tertiary">
-                Lädt…
+                {{ t('tree.loading') }}
               </p>
               <p v-else-if="templateOptions.length === 0" class="px-3.5 py-2 text-sm text-content-tertiary">
-                Keine Vorlagen vorhanden
+                {{ t('tree.noTemplates') }}
               </p>
               <button
                 v-for="template in templateOptions"
@@ -1053,7 +1055,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
         >
           <Upload class="h-6 w-6 text-accent" stroke-width="1.5" />
           <p class="text-sm font-medium text-content-primary">
-            Dateien hier ablegen zum Importieren
+            {{ t('tree.dropToImport') }}
           </p>
         </div>
       </Transition>
@@ -1072,10 +1074,10 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
       <div v-else-if="displayNodes.length === 0 && !editState" class="flex flex-col items-center gap-2 px-4 py-12 text-center">
         <FolderPlus class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
         <p class="text-base text-content-tertiary">
-          Dein Vault ist noch leer
+          {{ t('tree.vaultEmpty') }}
         </p>
         <p class="mb-1 text-sm text-content-tertiary">
-          Leg deine erste Notiz an, um loszulegen.
+          {{ t('tree.vaultEmptyDesc') }}
         </p>
         <button
           type="button"
@@ -1083,7 +1085,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
           @click="startCreate('create-file', vaultTree.selectedFolder)"
         >
           <FilePlus class="h-4 w-4" stroke-width="1.5" />
-          Neue Notiz erstellen
+          {{ t('tree.createNewNote') }}
         </button>
       </div>
 
@@ -1113,7 +1115,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             @click="contextMenu && exportAsMarkdown(contextMenu.node); close()"
           >
             <FileDown class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
-            Als Markdown
+            {{ t('tree.asMarkdown') }}
           </button>
           <button
             type="button"
@@ -1121,7 +1123,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             @click="contextMenu && printNote(contextMenu.node); close()"
           >
             <Printer class="h-4 w-4 shrink-0 text-content-tertiary" stroke-width="1.5" />
-            Drucken / Als PDF
+            {{ t('tree.printPdf') }}
           </button>
         </div>
       </template>
@@ -1144,7 +1146,7 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
             class="mt-1.5 w-full rounded-md px-2 py-1.5 text-left text-xs text-content-tertiary transition-colors duration-150 hover:bg-white/[0.04] hover:text-content-primary focus-visible:outline-none"
             @click="contextMenu && setFolderColor(contextMenu.node.path, null); close()"
           >
-            Zurücksetzen
+            {{ t('tree.resetColor') }}
           </button>
         </div>
       </template>
@@ -1152,9 +1154,9 @@ function wasRecentlyImported(node: VaultTreeNode): boolean {
 
     <ConfirmDialog
       v-if="pendingDelete?.type === 'file'"
-      title="Löschen"
+      :title="t('tree.delete')"
       :message="deleteConfirmMessage"
-      confirm-label="Löschen"
+      :confirm-label="t('tree.delete')"
       @confirm="confirmDelete"
       @cancel="pendingDelete = null"
     />

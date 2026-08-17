@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { CornerDownLeft, FileText } from '@lucide/vue'
 import type { FileEntry } from '@synap/editor-core'
 import { ref, watch } from 'vue'
@@ -54,8 +56,6 @@ defineExpose({ onKeyDown })
         </button>
       </li>
     </ul>
-    <p v-else class="px-3.5 py-2 text-content-tertiary">
-      Keine Treffer
-    </p>
+    <p v-else class="px-3.5 py-2 text-content-tertiary">{{ t('editor.noResults') }}</p>
   </div>
 </template>

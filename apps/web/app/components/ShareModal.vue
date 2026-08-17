@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Link2, Copy, Trash2, Calendar, Eye, Lock, ShieldCheck } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
 const { isOpen, targetPath, closeShareDialog } = useShareLink()
 const toast = useToast()
+const { t } = useI18n()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -97,7 +99,7 @@ async function handleSave() {
     }
     closeShareDialog()
   } catch (e: any) {
-    toast.show(e.data?.statusMessage || 'Fehler beim Speichern', 'error')
+    toast.show(e.data?.statusMessage || t('share.saveError'), 'error')
   } finally {
     saving.value = false
   }
@@ -131,18 +133,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             <div class="shrink-0 border-b border-border px-4 py-3">
               <h2 class="flex items-center gap-2 font-semibold text-content-primary">
                 <Link2 class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-                Dokument freigeben
+                {{ t('share.title') }}
               </h2>
             </div>
 
             <div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
-              <div v-if="loading" class="text-sm text-content-tertiary">Lädt...</div>
+              <div v-if="loading" class="text-sm text-content-tertiary">{{ t('share.loadingShare') }}</div>
               
               <template v-else>
                 <div class="flex items-center justify-between">
                   <div>
-                    <label class="text-sm font-medium text-content-primary">Externen Link aktivieren</label>
-                    <p class="text-xs text-content-tertiary">Erlaubt den Zugriff über einen öffentlichen Link.</p>
+                    <label class="text-sm font-medium text-content-primary">{{ t('share.enableLink') }}</label>
+                    <p class="text-xs text-content-tertiary">{{ t('share.enableLinkDesc') }}</p>
                   </div>
                   <label class="relative inline-flex cursor-pointer items-center">
                     <input type="checkbox" v-model="isShared" class="peer sr-only">
@@ -152,11 +154,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 
                 <div v-if="isShared" class="space-y-4">
                   <div class="rounded-md border border-accent/20 bg-accent/5 p-3">
-                    <p class="mb-2 text-xs font-medium text-accent">Freigabe-Link (Speichern erforderlich)</p>
+                    <p class="mb-2 text-xs font-medium text-accent">{{ t('share.linkRequiresSave') }}</p>
                     <div class="flex items-center gap-2">
                       <input
                         type="text"
-                        :value="shareId ? `${window?.location?.origin || ''}/share/${shareId}` : 'Wird beim Speichern generiert...'"
+                        :value="shareId ? `${window?.location?.origin || ''}/share/${shareId}` : t('share.generatingLink')"
                         readonly
                         class="w-full rounded-md border border-border-strong bg-surface-2 px-3 py-1.5 text-sm text-content-primary"
                       />
@@ -173,7 +175,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                   </div>
 
                   <div>
-                    <label class="mb-1 block text-sm font-medium text-content-secondary">Custom ID (Optional)</label>
+                    <label class="mb-1 block text-sm font-medium text-content-secondary">{{ t('share.customId') }}</label>
                     <div class="relative">
                       <input
                         v-model="customId"
@@ -186,26 +188,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 
                   <div>
                     <label class="mb-1 block text-sm font-medium text-content-secondary flex items-center gap-1.5">
-                      <Lock class="h-4 w-4" stroke-width="1.5"/>
-                      Passwort
-                    </label>
+                      <Lock class="h-4 w-4" stroke-width="1.5"/>{{ t('share.passwordShare') }}</label>
                     <input
                       v-model="password"
                       type="password"
                       :placeholder="originalHasPassword ? 'Passwort unverändert (leer lassen zum Behalten)' : 'Kein Passwort (optional)'"
                       class="w-full rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-sm text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
                     />
-                    <p v-if="originalHasPassword && !password" class="mt-1 text-xs text-content-tertiary">
-                      Ein Passwort ist aktuell gesetzt.
-                    </p>
+                    <p v-if="originalHasPassword && !password" class="mt-1 text-xs text-content-tertiary">{{ t('share.passwordSet') }}</p>
                   </div>
 
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <label class="mb-1 block text-sm font-medium text-content-secondary flex items-center gap-1.5">
-                        <Calendar class="h-4 w-4" stroke-width="1.5"/>
-                        Ablaufdatum
-                      </label>
+                        <Calendar class="h-4 w-4" stroke-width="1.5"/>{{ t('share.expiresAt') }}</label>
                       <input
                         v-model="expiresAt"
                         type="date"
@@ -214,9 +210,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                     </div>
                     <div>
                       <label class="mb-1 block text-sm font-medium text-content-secondary flex items-center gap-1.5">
-                        <Eye class="h-4 w-4" stroke-width="1.5"/>
-                        Max. Aufrufe
-                      </label>
+                        <Eye class="h-4 w-4" stroke-width="1.5"/>{{ t('share.maxViews') }}</label>
                       <input
                         v-model.number="maxViews"
                         type="number"
@@ -231,8 +225,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                     <div class="flex items-center gap-1.5">
                       <ShieldCheck class="h-4 w-4 text-content-secondary" stroke-width="1.5" />
                       <div>
-                        <label class="text-sm font-medium text-content-primary">Login erforderlich</label>
-                        <p class="text-xs text-content-tertiary">Nur angemeldete Nutzer können zugreifen</p>
+                        <label class="text-sm font-medium text-content-primary">{{ t('share.requireLogin') }}</label>
+                        <p class="text-xs text-content-tertiary">{{ t('share.requireLoginDesc') }}</p>
                       </div>
                     </div>
                     <label class="relative inline-flex cursor-pointer items-center">
@@ -250,7 +244,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                 class="rounded-md border border-border-strong px-4 py-2 text-sm text-content-primary transition-colors duration-150 hover:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-accent/50"
                 @click="handleCancel"
               >
-                Abbrechen
+                {{ t('share.cancel') }}
               </button>
               <button
                 type="button"
@@ -258,7 +252,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                 class="rounded-md bg-accent px-4 py-2 text-sm text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                 @click="handleSave"
               >
-                {{ saving ? 'Speichert...' : 'Speichern' }}
+                {{ saving ? t('share.saving') : t('share.save') }}
               </button>
             </div>
           </div>

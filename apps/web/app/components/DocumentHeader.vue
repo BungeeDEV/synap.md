@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Star } from '@lucide/vue'
 import { formatRelativeTime } from '#shared/formatDate'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ path: string, title: string, mtime: string | null }>()
 
 const { isFavorite, toggleFavorite } = useFavorites()
 
-const metaLabel = computed(() => (props.mtime ? `Zuletzt bearbeitet ${formatRelativeTime(new Date(props.mtime))}` : null))
+const metaLabel = computed(() => (props.mtime ? t('actions.lastEdited', { time: formatRelativeTime(new Date(props.mtime)) }) : null))
 </script>
 
 <template>
@@ -19,7 +22,7 @@ const metaLabel = computed(() => (props.mtime ? `Zuletzt bearbeitet ${formatRela
         type="button"
         class="mt-1 shrink-0 rounded-md p-1.5 transition duration-150 active:scale-90"
         :class="isFavorite(path) ? 'text-accent' : 'text-content-tertiary hover:text-accent'"
-        :title="isFavorite(path) ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+        :title="isFavorite(path) ? t('actions.removeFavorite') : t('actions.addFavorite')"
         @click="toggleFavorite(path)"
       >
         <Star class="h-6 w-6" stroke-width="1.5" :fill="isFavorite(path) ? 'currentColor' : 'none'" />

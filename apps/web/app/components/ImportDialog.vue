@@ -3,9 +3,11 @@ import { AlertTriangle, FileText, FileWarning, Upload } from '@lucide/vue'
 import type { ImportConflictAction } from '#shared/import'
 import { isMarkdownImportFilename } from '#shared/import'
 import type { VaultTreeNode } from '@synap/store'
+import { useI18n } from 'vue-i18n'
 import { formatBytes } from '~/utils/formatBytes'
 import { folderOptionsOf } from '~/utils/vaultFolders'
 
+const { t } = useI18n()
 const { dialog, closeImportDialog, runImport } = useVaultImport()
 const vaultTree = useVaultTreeStore()
 
@@ -102,14 +104,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <div class="shrink-0 border-b border-border px-4 py-3">
             <h2 class="flex items-center gap-2 font-semibold text-content-primary">
               <Upload class="h-5 w-5 text-content-tertiary" stroke-width="1.5" />
-              Dateien importieren
+              {{ t('dialogs.importFiles') }}
             </h2>
           </div>
 
           <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
             <div>
               <label class="mb-1 block text-sm font-medium text-content-secondary" for="import-target-folder">
-                Zielordner
+                {{ t('dialogs.targetFolder') }}
               </label>
               <select
                 id="import-target-folder"
@@ -200,7 +202,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
               class="rounded-md border border-border-strong px-4 py-2 text-content-primary transition-colors duration-150 hover:bg-white/[0.04] focus:outline-none focus:ring-1 focus:ring-accent/50"
               @click="handleCancel"
             >
-              Abbrechen
+              {{ t('dialogs.cancel') }}
             </button>
             <button
               type="button"

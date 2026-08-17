@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { Download } from '@lucide/vue'
 
 const { show } = useToast()
@@ -24,12 +26,8 @@ async function exportVault(): Promise<void> {
 
 <template>
   <div>
-    <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-      Backup
-    </h2>
-    <p class="mb-4 text-sm text-content-secondary">
-      Lädt den gesamten Vault-Inhalt (alle Notes und Anhänge, ohne Papierkorb) als ZIP-Datei herunter.
-    </p>
+    <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">{{ t('settings.backupTitle') }}</h2>
+    <p class="mb-4 text-sm text-content-secondary">{{ t('settings.backupDesc') }}</p>
     <button
       type="button"
       :disabled="exporting"

@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 const username = ref('')
 const password = ref('')
 const error = ref('')
 const submitting = ref(false)
+const rememberMe = ref(false)
 
 const { fetch: refreshSession } = useUserSession()
+const { t } = useI18n()
 
 async function handleSubmit() {
   error.value = ''
@@ -13,14 +17,14 @@ async function handleSubmit() {
   try {
     await $fetch('/api/auth/login', {
       method: 'POST',
-      body: { username: username.value, password: password.value }
+      body: { username: username.value, password: password.value, rememberMe: rememberMe.value }
     })
     await refreshSession()
     await navigateTo('/')
   } catch {
     // Deliberately generic - the server never reveals whether the
     // username or the password was wrong, so neither does the client.
-    error.value = 'Zugangsdaten ungültig'
+    error.value = t('auth.invalidCredentials')
   } finally {
     submitting.value = false
   }
@@ -35,7 +39,7 @@ async function handleSubmit() {
       </h1>
 
       <label class="flex flex-col gap-1 text-sm text-content-secondary">
-        Username
+        {{ t('auth.username') }}
         <input
           v-model="username"
           type="text"
@@ -46,7 +50,7 @@ async function handleSubmit() {
       </label>
 
       <label class="flex flex-col gap-1 text-sm text-content-secondary">
-        Password
+        {{ t('auth.password') }}
         <input
           v-model="password"
           type="password"
@@ -54,6 +58,14 @@ async function handleSubmit() {
           required
           class="rounded-md border border-border bg-surface-2 px-3 py-2 text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50"
         >
+      </label>
+
+      <label class="flex items-center gap-2.5 text-sm text-content-secondary cursor-pointer select-none">
+        <input
+          v-model="rememberMe"
+          type="checkbox"
+        >
+        {{ t('auth.rememberMe') }}
       </label>
 
       <p v-if="error" class="text-sm text-danger">
@@ -65,7 +77,7 @@ async function handleSubmit() {
         :disabled="submitting"
         class="rounded-md bg-accent px-4 py-2 font-medium text-content-primary transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {{ submitting ? 'Signing in…' : 'Sign in' }}
+        {{ submitting ? t('auth.signingIn') : t('auth.signIn') }}
       </button>
     </form>
   </main>

@@ -57,6 +57,10 @@ function setupObserver(): void {
   elements.forEach((element) => observer!.observe(element))
 }
 
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 watch(() => [props.container, headings.value.length] as const, () => nextTick(setupObserver), { immediate: true })
 onBeforeUnmount(() => observer?.disconnect())
 
@@ -71,7 +75,7 @@ function jumpTo(index: number): void {
     class="sticky top-0 hidden w-56 shrink-0 self-start overflow-y-auto overscroll-contain py-4 text-sm lg:block [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb:hover]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
   >
     <p class="mb-4 px-4 text-xs font-semibold tracking-wider text-content-tertiary uppercase">
-      Contents
+      {{ t('sidebar.toc') || 'Contents' }}
     </p>
     <ul class="space-y-2 px-4">
       <li v-for="(heading, index) in headings" :key="`${heading.line}-${index}`">

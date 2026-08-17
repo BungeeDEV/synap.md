@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User, Key } from '@lucide/vue'
+import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User, Key, Palette } from '@lucide/vue'
 import type { Component } from 'vue'
 import AboutTab from '~/components/settings/AboutTab.vue'
 import AccountTab from '~/components/settings/AccountTab.vue'
+import AppearanceTab from '~/components/settings/AppearanceTab.vue'
 import ApiTab from '~/components/settings/ApiTab.vue'
 import ArchivePanel from '~/components/settings/ArchivePanel.vue'
 import BackupTab from '~/components/settings/BackupTab.vue'
@@ -12,24 +13,29 @@ import TemplatesTab from '~/components/settings/TemplatesTab.vue'
 import TrashPanel from '~/components/settings/TrashPanel.vue'
 import VaultStatsTab from '~/components/settings/VaultStatsTab.vue'
 
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 interface SettingsTab {
   id: string
-  label: string
+  label: () => string
   icon: Component
   component: Component
 }
 
 const tabs: SettingsTab[] = [
-  { id: 'account', label: 'Account', icon: User, component: AccountTab },
-  { id: 'editor', label: 'Editor', icon: SettingsIcon, component: EditorTab },
-  { id: 'templates', label: 'Vorlagen', icon: LayoutTemplate, component: TemplatesTab },
-  { id: 'vault', label: 'Vault & Speicher', icon: HardDrive, component: VaultStatsTab },
-  { id: 'api', label: 'API Tokens', icon: Key, component: ApiTab },
-  { id: 'archive', label: 'Archiv', icon: Archive, component: ArchivePanel },
-  { id: 'trash', label: 'Papierkorb', icon: Trash2, component: TrashPanel },
-  { id: 'backup', label: 'Backup', icon: Download, component: BackupTab },
-  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard, component: ShortcutsTab },
-  { id: 'about', label: 'Über', icon: Info, component: AboutTab }
+  { id: 'account', label: () => t('settings.account'), icon: User, component: AccountTab },
+  { id: 'editor', label: () => t('settings.editor'), icon: SettingsIcon, component: EditorTab },
+  { id: 'appearance', label: () => t('settings.appearance'), icon: Palette, component: AppearanceTab },
+  { id: 'templates', label: () => t('settings.templates'), icon: LayoutTemplate, component: TemplatesTab },
+  { id: 'vault', label: () => t('settings.vaultAndStorage'), icon: HardDrive, component: VaultStatsTab },
+  { id: 'api', label: () => t('settings.apiTokens'), icon: Key, component: ApiTab },
+  { id: 'archive', label: () => t('settings.archive'), icon: Archive, component: ArchivePanel },
+  { id: 'trash', label: () => t('settings.trash'), icon: Trash2, component: TrashPanel },
+  { id: 'backup', label: () => t('settings.backup'), icon: Download, component: BackupTab },
+  { id: 'shortcuts', label: () => t('settings.shortcuts'), icon: Keyboard, component: ShortcutsTab },
+  { id: 'about', label: () => t('settings.about'), icon: Info, component: AboutTab }
 ]
 
 // Lets sidebar links (Papierkorb/Vorlagen system entries) deep-link straight
@@ -67,7 +73,7 @@ function selectTab(id: string) {
         >
           <ArrowLeft class="h-5 w-5" stroke-width="1.5" />
         </button>
-        <span class="text-content-primary">Einstellungen</span>
+        <span class="text-content-primary">{{ t('sidebar.settings') }}</span>
       </div>
 
       <nav class="flex-1 space-y-0.5 overflow-y-auto p-2">
@@ -80,7 +86,7 @@ function selectTab(id: string) {
           @click="selectTab(tab.id)"
         >
           <component :is="tab.icon" class="h-5 w-5 shrink-0" stroke-width="1.5" />
-          {{ tab.label }}
+          {{ tab.label() }}
         </button>
       </nav>
     </aside>
@@ -98,7 +104,7 @@ function selectTab(id: string) {
         >
           <ArrowLeft class="h-5 w-5" stroke-width="1.5" />
         </button>
-        <span class="text-content-primary">{{ activeTab.label }}</span>
+        <span class="text-content-primary">{{ activeTab.label() }}</span>
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 md:p-8">

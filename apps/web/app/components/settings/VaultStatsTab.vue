@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { formatBytes } from '~/utils/formatBytes'
 
 interface VaultStats {
@@ -26,9 +28,7 @@ void load()
 
 <template>
   <div class="space-y-8">
-    <h2 class="border-b border-border pb-2 text-xl font-semibold">
-      Vault & Speicher
-    </h2>
+    <h2 class="border-b border-border pb-2 text-xl font-semibold">{{ t('settings.vaultStatsTitle') }}</h2>
 
     <p v-if="loading" class="text-sm text-content-tertiary">
       Lädt…
@@ -39,41 +39,31 @@ void load()
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.noteCount }}
         </p>
-        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
-          Notes
-        </p>
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('settings.statNotes') }}</p>
       </div>
       <div>
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.folderCount }}
         </p>
-        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
-          Ordner
-        </p>
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('settings.statFolders') }}</p>
       </div>
       <div>
         <p class="text-2xl font-semibold text-content-primary">
           {{ stats.attachmentCount }}
         </p>
-        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
-          Anhänge
-        </p>
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('settings.statAttachments') }}</p>
       </div>
       <div>
         <p class="text-2xl font-semibold text-content-primary">
           {{ formatBytes(stats.attachmentSizeBytes) }}
         </p>
-        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
-          Anhänge-Größe
-        </p>
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('settings.statAttachmentsSize') }}</p>
       </div>
       <div>
         <p class="text-2xl font-semibold text-content-primary">
           {{ formatBytes(stats.totalSizeBytes) }}
         </p>
-        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">
-          Gesamtgröße
-        </p>
+        <p class="text-sm font-medium tracking-wider text-content-tertiary uppercase">{{ t('settings.statTotalSize') }}</p>
       </div>
     </div>
   </div>

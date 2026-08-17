@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { FilePlus, Trash2 } from '@lucide/vue'
 import { formatDate } from '#shared/formatDate'
 import { validateRawName } from '#shared/validateFileName'
@@ -126,30 +128,23 @@ const templateDropdownOptions = computed(() => templates.value)
 <template>
   <div class="space-y-8">
     <section>
-      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Daily Notes
-      </h2>
+      <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">{{ t('settings.dailyNotesTitle') }}</h2>
 
       <div class="flex flex-col gap-4 rounded-lg bg-surface-1 p-4 md:max-w-sm md:gap-3 md:bg-transparent md:p-0">
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Ordner
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.dailyNotesFolder') }}<input
             v-model="folder"
             type="text"
             class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
 
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Format
-          <input
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.dailyNotesFormat') }}<input
             v-model="dateFormat"
             type="text"
             class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 font-mono text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
           >
         </label>
-        <p class="text-sm text-content-tertiary">
-          Heute: <span class="font-mono text-content-secondary">{{ todayPreview }}.md</span>
+        <p class="text-sm text-content-tertiary">{{ t('settings.dailyNotesToday') }}<span class="font-mono text-content-secondary">{{ todayPreview }}.md</span>
         </p>
 
         <button
@@ -157,20 +152,14 @@ const templateDropdownOptions = computed(() => templates.value)
           :disabled="savingDailyNotes"
           class="min-h-12 w-full rounded-md bg-accent px-4 py-2 text-white transition-colors duration-150 hover:bg-accent/90 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-0 md:w-auto md:self-start"
           @click="saveDailyNotesSettings"
-        >
-          Speichern
-        </button>
+        >{{ t('settings.save') }}</button>
 
-        <label class="flex flex-col gap-1 text-sm text-content-secondary">
-          Standard-Vorlage
-          <select
+        <label class="flex flex-col gap-1 text-sm text-content-secondary">{{ t('settings.defaultTemplate') }}<select
             :value="preferences.preferences.dailyNotes.templateName ?? ''"
             class="min-h-12 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-base text-content-primary transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-accent/50 md:min-h-0 md:text-sm"
             @change="setDefaultTemplate"
           >
-            <option value="">
-              Keine Vorlage
-            </option>
+            <option value="">{{ t('settings.noTemplate') }}</option>
             <option v-for="template in templateDropdownOptions" :key="template.path" :value="template.name">
               {{ template.name }}
             </option>
@@ -180,16 +169,12 @@ const templateDropdownOptions = computed(() => templates.value)
     </section>
 
     <section>
-      <h2 class="mb-3 flex items-center justify-between border-b border-border pb-2 text-xl font-semibold">
-        Vorlagen verwalten
-        <button
+      <h2 class="mb-3 flex items-center justify-between border-b border-border pb-2 text-xl font-semibold">{{ t('settings.manageTemplates') }}<button
           type="button"
           class="flex min-h-12 items-center gap-1.5 rounded-md px-4 py-2 text-base font-normal text-content-secondary transition-colors duration-150 hover:bg-white/[0.04] md:min-h-0 md:px-3 md:py-1.5"
           @click="startCreateTemplate"
         >
-          <FilePlus class="h-5 w-5" stroke-width="1.5" />
-          Neue Vorlage
-        </button>
+          <FilePlus class="h-5 w-5" stroke-width="1.5" />{{ t('settings.newTemplate') }}</button>
       </h2>
 
       <p v-if="loadingTemplates" class="text-sm text-content-tertiary">
@@ -208,9 +193,7 @@ const templateDropdownOptions = computed(() => templates.value)
 
         <li v-if="!creatingTemplate && templates.length === 0" class="flex flex-col items-center gap-2 py-12 text-center">
           <FilePlus class="h-7 w-7 text-content-tertiary" stroke-width="1.5" />
-          <p class="text-base text-content-tertiary">
-            Noch keine Vorlagen vorhanden.
-          </p>
+          <p class="text-base text-content-tertiary">{{ t('settings.noTemplatesYet') }}</p>
         </li>
 
         <li v-for="template in templates" :key="template.path" class="flex items-center justify-between gap-4 py-2">

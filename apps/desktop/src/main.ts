@@ -30,8 +30,11 @@ setSynapApi({
 
 const pinia = createPinia();
 
+import { createSynapI18n } from '@synap/i18n';
+const i18n = createSynapI18n();
+
 if (isSticky && stickyFile) {
-    createApp(StickyNoteApp, { file: stickyFile }).use(pinia).mount('#app');
+    createApp(StickyNoteApp, { file: stickyFile }).use(pinia).use(i18n).mount('#app');
 } else {
-    createApp(App).use(pinia).mount('#app');
+    createApp(App).use(pinia).use(i18n).mount('#app');
 }

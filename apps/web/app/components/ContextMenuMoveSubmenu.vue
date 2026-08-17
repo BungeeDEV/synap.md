@@ -3,7 +3,9 @@ import { Folder } from '@lucide/vue'
 import type { VaultTreeNode } from '@synap/store'
 import { folderIndentClass, folderOptionsOf } from '~/utils/vaultFolders'
 import { isValidMoveTarget } from '~/utils/vaultMove'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{ node: VaultTreeNode }>()
 const emit = defineEmits<{ select: [targetFolderPath: string] }>()
 
@@ -27,7 +29,7 @@ onMounted(() => { void nextTick(() => inputRef.value?.focus()) })
       ref="inputRef"
       v-model="query"
       type="text"
-      placeholder="Ordner suchen…"
+      :placeholder="t('palette.searchFolders')"
       class="mb-1 w-full rounded-md border border-border-strong bg-surface-2 px-2.5 py-1.5 text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-1 focus:ring-accent/50"
     >
     <ul class="max-h-60 space-y-0.5 overflow-y-auto">

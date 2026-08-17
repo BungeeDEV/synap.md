@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { CircleCheck, CircleX, ChevronDown, ChevronUp, Loader2, RotateCcw, SkipForward, X } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const { progress, cancelRemaining, closeProgressPanel, toggleProgressCollapsed, retryImportFile } = useVaultImport()
 
 const total = computed(() => progress.value?.files.length ?? 0)
@@ -10,7 +12,7 @@ const hasPendingRemaining = computed(() => progress.value?.files.some((f) => f.s
 
 const summaryText = computed(() => {
   if (!progress.value) return ''
-  return progress.value.done ? `${completedCount.value} von ${total.value} verarbeitet` : `${completedCount.value} von ${total.value} importiert`
+  return progress.value.done ? t('import.processed', { count: completedCount.value, total: total.value }) : t('import.importing', { count: completedCount.value, total: total.value })
 })
 </script>
 
@@ -27,7 +29,7 @@ const summaryText = computed(() => {
         <button
           type="button"
           class="shrink-0 rounded-md p-1 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
-          :title="progress.collapsed ? 'Liste einblenden' : 'Liste ausblenden'"
+          :title="progress.collapsed ? t('common.showList') : t('common.hideList')"
           @click="toggleProgressCollapsed"
         >
           <ChevronUp v-if="progress.collapsed" class="h-4 w-4" stroke-width="1.5" />
@@ -36,7 +38,7 @@ const summaryText = computed(() => {
         <button
           type="button"
           class="shrink-0 rounded-md p-1 text-content-tertiary transition duration-150 hover:bg-white/[0.04] hover:text-content-secondary"
-          title="Schließen"
+          :title="t('common.close')"
           @click="closeProgressPanel"
         >
           <X class="h-4 w-4" stroke-width="1.5" />
@@ -75,11 +77,11 @@ const summaryText = computed(() => {
                   v-if="file.status === 'error'"
                   type="button"
                   class="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-content-secondary transition duration-150 hover:bg-white/[0.04] active:scale-95"
-                  title="Erneut versuchen"
+                  :title="t('common.retry')"
                   @click="retryImportFile(index)"
                 >
                   <RotateCcw class="h-3.5 w-3.5" stroke-width="1.5" />
-                  Erneut
+                  {{ t('common.retry') }}
                 </button>
               </li>
             </ul>
@@ -93,7 +95,7 @@ const summaryText = computed(() => {
           class="text-sm text-content-tertiary transition-colors duration-150 hover:text-content-secondary"
           @click="cancelRemaining"
         >
-          Verbleibende abbrechen
+          {{ t('import.cancelRemaining') }}
         </button>
       </div>
     </div>

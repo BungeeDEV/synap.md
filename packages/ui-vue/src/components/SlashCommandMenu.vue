@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 import { 
   ArrowDown, ArrowUp, CornerDownLeft,
   Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote, Code, Link, AtSign, Image, Paperclip, Minus,
@@ -107,9 +109,7 @@ defineExpose({ onKeyDown })
           </ul>
         </div>
       </template>
-      <p v-else class="px-3.5 py-2 text-content-tertiary">
-        Keine Treffer
-      </p>
+      <p v-else class="px-3.5 py-2 text-content-tertiary">{{ t('editor.noResults') }}</p>
     </div>
 
     <div class="flex shrink-0 items-center justify-between gap-3 border-t border-border px-3.5 py-2 text-xs text-content-tertiary bg-surface-1">
@@ -117,11 +117,7 @@ defineExpose({ onKeyDown })
         <span class="inline-flex items-center gap-0.5">
           <ArrowUp class="h-3 w-3" stroke-width="1.5" />
           <ArrowDown class="h-3 w-3" stroke-width="1.5" />
-        </span>
-        Navigieren
-        <CornerDownLeft class="h-3 w-3" stroke-width="1.5" />
-        Auswählen
-      </span>
+        </span>{{ t('editor.navigate') }}<CornerDownLeft class="h-3 w-3" stroke-width="1.5" />{{ t('editor.select') }}</span>
       <span v-if="query" class="truncate opacity-70">{{ query }}</span>
     </div>
   </div>

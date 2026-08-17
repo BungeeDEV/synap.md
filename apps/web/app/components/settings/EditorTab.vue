@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { Eye, PenLine } from '@lucide/vue'
 import type { ViewMode } from '@synap/store'
+import { useI18n } from 'vue-i18n'
 
 const preferences = usePreferencesStore()
 const { show } = useToast()
+const { t } = useI18n()
 
 // Just 2 modes now that the Tiptap editor is WYSIWYG/live-preview itself -
 // see ViewModeToggle.vue.
-const modes: { value: ViewMode, label: string, icon: typeof Eye }[] = [
-  { value: 'editor', label: 'Editor', icon: PenLine },
-  { value: 'reader', label: 'Vorschau', icon: Eye }
-]
+const modes = computed(() => [
+  { value: 'editor' as ViewMode, label: t('settings.modeEdit'), icon: PenLine },
+  { value: 'reader' as ViewMode, label: t('settings.modeRead'), icon: Eye }
+])
 
 async function setDefaultViewMode(mode: ViewMode): Promise<void> {
   try {
@@ -35,7 +37,7 @@ async function setFontSize(event: Event): Promise<void> {
   <div class="space-y-8">
     <section>
       <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Standard-Ansicht für neue Notes
+        {{ t('settings.defaultViewMode') }}
       </h2>
       <div class="inline-flex w-full items-center gap-0.5 rounded-full border border-border p-0.5 md:w-auto md:p-0.5 md:p-1">
         <button
@@ -55,7 +57,7 @@ async function setFontSize(event: Event): Promise<void> {
 
     <section>
       <h2 class="mb-3 border-b border-border pb-2 text-xl font-semibold">
-        Editor-Schriftgröße
+        {{ t('settings.fontSize') }}
       </h2>
       <div class="flex items-center gap-3 rounded-lg bg-surface-1 p-4 md:bg-transparent md:p-0">
         <input

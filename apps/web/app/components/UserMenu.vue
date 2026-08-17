@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { LogOut, Settings } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{ username?: string }>()
 const emit = defineEmits<{ logout: [] }>()
 
@@ -58,7 +60,7 @@ function onLogout(): void {
           @click="onSettings"
         >
           <Settings class="h-4 w-4 text-content-tertiary" stroke-width="1.5" />
-          Einstellungen
+          {{ t('sidebar.settings') }}
         </button>
         <button
           type="button"
@@ -66,7 +68,7 @@ function onLogout(): void {
           @click="onLogout"
         >
           <LogOut class="h-4 w-4" stroke-width="1.5" />
-          Log out
+          {{ t('auth.logout') || 'Abmelden' }}
         </button>
       </div>
     </Transition>

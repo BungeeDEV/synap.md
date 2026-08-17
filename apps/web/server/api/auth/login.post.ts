@@ -1,6 +1,7 @@
 interface LoginBody {
   username: string
   password: string
+  rememberMe?: boolean
 }
 
 export default defineEventHandler(async (event) => {
@@ -23,7 +24,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Zugangsdaten ungültig' })
   }
 
-  await setUserSession(event, { user: { id: user.id, username: user.username } })
+  const sessionOptions = body.rememberMe ? { maxAge: 60 * 60 * 24 * 30 } : {}
+  await setUserSession(event, { user: { id: user.id, username: user.username } }, sessionOptions)
 
   return { username: user.username }
 })

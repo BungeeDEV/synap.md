@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n();
 import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -42,21 +44,51 @@ onMounted(async () => {
     if (await store.has('editorFontSize')) appState.editorFontSize = await store.get<number>('editorFontSize') ?? 16;
     if (await store.has('editorFontFamily')) appState.editorFontFamily = await store.get<any>('editorFontFamily') ?? 'sans';
     if (await store.has('editorLineHeight')) appState.editorLineHeight = await store.get<number>('editorLineHeight') ?? 1.7;
+    if (await store.has('theme')) appState.theme = await store.get<any>('theme') ?? 'dark';
+    if (await store.has('accentColor')) appState.accentColor = await store.get<any>('accentColor') ?? null;
+    if (await store.has('locale')) appState.locale = await store.get<any>('locale') ?? 'de';
 
     // Watch for editor setting changes to auto-save
     watch(() => [
         appState.defaultView, 
         appState.editorFontSize, 
         appState.editorFontFamily, 
-        appState.editorLineHeight
+        appState.editorLineHeight,
+        appState.theme,
+        appState.accentColor,
+        appState.locale
     ], async () => {
         const store = await load('store.json', { autoSave: false });
         await store.set('defaultView', appState.defaultView);
         await store.set('editorFontSize', appState.editorFontSize);
         await store.set('editorFontFamily', appState.editorFontFamily);
         await store.set('editorLineHeight', appState.editorLineHeight);
+        await store.set('theme', appState.theme);
+        await store.set('accentColor', appState.accentColor);
+        await store.set('locale', appState.locale);
         await store.save();
     }, { deep: true });
+
+    // Watch and apply theme/accentColor/locale
+    const { locale: i18nLocale } = useI18n();
+    watch(() => [appState.theme, appState.accentColor, appState.locale], async () => {
+        document.documentElement.dataset.theme = appState.theme;
+        i18nLocale.value = appState.locale;
+        
+        if (appState.accentColor) {
+            document.documentElement.style.setProperty('--color-accent', appState.accentColor);
+            const { computeAccentVariations } = await import('@synap/design-tokens');
+            const vars = computeAccentVariations(appState.accentColor);
+            if (vars) {
+                document.documentElement.style.setProperty('--color-accent-soft', vars.soft);
+                document.documentElement.style.setProperty('--color-accent-strong', vars.strong);
+            }
+        } else {
+            document.documentElement.style.removeProperty('--color-accent');
+            document.documentElement.style.removeProperty('--color-accent-soft');
+            document.documentElement.style.removeProperty('--color-accent-strong');
+        }
+    }, { immediate: true });
 
     if (storedPath) {
         appState.vaultPath = storedPath;
@@ -432,11 +464,10 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
     <!-- Setup Screen -->
     <div v-if="!appState.vaultPath" class="flex-1 flex flex-col items-center justify-center gap-4 p-8">
       <Folder class="w-12 h-12 text-content-tertiary mb-2" stroke-width="1.5" />
-      <h2 class="text-2xl font-bold text-content-primary tracking-tight">Synap Vault wählen</h2>
-      <p class="text-content-secondary mb-4 text-center max-w-sm">Wähle den lokalen Ordner für deine Offline-Notizen aus.</p>
+      <h2 class="text-2xl font-bold text-content-primary tracking-tight">{{ t('desktopSettings.selectVault') }}</h2>
+      <p class="text-content-secondary mb-4 text-center max-w-sm">{{ t('desktopSettings.selectVaultDesc') }}</p>
       <button @click="selectVaultFolder" class="btn-primary">
-        <Folder class="w-4 h-4" stroke-width="1.5" /> Ordner auswählen...
-      </button>
+        <Folder class="w-4 h-4" stroke-width="1.5" />{{ t('desktopSettings.selectFolderBtn') }}</button>
     </div>
 
     <!-- Main App Layout: horizontal flex, fills remaining height -->
@@ -460,15 +491,15 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
     >
       <template #move="{ close }">
         <div class="bg-surface-2 p-3 text-[13px] rounded shadow-md border border-divider w-48">
-          <p class="font-semibold mb-2">Verschieben nach:</p>
-          <p class="text-content-tertiary">Ziel wählen...</p>
-          <button @click="close" class="mt-2 text-accent">Abbrechen</button>
+          <p class="font-semibold mb-2">{{ t('desktopSettings.moveTo') }}</p>
+          <p class="text-content-tertiary">{{ t('desktopSettings.selectTarget') }}</p>
+          <button @click="close" class="mt-2 text-accent">{{ t('desktopSettings.cancelDesktop') }}</button>
         </div>
       </template>
       <template #export="{ close }">
         <div class="bg-surface-2 p-2 text-[13px] rounded shadow-md border border-divider flex flex-col gap-1 w-40">
-          <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">Als Markdown</button>
-          <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">Drucken (PDF)</button>
+          <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">{{ t('desktopSettings.asMarkdownDesktop') }}</button>
+          <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">{{ t('desktopSettings.printPdfDesktop') }}</button>
         </div>
       </template>
       <template #color="{ close }">

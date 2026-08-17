@@ -16,6 +16,7 @@
     "@nuxt/eslint": "1.17.0",
     "@pinia/nuxt": "^1.0.2",
     "@synap/config-tailwind": "workspace:*",
+    "@synap/i18n": "workspace:*",
     "@synap/store": "workspace:*",
     "@synap/ui-vue": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
@@ -59,6 +60,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "vue": "^3.5.39",
+    "vue-i18n": "^10.0.5",
     "vue-router": "^5.1.0",
     "yaml": "^2.9.0"
   },

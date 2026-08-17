@@ -20,7 +20,9 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
+    "@synap/design-tokens": "workspace:*",
     "@synap/editor-core": "workspace:*",
+    "@synap/i18n": "workspace:*",
     "@synap/store": "workspace:*",
     "@synap/ui-vue": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
@@ -40,7 +42,8 @@
     "@lucide/vue": "^1.31.0",
     "pinia": "^4.0.2",
     "tiptap-markdown": "^0.9.0",
-    "vue": "^3.5.41"
+    "vue": "^3.5.41",
+    "vue-i18n": "^10.0.5"
   },
   "dependenciesMeta": {
     "@synap/store": {
