@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { indexNote, removeNoteFromIndex } from './indexer'
+import { indexNote, removeNoteFromIndex, renameFolderInIndex } from './indexer'
 
 function createTestDb(): Database.Database {
   const db = new Database(':memory:')
@@ -115,5 +115,73 @@ describe('indexer', () => {
     // target.md itself was untouched - ON DELETE SET NULL only applies to
     // links pointing at a removed note, not the note we just removed.
     expect(db.prepare('SELECT * FROM notes WHERE path = ?').get('target.md')).toBeDefined()
+  })
+
+  describe('renameFolderInIndex', () => {
+    it('rewrites the path of every indexed note nested under the renamed folder, at any depth', async () => {
+      writeNote('Projects/a.md', '# A\n')
+      writeNote('Projects/Sub/b.md', '# B\n')
+      writeNote('Elsewhere/c.md', '# C\n')
+      await indexNote(db, 'Projects/a.md', vaultRoot)
+      await indexNote(db, 'Projects/Sub/b.md', vaultRoot)
+      await indexNote(db, 'Elsewhere/c.md', vaultRoot)
+
+      const renamed = renameFolderInIndex(db, 'Projects', 'Work')
+
+      const paths = db.prepare('SELECT path FROM notes ORDER BY path').all().map((row) => (row as { path: string }).path)
+      expect(paths).toEqual(['Elsewhere/c.md', 'Work/Sub/b.md', 'Work/a.md'])
+
+      expect(renamed.map((n) => [n.oldPath, n.newPath]).sort()).toEqual([
+        ['Projects/Sub/b.md', 'Work/Sub/b.md'],
+        ['Projects/a.md', 'Work/a.md']
+      ])
+    })
+
+    it('preserves title, tags, links and the FTS entry - only the path column changes', async () => {
+      writeNote('Projects/target.md', '# Target\n')
+      await indexNote(db, 'Projects/target.md', vaultRoot)
+
+      writeNote('Projects/source.md', 'Tagged #kept, linking to [[Target]].')
+      await indexNote(db, 'Projects/source.md', vaultRoot)
+
+      const sourceBefore = db.prepare('SELECT id, title FROM notes WHERE path = ?').get('Projects/source.md') as { id: number, title: string }
+
+      renameFolderInIndex(db, 'Projects', 'Work')
+
+      const sourceAfter = db.prepare('SELECT id, title FROM notes WHERE path = ?').get('Work/source.md') as { id: number, title: string }
+      expect(sourceAfter.id).toBe(sourceBefore.id)
+      expect(sourceAfter.title).toBe(sourceBefore.title)
+
+      const target = db.prepare('SELECT id FROM notes WHERE path = ?').get('Work/target.md') as { id: number }
+      const link = db.prepare('SELECT target_note_id FROM links WHERE source_note_id = ?').get(sourceAfter.id) as { target_note_id: number }
+      expect(link.target_note_id).toBe(target.id)
+
+      const tagNames = db.prepare(`
+        SELECT t.name FROM tags t JOIN note_tags nt ON nt.tag_id = t.id WHERE nt.note_id = ?
+      `).all(sourceAfter.id).map((row) => (row as { name: string }).name)
+      expect(tagNames).toEqual(['kept'])
+
+      const ftsHits = db.prepare(`
+        SELECT n.path FROM notes_fts f JOIN notes n ON n.id = f.rowid WHERE notes_fts MATCH 'kept'
+      `).all() as { path: string }[]
+      expect(ftsHits).toEqual([{ path: 'Work/source.md' }])
+    })
+
+    it('does not touch notes outside the renamed folder, including same-prefix siblings', async () => {
+      writeNote('Projects/a.md', '# A\n')
+      writeNote('Projects-Archive/b.md', '# B\n')
+      await indexNote(db, 'Projects/a.md', vaultRoot)
+      await indexNote(db, 'Projects-Archive/b.md', vaultRoot)
+
+      renameFolderInIndex(db, 'Projects', 'Work')
+
+      const paths = db.prepare('SELECT path FROM notes ORDER BY path').all().map((row) => (row as { path: string }).path)
+      expect(paths).toEqual(['Projects-Archive/b.md', 'Work/a.md'])
+    })
+
+    it('is a no-op (returns an empty array) when the renamed folder has no indexed notes', () => {
+      expect(renameFolderInIndex(db, 'Empty', 'Renamed')).toEqual([])
+      expect(db.prepare('SELECT COUNT(*) c FROM notes').get()).toMatchObject({ c: 0 })
+    })
   })
 })

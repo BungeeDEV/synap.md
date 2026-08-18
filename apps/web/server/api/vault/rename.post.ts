@@ -51,32 +51,64 @@ export default defineEventHandler(async (event) => {
   let updatedBacklinks: string[] = []
 
   try {
-    // Folder renames land here too (fs.rename works on directories). Only
-    // single-file index bookkeeping is done in this phase - descendant notes
-    // inside a renamed folder keep their old (now-broken) path in the index
-    // until the next /api/admin/reindex. Acceptable per decisions.md: the
-    // index is a rebuildable cache, never the source of truth.
-    const wasMarkdown = body.oldPath.toLowerCase().endsWith('.md')
-    const isMarkdown = body.newPath.toLowerCase().endsWith('.md')
+    const newStats = await stat(newAbsolutePath)
 
-    if (wasMarkdown && isMarkdown) {
+    if (newStats.isDirectory()) {
+      // Folder renames land here too (fs.rename works on directories just as
+      // well as files). Every descendant note keeps its filename and content,
+      // only its path prefix changes, so a bulk path-prefix rewrite is enough
+      // - no per-file reindex, no title-based wikilink propagation needed
+      // (title-based wikilinks don't reference path at all). Path-*literal*
+      // wikilinks (`[[folder/note.md]]`) DO reference the moved path though,
+      // so each renamed descendant still needs propagatePathWikilinkRename.
       const db = getDb()
-      const before = db.prepare('SELECT id, title FROM notes WHERE path = ?').get(body.oldPath) as { id: number, title: string } | undefined
+      const renamedNotes = renameFolderInIndex(db, body.oldPath, body.newPath)
 
-      await renameNoteInIndex(db, body.oldPath, body.newPath, config.vaultPath)
-
-      if (before) {
-        const after = db.prepare('SELECT title FROM notes WHERE id = ?').get(before.id) as { title: string }
-        updatedBacklinks = await propagateWikilinkRename(db, before.id, before.title, after.title, config.vaultPath)
+      const backlinkPaths = new Set<string>()
+      for (const note of renamedNotes) {
+        for (const path of await propagatePathWikilinkRename(db, note.id, note.oldPath, note.newPath, config.vaultPath)) {
+          backlinkPaths.add(path)
+        }
       }
-    } else if (wasMarkdown) {
-      removeNoteFromIndex(getDb(), body.oldPath)
-    } else if (isMarkdown) {
-      await indexNote(getDb(), body.newPath, config.vaultPath)
+      updatedBacklinks = [...backlinkPaths]
+
+      // Same staleness class, different table: favorites/expandedFolders/
+      // folderColors also store vault-relative paths (preferences.ts).
+      const users = db.prepare('SELECT id, preferences_json FROM users').all() as { id: number, preferences_json: string }[]
+      const updatePreferences = db.prepare('UPDATE users SET preferences_json = ? WHERE id = ?')
+      for (const user of users) {
+        const rewritten = rewritePreferencePathsForRename(parsePreferences(user.preferences_json), body.oldPath, body.newPath)
+        if (rewritten) updatePreferences.run(JSON.stringify(rewritten), user.id)
+      }
+    } else {
+      const wasMarkdown = body.oldPath.toLowerCase().endsWith('.md')
+      const isMarkdown = body.newPath.toLowerCase().endsWith('.md')
+
+      if (wasMarkdown && isMarkdown) {
+        const db = getDb()
+        const before = db.prepare('SELECT id, title FROM notes WHERE path = ?').get(body.oldPath) as { id: number, title: string } | undefined
+
+        await renameNoteInIndex(db, body.oldPath, body.newPath, config.vaultPath)
+
+        if (before) {
+          const after = db.prepare('SELECT title FROM notes WHERE id = ?').get(before.id) as { title: string }
+          const backlinkPaths = new Set<string>()
+          for (const path of await propagateWikilinkRename(db, before.id, before.title, after.title, config.vaultPath)) {
+            backlinkPaths.add(path)
+          }
+          for (const path of await propagatePathWikilinkRename(db, before.id, body.oldPath, body.newPath, config.vaultPath)) {
+            backlinkPaths.add(path)
+          }
+          updatedBacklinks = [...backlinkPaths]
+        }
+      } else if (wasMarkdown) {
+        removeNoteFromIndex(getDb(), body.oldPath)
+      } else if (isMarkdown) {
+        await indexNote(getDb(), body.newPath, config.vaultPath)
+      }
     }
 
-    const { mtime } = await stat(newAbsolutePath)
-    return { path: body.newPath, mtime: mtime.toISOString(), updatedBacklinks }
+    return { path: body.newPath, mtime: newStats.mtime.toISOString(), updatedBacklinks }
   } catch (err) {
     if (err && typeof err === 'object' && 'statusCode' in err) throw err
     console.error('rename.post.ts: renamed on disk but failed to update index for', body.newPath, err)

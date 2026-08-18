@@ -139,9 +139,32 @@ feature/*  →  develop  →  main (tagged vX.Y.Z)
 
 ## Roadmap
 
-There's no formal roadmap doc yet — planned work and open questions are
-tracked in [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues).
-Feel free to open one if you have an idea, or weigh in on an existing one.
+Rough shape of what's planned, roughly in priority order. Nothing here has
+a committed date — see [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues)
+for what's actively being worked on, or to weigh in on an idea.
+
+1. **End-to-end test coverage** — the app only has unit tests today
+   (`apps/web/server/utils/*.test.ts`); no Playwright/E2E setup exists yet.
+   Foundation for building everything below with confidence.
+2. **Version history** — per-note history, likely as its own reserved vault
+   folder/snapshot mechanism (same pattern as `_trash`/`_archive`) rather
+   than a full VCS. Currently there's explicitly none (see
+   `docs/sync-plan.md`: "no built-in version history" was a deliberate
+   Phase-1 decision, revisited here).
+3. **Whiteboard support** — a canvas note type (drawings, arrows, sticky
+   notes) alongside the Markdown editor, likely its own file format stored
+   in the vault the same way notes are, not a separate backing store.
+4. **Plugin system** — user-extensible slash commands/editor extensions.
+   Needs a real security/sandboxing story before anything ships, since this
+   is a self-hosted app that's often reachable from the internet.
+5. **Multi-user / team vaulting / vault sharing** — the most invasive item
+   on this list: it cuts against "self-hosted & single-user" as currently
+   documented (see Features above) and `docs/sync-plan.md`'s explicit
+   single-user-across-devices decision. Needs its own design discussion
+   before scoping, not just a checkbox here. Note that single-note public
+   sharing (read-only link, optional password) already exists today - this
+   item is about multiple real accounts collaborating on one private vault,
+   which is a different problem.
 
 ## Contributing
 

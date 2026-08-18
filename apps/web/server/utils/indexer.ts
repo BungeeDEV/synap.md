@@ -189,6 +189,59 @@ export async function renameNoteInIndex(
   apply()
 }
 
+export interface RenamedFolderNote {
+  id: number
+  oldPath: string
+  newPath: string
+}
+
+/**
+ * Rewrites the `path` of every indexed note nested under a renamed/moved
+ * folder, by prefix substitution - mirrors what `packages/store`'s
+ * `rewriteDescendantPaths()` already does client-side for the tree UI.
+ * `fs.rename` on a directory doesn't touch filenames or content, so title,
+ * tags, links (which point at a stable `notes.id`, not a path) and the FTS
+ * entry all stay valid for every descendant - only `notes.path` changes.
+ * No file reads needed, unlike `renameNoteInIndex`. No-op (empty array) if
+ * the folder had no indexed notes under it.
+ *
+ * Returns the old/new path of every renamed descendant so the caller can
+ * run per-note follow-up (`propagatePathWikilinkRename`) against each one -
+ * a folder rename only shifts each descendant's path prefix, so the
+ * old->new pair differs per note.
+ */
+export function renameFolderInIndex(
+  db: Database.Database,
+  oldFolderPath: string,
+  newFolderPath: string
+): RenamedFolderNote[] {
+  const oldPrefix = `${oldFolderPath}/`
+  const newPrefix = `${newFolderPath}/`
+
+  const descendants = db.prepare(
+    'SELECT id, path FROM notes WHERE substr(path, 1, ?) = ?'
+  ).all(oldPrefix.length, oldPrefix) as { id: number, path: string }[]
+
+  if (descendants.length === 0) return []
+
+  const renamed: RenamedFolderNote[] = descendants.map((note) => ({
+    id: note.id,
+    oldPath: note.path,
+    newPath: newPrefix + note.path.slice(oldPrefix.length)
+  }))
+
+  const updatePath = db.prepare('UPDATE notes SET path = ? WHERE id = ?')
+  const apply = db.transaction(() => {
+    for (const note of renamed) {
+      updatePath.run(note.newPath, note.id)
+    }
+  })
+
+  apply()
+
+  return renamed
+}
+
 /** Removes a note and all of its derived data (tags/links/FTS entry) from the index. */
 export function removeNoteFromIndex(db: Database.Database, relativePath: string): void {
   const remove = db.transaction(() => {

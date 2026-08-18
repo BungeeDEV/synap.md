@@ -1,152 +1,102 @@
-# synap – Sync-Plan: Web-App ↔ Tauri-Desktop-App
+# synap – Sync Plan: Web App ↔ Tauri Desktop App
 
-Diese Datei ist die gemeinsame Referenz für zwei Repos: die bestehende
-synap.md-Web-App (Nuxt/Nitro) und eine neue Tauri-Desktop-App (z.B.
-`synap-desktop`). Beide Repos bekommen diese Datei (z.B. unter
-`docs/sync-plan.md`) — sie beschreibt den Gesamtplan, damit Claude Code
-in beiden Repos denselben Kontext hat, auch wenn jeweils nur der eigene
-Teil umgesetzt wird.
+This file is the shared reference for two repos: the existing `synap.md` web app (Nuxt/Nitro) and a new Tauri desktop app (e.g., `synap-desktop`). Both repos will include this file (e.g., under `docs/sync-plan.md`) — it outlines the overall plan so that Claude has the same context when writing code in both repos, even when only the respective part is being implemented.
 
-## Ziel
+## Goal
 
-Eine native Tauri-2-Desktop-App (Rust-Backend), die den Vault
-vollständig lokal hält, komplett offline editierbar macht, und im
-Hintergrund mit dem Server abgleicht — sodass Web-Vault (z.B. am Handy)
-und Tauri-App (PC) immer denselben Stand zeigen. Obsidian-artige
-Bedienung als Vorbild.
+A native Tauri 2 desktop app (Rust backend) that keeps the vault completely local, makes it fully editable offline, and syncs with the server in the background — ensuring the web vault (e.g., on mobile) and Tauri app (PC) always reflect the same state. Obsidian-like user experience as a model.
 
-## Architektur-Entscheidungen (bereits getroffen, nicht neu diskutieren)
+## Architectural Decisions (already made, do not re-discuss)
 
-- **Sync-Mechanismus**: REST-Diff-Sync, hash-/mtime-basiert. Kein Git,
-  keine eingebaute Versionshistorie.
-- **Konfliktstrategie**: Last-Write-Wins + Konfliktkopie bei echtem
-  Gleichzeitig-Konflikt (wie Dropbox), kein CRDT/Realtime-Merging.
-- **Setup**: Single-User über mehrere Geräte, kein Multi-User-Merging
-  nötig.
-- **Client-Stack**: Tauri 2 + Rust, explizit kein Electron. Tooling/
-  Signing-Konventionen können vom bestehenden Tauri-2-Projekt
-  `nexo-suite` übernommen werden.
-- **Bestehendes Server-Modell bleibt unangetastet**: Vault = Ordner mit
-  echten .md-Dateien auf der Server-Platte, SQLite ist und bleibt nur
-  rebuildbarer Cache, nie Daten-Owner. `resolveVaultPath()` bleibt der
-  einzige Sicherheits-Choke-Point für jeden Dateipfad — auch für neue
-  Sync-Endpoints, ausnahmslos.
+* **Sync Mechanism**: REST diff sync, hash/mtime-based. No Git, no built-in version history.
+* **Conflict Strategy**: Last-Write-Wins + conflict copy for genuine simultaneous conflicts (like Dropbox), no CRDT/real-time merging.
+* **Setup**: Single-user across multiple devices, no multi-user merging required.
+* **Client Stack**: Tauri 2 + Rust, explicitly no Electron. Tooling/signing conventions can be adopted from the existing Tauri 2 project `nexo-suite`.
+* **Existing Server Model remains untouched**: Vault = folder with real .md files on the server disk, SQLite is and remains only a rebuildable cache, never the data owner. `resolveVaultPath()` remains the sole security choke point for every file path — including for new sync endpoints, without exception.
 
-## Phasenplan (Reihenfolge verbindlich, jede Phase erst nach Bestätigung)
+## Phase Plan (order is binding, each phase only after confirmation)
 
-| Phase | Inhalt | Repo |
-|---|---|---|
-| 0 | Validierung/Proof-of-Concept (ABGESCHLOSSEN) | Tauri (+ minimale Server-Endpoints) |
-| 1 | Lokales Vault + vollständige Sync-Engine (ABGESCHLOSSEN) | Tauri + Server |
-| 2 | Editor-Wiederverwendung statt Textfeld (ABGESCHLOSSEN) | Tauri (+ ggf. Web-App für Extraktion) |
-| 3 | Native Politur (ABGESCHLOSSEN) | Tauri |
+| Phase | Content                                        | Repo                                       |
+| ----- | ---------------------------------------------- | ------------------------------------------ |
+| 0     | Validation/Proof of Concept (COMPLETED)        | Tauri (+ minimal server endpoints)         |
+| 1     | Local Vault + full sync engine (COMPLETED)     | Tauri + Server                             |
+| 2     | Editor reuse instead of text field (COMPLETED) | Tauri (+ web app for extraction if needed) |
+| 3     | Native Polish (COMPLETED)                      | Tauri                                      |
 
-Phase 0 hat Priorität — Zweck ist der Beweis, dass die Kette
-grundsätzlich funktioniert, bevor in Sync-Engine, sichere Auth-Ablage
-oder den vollen Editor investiert wird.
+Phase 0 has priority — the purpose is to prove that the chain fundamentally works before investing in the sync engine, secure auth storage, or the full editor.
 
 ---
 
-## Teil A — Verantwortlichkeiten im Web-App-Repo (synap.md)
+## Part A — Responsibilities in the Web App Repo (synap.md)
 
-### A1. Manifest-Endpoint
-`GET /api/vault/manifest` — liefert für den gesamten Vault eine Liste
-`{ path, hash, mtime, size }` pro Datei (Hash z.B. SHA-256 über den
-Inhalt). Prüfen, ob der bestehende Indexer (`server/utils/indexer.ts`)
-diese Metadaten schon mitführt, sonst Caching-Strategie fürs Hashing
-überlegen (nicht bei jedem Request den kompletten Vault neu hashen).
+### A1. Manifest Endpoint
 
-### A2. Batch-Sync-Endpoints
-- `POST /api/vault/sync/pull` — Liste von Pfaden rein, Inhalt +
-  aktueller Hash/mtime pro Datei raus
-- `POST /api/vault/sync/push` — Liste von
-  `{ path, content, expectedMtime }` rein, schreibt über denselben
-  Pfad wie das bestehende `PUT /api/vault/file` (inkl. dessen
-  409-Konflikterkennung), aber gebündelt; Antwort pro Datei: Erfolg
-  oder 409 mit aktuellem Server-Stand
-- Jeder Pfad in beiden Endpoints durch `resolveVaultPath()`
+`GET /api/vault/manifest` — returns a list of `{ path, hash, mtime, size }` per file for the entire vault (hash e.g., SHA-256 over the content). Check if the existing indexer (`server/utils/indexer.ts`) already includes these metadata; otherwise, consider a caching strategy for hashing (do not re-hash the entire vault on every request).
 
-### A3. Auth für Nicht-Browser-Clients
-Prüfen, ob bereits ein Token-/API-Key-Mechanismus abseits der
-Session-Cookie-Middleware (`requireUserSession`) existiert. Falls
-nicht: einfachen Personal-Access-Token-Mechanismus ergänzen (in den
-Einstellungen generierbar, Anzeige-nur-einmal, optional mit
-Ablaufdatum) für die Tauri-App.
+### A2. Batch Sync Endpoints
+
+* `POST /api/vault/sync/pull` — takes a list of paths in, returns content + current hash/mtime per file out.
+* `POST /api/vault/sync/push` — takes a list of `{ path, content, expectedMtime }` in, writes via the same path as the existing `PUT /api/vault/file` (including its 409 conflict detection), but batched; response per file: success or 409 with current server state.
+* Every path in both endpoints must go through `resolveVaultPath()`.
+
+### A3. Auth for Non-Browser Clients
+
+Check if a token/API key mechanism already exists apart from the session cookie middleware (`requireUserSession`). If not: add a simple Personal Access Token mechanism (generatable in settings, display-only-once, optional expiration date) for the Tauri app.
 
 ---
 
-## Teil B — Verantwortlichkeiten im Tauri-Repo (synap-desktop)
+## Part B — Responsibilities in the Tauri Repo (synap-desktop)
 
-### B0. Phase 0 — Validierung (ABGESCHLOSSEN)
-- Tauri-2-Projekt aufsetzen (Struktur/Signing an `nexo-suite` anlehnen)
-- Minimales Frontend: Server-URL + Token-Eingabe (Token vorerst nur im
-  Klartext-State, wird in Phase 3 ersetzt)
-- Rust-Command gegen `GET /api/vault/manifest` (Teil A1)
-- Einfache Dateiliste im UI
-- Datei anklicken → Inhalt via `sync/pull` laden, in simplem Textfeld
-  anzeigen (kein Markdown-Rendering nötig)
-- Bearbeiten + Speichern via `sync/push`
+### B0. Phase 0 — Validation (COMPLETED)
 
-**Definition of Done**: App verbindet sich, zeigt Vault-Dateiliste,
-kann eine Datei laden/bearbeiten/speichern. Kein lokales Vault, kein
-Offline-Modus, kein Diffing.
+* Set up Tauri 2 project (base structure/signing on `nexo-suite`)
+* Minimal frontend: Server URL + token input (token only in plaintext state for now, will be replaced in Phase 3)
+* Rust command against `GET /api/vault/manifest` (Part A1)
+* Simple file list in the UI
+* Click file → load content via `sync/pull`, display in a simple text field (no markdown rendering required)
+* Edit + save via `sync/push`
 
-### B1. Phase 1 — Lokales Vault + Sync-Engine (ABGESCHLOSSEN)
-- Lokalen Vault-Root wählen/anlegen (Dialog beim ersten Start)
-- Lokale SQLite-Cache-DB (`rusqlite`/`sqlx`): pro Datei lokaler
-  Hash/mtime UND letzter-erfolgreicher-Sync-Hash/mtime (für
-  3-Wege-Diff: lokal vs. letzter Sync vs. Server)
-- Datei-Watcher (`notify`-Crate) für sofortige lokale
-  Änderungserkennung
-- HTTP-Client (`reqwest`) gegen Teil A1/A2, Auth über Token aus Phase 0
-- Sync-Orchestrierung: voller Abgleich beim Start, periodischer
-  Hintergrund-Sync, sofortiger Sync-Versuch bei lokaler Änderung
-  (debounced), Offline-Warteschlange bei fehlgeschlagenen Requests,
-  automatisches Nachholen bei Wiederverbindung
-- Konfliktbehandlung: nur-lokal-geändert → hochladen,
-  nur-remote-geändert → herunterladen, beides-geändert → lokale
-  Version behalten + Server-Version als Konfliktkopie
-  (`Titel (Konflikt vom Datum).md`), sichtbar im UI markieren
-- Löschungen: erst gegen andere neue lokale Dateien hash-vergleichen
-  (Move/Rename-Erkennung) bevor als Löschung an den Server propagiert
-  wird
+**Definition of Done**: App connects, shows vault file list, can load/edit/save a file. No local vault, no offline mode, no diffing.
 
-**Definition of Done**: zwei Geräte zeigen nach kurzer Zeit denselben
-Vault-Stand, auch nach Offline-Änderungen. Echte Konflikte erzeugen
-eine Konfliktkopie statt Datenverlust.
+### B1. Phase 1 — Local Vault + Sync Engine (COMPLETED)
 
-### B2. Phase 2 — Monorepo & Echter Editor (ABGESCHLOSSEN)
-- **Monorepo-Infrastruktur**: Erfolgreich in einen pnpm-Workspace + Turborepo umgewandelt.
-- **Packages extrahiert**: Die bestehende Editor-Logik (nun Tiptap statt CodeMirror), UI-Komponenten und Pinia-Stores wurden in `packages/editor-core`, `packages/ui-vue` und `packages/store` ausgelagert.
-- **Web-App & Desktop-App gekoppelt**: Beide konsumieren dieselben geteilten Packages.
-- Sidebar/Baum, Tabs und Stores werden einmal in `packages/` gebaut und per dünner Verdrahtung von den Apps genutzt.
+* Select/create local vault root (dialog on first launch)
+* Local SQLite cache DB (`rusqlite`/`sqlx`): local hash/mtime per file AND last-successful-sync hash/mtime (for 3-way diff: local vs. last sync vs. server)
+* File watcher (`notify` crate) for immediate local change detection
+* HTTP client (`reqwest`) against Part A1/A2, auth via token from Phase 0
+* Sync orchestration: full sync on startup, periodic background sync, immediate sync attempt on local change (debounced), offline queue for failed requests, automatic catch-up upon reconnection
+* Conflict handling: only-local-changed → upload, only-remote-changed → download, both-changed → keep local version + server version as conflict copy (`Title (conflict from date).md`), visibly mark in the UI
+* Deletions: first hash-compare against other new local files (move/rename detection) before propagating as a deletion to the server
 
-### B3. Phase 3 — Native Politur (ABGESCHLOSSEN)
-- Klartext-Token aus Phase 0 ersetzen durch sichere Ablage (via `keyring`)
-- System-Tray-Icon (Sync auch bei minimiertem Fenster)
-- Natives Drag & Drop für .md-Import (Tauri Drag-Drop Event auf den Vault-Ordner umgeleitet)
-- Native OS-Benachrichtigungen bei Sync-Konflikten (via `tauri-plugin-notification`)
-- Optionaler Autostart beim Login (via `tauri-plugin-autostart`)
+**Definition of Done**: Two devices show the same vault state after a short time, even after offline changes. Genuine conflicts generate a conflict copy instead of data loss.
+
+### B2. Phase 2 — Monorepo & Real Editor (COMPLETED)
+
+* **Monorepo Infrastructure**: Successfully converted into a pnpm workspace + Turborepo.
+* **Packages extracted**: The existing editor logic (now Tiptap instead of CodeMirror), UI components, and Pinia stores were extracted into `packages/editor-core`, `packages/ui-vue`, and `packages/store`.
+* **Web App & Desktop App coupled**: Both consume the same shared packages.
+* Sidebar/tree, tabs, and stores are built once in `packages/` and used by the apps via thin wiring.
+
+### B3. Phase 3 — Native Polish (COMPLETED)
+
+* Replace plaintext token from Phase 0 with secure storage (via `keyring`)
+* System tray icon (sync even when window is minimized)
+* Native drag & drop for .md import (Tauri drag-drop event redirected to the vault folder)
+* Native OS notifications on sync conflicts (via `tauri-plugin-notification`)
+* Optional autostart on login (via `tauri-plugin-autostart`)
 
 ---
 
-## Cross-Cutting Anforderungen (gelten für beide Repos)
+## Cross-Cutting Requirements (apply to both repos)
 
-- `resolveVaultPath()` für jeden Dateipfad, ausnahmslos, auch in neuen
-  Batch-/Sync-Endpoints
-- Bestehenden Schreibpfad und 409-Konflikterkennung von
-  `PUT /api/vault/file` wiederverwenden statt duplizieren
-- Kein Electron, keine Node-Runtime im Tauri-Client
-- Rust-Code idiomatisch, async wo sinnvoll (Tauri 2 nutzt async
-  Commands nativ)
-- STYLEGUIDE.md (Tailwind v4 Tokens etc.) gilt für alle UI-Änderungen
-  im Web-App-Repo
+* `resolveVaultPath()` for every file path, without exception, including in new batch/sync endpoints
+* Reuse the existing write path and 409 conflict detection from `PUT /api/vault/file` instead of duplicating
+* No Electron, no Node runtime in the Tauri client
+* Rust code idiomatic, async where appropriate (Tauri 2 uses async commands natively)
+* STYLEGUIDE.md (Tailwind v4 tokens, etc.) applies to all UI changes in the web app repo
 
-## Offene Punkte, die der jeweilige Statusbericht klären soll
+## Open Items to be clarified by the respective status report
 
-- Existiert bereits Token-/API-Key-Auth abseits der Session-Cookies?
-- Führt der Indexer bereits Hash/mtime pro Datei, oder muss das neu
-  berechnet werden?
-- Wie realistisch ist eine echte Code-Extraktion für Phase 2
-  (gemeinsames Editor-Package) angesichts der aktuellen
-  srcDir-Struktur (Nuxt `app/` vs. `server/`)?
+* Does token/API key auth already exist apart from session cookies?
+* Does the indexer already track hash/mtime per file, or does it need to be newly calculated?
+* How realistic is a true code extraction for Phase 2 (shared editor package) given the current srcDir structure (Nuxt `app/` vs. `server/`)?
