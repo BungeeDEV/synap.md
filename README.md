@@ -4,8 +4,6 @@
   <img src="img/banner.svg" alt="synap.md — plain files, your server, no lock-in" width="100%" />
 </div>
 
-# synap.md
-
 **A self-hosted, Obsidian-like Markdown notes app — with a native desktop client that syncs against your own server.**
 
 [![CI](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml/badge.svg)](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml)
