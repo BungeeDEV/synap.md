@@ -1,10 +1,7 @@
+<!-- markdownlint-disable MD033 MD041 -->
 <div align="center">
 
-<div align="center">
-  <img src="img/banner.svg" alt="synap.md — plain files, your server, no lock-in" width="100%" />
-</div>
-
-**A self-hosted, Obsidian-like Markdown notes app — with a native desktop client that syncs against your own server.**
+<img src="img/banner.svg" alt="synap.md — plain files, your server, no lock-in" width="100%" />
 
 [![CI](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml/badge.svg)](https://github.com/BungeeDEV/synap-monorepo/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -34,8 +31,6 @@ file format.
 - 🗑️ **Trash & archive** with configurable retention, instead of permanent
   deletes
 - 📝 **Templates** and daily notes
-- 🌐 **Multi-language UI** — German and English, switchable in Settings
-- 🎨 **Customizable theme** — light/dark plus a configurable accent color
 - 🔒 **Self-hosted & single-user** — your data never leaves your server
 - 🐳 **One container, one volume** — deploy with Docker Compose or
   [Dokploy](https://dokploy.com) in minutes
@@ -54,28 +49,27 @@ file format.
 
 This is a [Turborepo](https://turborepo.com)/pnpm monorepo:
 
-| Path                                                   | Description                                                          |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| [`apps/web`](apps/web)                                 | Nuxt 4 web app + Nitro backend — the synap.md server                 |
-| [`apps/desktop`](apps/desktop)                         | Tauri 2 + Vue 3 desktop client                                       |
-| [`packages/store`](packages/store)                     | Shared Pinia stores & API client, used by both apps                  |
-| [`packages/editor-core`](packages/editor-core)         | Shared Tiptap editor extensions (slash commands, wikilinks, uploads) |
-| [`packages/ui-vue`](packages/ui-vue)                   | Shared Vue component library, including the editor UI                |
-| [`packages/i18n`](packages/i18n)                       | Shared vue-i18n setup & DE/EN translation catalog, used by both apps |
-| [`packages/design-tokens`](packages/design-tokens)     | Shared design tokens (CSS/Tailwind)                                  |
-| [`packages/config-tailwind`](packages/config-tailwind) | Shared Tailwind config                                               |
-| [`docs`](docs)                                         | Architecture docs (e.g. the web ↔ desktop sync design)               |
+| Path | Description |
+|---|---|
+| [`apps/web`](apps/web) | Nuxt 4 web app + Nitro backend — the synap.md server |
+| [`apps/desktop`](apps/desktop) | Tauri 2 + Vue 3 desktop client |
+| [`packages/store`](packages/store) | Shared Pinia stores & API client, used by both apps |
+| [`packages/editor-core`](packages/editor-core) | Shared Tiptap editor extensions (slash commands, wikilinks, uploads) |
+| [`packages/ui-vue`](packages/ui-vue) | Shared Vue component library, including the editor UI |
+| [`packages/design-tokens`](packages/design-tokens) | Shared design tokens (CSS/Tailwind) |
+| [`packages/config-tailwind`](packages/config-tailwind) | Shared Tailwind config |
+| [`docs`](docs) | Architecture docs (e.g. the web ↔ desktop sync design) |
 
 ## Tech stack
 
-| Layer               | Technology                                                        |
-| ------------------- | ----------------------------------------------------------------- |
-| Web frontend        | Nuxt 4, Vue 3, TypeScript, Tailwind CSS v4                        |
-| Web backend         | Nitro server routes (no separate backend service), better-sqlite3 |
-| Desktop shell       | Tauri 2 (Rust)                                                    |
-| Desktop sync engine | `rusqlite`, `notify` (filesystem watcher), `reqwest`              |
-| Editor              | Tiptap 3, shared byte-for-byte between web and desktop            |
-| Tooling             | Turborepo, pnpm workspaces, Vitest, ESLint                        |
+| Layer | Technology |
+|---|---|
+| Web frontend | Nuxt 4, Vue 3, TypeScript, Tailwind CSS v4 |
+| Web backend | Nitro server routes (no separate backend service), better-sqlite3 |
+| Desktop shell | Tauri 2 (Rust) |
+| Desktop sync engine | `rusqlite`, `notify` (filesystem watcher), `reqwest` |
+| Editor | Tiptap 3, shared byte-for-byte between web and desktop |
+| Tooling | Turborepo, pnpm workspaces, Vitest, ESLint |
 
 ## Getting started
 
@@ -116,6 +110,7 @@ Docker Compose and [Dokploy](https://dokploy.com) deployment guide.
 
 - [`docs/sync-plan.md`](docs/sync-plan.md) — the web ↔ desktop sync
   architecture (settled design decisions, not open questions)
+- [`ROADMAP.md`](ROADMAP.md) — planned work and ideas under consideration
 - [`apps/web/README.md`](apps/web/README.md) — web app setup & deployment
 - [`apps/desktop/README.md`](apps/desktop/README.md) — desktop app setup
   (German)
@@ -139,32 +134,9 @@ feature/*  →  develop  →  main (tagged vX.Y.Z)
 
 ## Roadmap
 
-Rough shape of what's planned, roughly in priority order. Nothing here has
-a committed date — see [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues)
-for what's actively being worked on, or to weigh in on an idea.
-
-1. **End-to-end test coverage** — the app only has unit tests today
-   (`apps/web/server/utils/*.test.ts`); no Playwright/E2E setup exists yet.
-   Foundation for building everything below with confidence.
-2. **Version history** — per-note history, likely as its own reserved vault
-   folder/snapshot mechanism (same pattern as `_trash`/`_archive`) rather
-   than a full VCS. Currently there's explicitly none (see
-   `docs/sync-plan.md`: "no built-in version history" was a deliberate
-   Phase-1 decision, revisited here).
-3. **Whiteboard support** — a canvas note type (drawings, arrows, sticky
-   notes) alongside the Markdown editor, likely its own file format stored
-   in the vault the same way notes are, not a separate backing store.
-4. **Plugin system** — user-extensible slash commands/editor extensions.
-   Needs a real security/sandboxing story before anything ships, since this
-   is a self-hosted app that's often reachable from the internet.
-5. **Multi-user / team vaulting / vault sharing** — the most invasive item
-   on this list: it cuts against "self-hosted & single-user" as currently
-   documented (see Features above) and `docs/sync-plan.md`'s explicit
-   single-user-across-devices decision. Needs its own design discussion
-   before scoping, not just a checkbox here. Note that single-note public
-   sharing (read-only link, optional password) already exists today - this
-   item is about multiple real accounts collaborating on one private vault,
-   which is a different problem.
+Planned work and ideas under consideration now live in
+[ROADMAP.md](ROADMAP.md). For what's actively being worked on, or to weigh
+in on an idea, see [GitHub Issues](https://github.com/BungeeDEV/synap-monorepo/issues).
 
 ## Contributing
 
