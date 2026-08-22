@@ -568,7 +568,7 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
     </div>
 
     <!-- Modals (fixed overlays, unaffected by layout) -->
-    <SettingsModal @sync="manualSync" @change-vault="changeVault" @reset-app="resetApp" @toggle-auto-sync="toggleAutoSync" />
+    <SettingsModal @sync="manualSync" @change-vault="changeVault" @reset-app="resetApp" @toggle-auto-sync="toggleAutoSync" @open-note="loadFile" />
     <CommandPalette @select="loadFile" />
     <DeleteFolderModal />
     
@@ -578,20 +578,20 @@ const contextMenuGroups = computed<ContextMenuGroup[]>(() => {
       @close="appState.contextMenu = null"
     >
       <template #move="{ close }">
-        <div class="bg-surface-2 p-3 text-[13px] rounded shadow-md border border-divider w-48">
+        <div class="bg-surface-2 p-3 text-[13px] rounded shadow-md border border-border w-48">
           <p class="font-semibold mb-2">{{ t('desktopSettings.moveTo') }}</p>
           <p class="text-content-tertiary">{{ t('desktopSettings.selectTarget') }}</p>
           <button @click="close" class="mt-2 text-accent">{{ t('desktopSettings.cancelDesktop') }}</button>
         </div>
       </template>
       <template #export="{ close }">
-        <div class="bg-surface-2 p-2 text-[13px] rounded shadow-md border border-divider flex flex-col gap-1 w-40">
+        <div class="bg-surface-2 p-2 text-[13px] rounded shadow-md border border-border flex flex-col gap-1 w-40">
           <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">{{ t('desktopSettings.asMarkdownDesktop') }}</button>
           <button @click="close" class="text-left px-2 py-1.5 hover:bg-surface-1 rounded">{{ t('desktopSettings.printPdfDesktop') }}</button>
         </div>
       </template>
       <template #color="{ close }">
-        <div class="bg-surface-2 p-3 text-[13px] rounded shadow-md border border-divider flex gap-2">
+        <div class="bg-surface-2 p-3 text-[13px] rounded shadow-md border border-border flex gap-2">
           <div @click="close" class="w-6 h-6 rounded-full bg-red-500 cursor-pointer"></div>
           <div @click="close" class="w-6 h-6 rounded-full bg-blue-500 cursor-pointer"></div>
           <div @click="close" class="w-6 h-6 rounded-full bg-green-500 cursor-pointer"></div>

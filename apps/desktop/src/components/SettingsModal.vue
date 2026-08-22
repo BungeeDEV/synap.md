@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 import { appState } from '../store';
-import { X, Server, Folder, Settings2, ShieldAlert, Keyboard, Palette, Moon, Sun, Check, ChevronDown, PenLine, Eye } from '@lucide/vue';
+import { X, Server, Folder, Settings2, ShieldAlert, Keyboard, Palette, Moon, Sun, Check, ChevronDown, PenLine, Eye, Stethoscope, RefreshCw, Loader2, CircleCheck, Unlink, FileQuestion } from '@lucide/vue';
 import { hexToRgb } from '@synap/design-tokens';
 import { RangeSlider, SegmentedControl } from '@synap/ui-vue';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const emit = defineEmits<{
   (e: 'sync'): void,
   (e: 'change-vault'): void,
   (e: 'reset-app'): void,
-  (e: 'toggle-auto-sync'): void
+  (e: 'toggle-auto-sync'): void,
+  (e: 'open-note', path: string): void
 }>();
 
 const activeTab = ref('allgemein');
@@ -91,6 +93,67 @@ async function toggleAutostart() {
     }
   } catch (e) { console.error("Autostart toggle failed", e); }
 }
+
+// --- Vault Health ---
+interface BrokenLink { path: string; title: string; target: string; occurrences: number }
+interface OrphanedNote { path: string; title: string }
+interface VaultHealthReport { brokenLinks: BrokenLink[]; orphanedNotes: OrphanedNote[]; checkedAt: string }
+
+const isServerConfigured = computed(() => !!appState.serverUrl && !!appState.token);
+const health = ref<VaultHealthReport | null>(null);
+const healthLoading = ref(false);
+const healthError = ref<string | null>(null);
+const reindexing = ref(false);
+
+const isHealthy = computed(() => health.value !== null && health.value.brokenLinks.length === 0 && health.value.orphanedNotes.length === 0);
+
+const healthCheckedAtLabel = computed(() => {
+  if (!health.value) return '';
+  return new Date(health.value.checkedAt).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' });
+});
+
+async function loadHealth() {
+  if (!isServerConfigured.value || healthLoading.value) return;
+  healthLoading.value = true;
+  healthError.value = null;
+  try {
+    health.value = await invoke<VaultHealthReport>('get_vault_health', { url: appState.serverUrl, token: appState.token });
+  } catch (e: any) {
+    healthError.value = String(e);
+  } finally {
+    healthLoading.value = false;
+  }
+}
+
+async function reindexAndRecheck() {
+  if (!isServerConfigured.value || reindexing.value) return;
+  reindexing.value = true;
+  try {
+    await invoke('reindex_vault', { url: appState.serverUrl, token: appState.token });
+    await loadHealth();
+  } catch (e: any) {
+    healthError.value = String(e);
+  } finally {
+    reindexing.value = false;
+  }
+}
+
+function openHealthNote(path: string) {
+  emit('open-note', path);
+  appState.isSettingsOpen = false;
+}
+
+// Health data is fetched lazily on first visit to the tab rather than on
+// modal mount, so opening Settings for an unrelated tab never fires a
+// network request against the configured server.
+let healthLoadedOnce = false;
+function selectTab(tab: string) {
+  activeTab.value = tab;
+  if (tab === 'health' && !healthLoadedOnce) {
+    healthLoadedOnce = true;
+    void loadHealth();
+  }
+}
 </script>
 
 <template>
@@ -101,7 +164,7 @@ async function toggleAutostart() {
     <div class="modal-panel relative z-10 flex w-full max-w-[640px] max-h-[80vh] overflow-hidden p-0">
       
       <!-- Settings Sidebar -->
-      <div class="w-48 bg-surface-2 border-r border-divider shrink-0 flex flex-col p-4 space-y-1 overflow-y-auto">
+      <div class="w-48 bg-surface-2 border-r border-border shrink-0 flex flex-col p-4 space-y-1 overflow-y-auto">
         <h2 class="text-xs font-semibold text-content-tertiary uppercase tracking-wider mb-2 px-2">{{ t('sidebar.settings') }}</h2>
         
         <button 
@@ -111,14 +174,21 @@ async function toggleAutostart() {
           <Folder class="w-4 h-4" /> {{ t('desktopSettings.generalTitle') }}
         </button>
         
-        <button 
+        <button
           @click="activeTab = 'sync'"
           :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'sync' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
           <Server class="w-4 h-4" /> {{ t('desktopSettings.syncTitle') }}
         </button>
-        
-        <button 
+
+        <button
+          @click="selectTab('health')"
+          :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'health' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
+        >
+          <Stethoscope class="w-4 h-4" /> {{ t('settings.health') }}
+        </button>
+
+        <button
           @click="activeTab = 'editor'"
           :class="['flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors', activeTab === 'editor' ? 'bg-surface-2 text-content-primary font-medium' : 'text-content-tertiary hover:bg-white/[0.04] hover:text-content-secondary']"
         >
@@ -157,7 +227,7 @@ async function toggleAutostart() {
               <div class="space-y-3">
                 <div>
                   <label class="block text-xs text-content-tertiary mb-1 uppercase tracking-wide">{{ t('desktopSettings.currentVault') }}</label>
-                  <div class="text-[13px] text-content-secondary bg-surface-2 px-3 py-2 rounded border border-divider break-all font-mono">
+                  <div class="text-[13px] text-content-secondary bg-surface-2 px-3 py-2 rounded border border-border break-all font-mono">
                     {{ appState.vaultPath || t('desktopSettings.noVaultSelected') }}
                   </div>
                 </div>
@@ -167,7 +237,7 @@ async function toggleAutostart() {
                   </button>
                 </div>
                 
-                <div class="pt-2 pb-2 flex items-center justify-between border-b border-divider">
+                <div class="pt-2 pb-2 flex items-center justify-between border-b border-border">
                   <label class="flex items-center gap-3 cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -185,7 +255,7 @@ async function toggleAutostart() {
             </div>
 
             <!-- Danger Zone -->
-            <div class="pt-4 border-t border-divider-strong">
+            <div class="pt-4 border-t border-border-strong">
               <h3 class="text-sm font-medium text-danger-DEFAULT flex items-center gap-2 mb-2">
                 <ShieldAlert class="w-4 h-4" /> {{ t('desktopSettings.dangerZone') }}
               </h3>
@@ -213,7 +283,7 @@ async function toggleAutostart() {
                   <input v-model="appState.token" type="password" placeholder="eyJhbGci..." class="input" />
                 </div>
                 
-                <div class="pt-2 pb-2 flex items-center justify-between border-b border-divider">
+                <div class="pt-2 pb-2 flex items-center justify-between border-b border-border">
                   <label class="flex items-center gap-3 cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -235,6 +305,114 @@ async function toggleAutostart() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- TAB: Health -->
+          <div v-if="activeTab === 'health'" class="space-y-6 animate-fade-in">
+            <div>
+              <h3 class="text-lg font-medium text-content-primary mb-1">{{ t('settings.healthTitle') }}</h3>
+              <p class="text-[13px] text-content-tertiary mb-6">{{ t('settings.healthSubtitle') }}</p>
+
+              <p v-if="!isServerConfigured" class="text-[13px] text-content-tertiary">
+                {{ t('settings.healthNeedsServer') }}
+              </p>
+
+              <template v-else>
+                <div class="flex items-center justify-between gap-3 mb-4">
+                  <p class="text-xs text-content-tertiary">
+                    {{ health ? t('settings.healthCheckedAt', { time: healthCheckedAtLabel }) : '' }}
+                  </p>
+                  <button
+                    type="button"
+                    :disabled="healthLoading"
+                    class="btn-secondary text-[13px] flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                    @click="loadHealth"
+                  >
+                    <RefreshCw :class="['w-3.5 h-3.5', healthLoading ? 'animate-spin' : '']" />
+                    {{ t('settings.healthRefresh') }}
+                  </button>
+                </div>
+
+                <div v-if="healthLoading && !health" class="space-y-2">
+                  <div v-for="i in 4" :key="i" class="h-10 rounded-lg bg-white/5 animate-pulse" />
+                </div>
+
+                <div v-else-if="healthError" class="rounded-lg border border-danger-strong bg-danger/10 p-4 text-[13px] text-danger">
+                  {{ healthError }}
+                </div>
+
+                <div v-else-if="health" class="space-y-6">
+                  <div v-if="isHealthy" class="flex flex-col items-center gap-2 py-10 text-center">
+                    <CircleCheck class="w-7 h-7 text-success" stroke-width="1.5" />
+                    <p class="text-[13px] text-content-tertiary">{{ t('settings.healthAllGood') }}</p>
+                  </div>
+
+                  <template v-else>
+                    <div class="flex items-center gap-2">
+                      <span class="rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
+                        {{ health.brokenLinks.length }} · {{ t('settings.healthBrokenLinksTitle') }}
+                      </span>
+                      <span class="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs font-medium text-content-secondary">
+                        {{ health.orphanedNotes.length }} · {{ t('settings.healthOrphanedNotesTitle') }}
+                      </span>
+                    </div>
+
+                    <div v-if="health.brokenLinks.length">
+                      <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ t('settings.healthBrokenLinksTitle') }}</h4>
+                      <div class="divide-y divide-border rounded-lg border border-border overflow-hidden">
+                        <button
+                          v-for="item in health.brokenLinks"
+                          :key="`${item.path}::${item.target}`"
+                          type="button"
+                          class="flex w-full items-center gap-2.5 bg-surface-2/50 px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors"
+                          @click="openHealthNote(item.path)"
+                        >
+                          <Unlink class="w-4 h-4 shrink-0 text-danger" />
+                          <span class="min-w-0 flex-1">
+                            <span class="block truncate text-[13px] text-content-primary">{{ item.title }}</span>
+                            <span class="block truncate text-xs text-content-tertiary">
+                              {{ item.target }}<template v-if="item.occurrences > 1"> · ×{{ item.occurrences }}</template>
+                            </span>
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="health.orphanedNotes.length">
+                      <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ t('settings.healthOrphanedNotesTitle') }}</h4>
+                      <div class="divide-y divide-border rounded-lg border border-border overflow-hidden">
+                        <button
+                          v-for="item in health.orphanedNotes"
+                          :key="item.path"
+                          type="button"
+                          class="flex w-full items-center gap-2.5 bg-surface-2/50 px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors"
+                          @click="openHealthNote(item.path)"
+                        >
+                          <FileQuestion class="w-4 h-4 shrink-0 text-content-tertiary" />
+                          <span class="min-w-0 flex-1">
+                            <span class="block truncate text-[13px] text-content-primary">{{ item.title }}</span>
+                            <span class="block truncate text-xs text-content-tertiary">{{ item.path }}</span>
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+
+                  <div class="flex items-center gap-2 border-t border-border pt-4 text-xs text-content-tertiary">
+                    <span>{{ t('settings.healthReindexHint') }}</span>
+                    <button
+                      type="button"
+                      :disabled="reindexing"
+                      class="flex items-center gap-1.5 font-medium text-content-secondary hover:text-content-primary transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      @click="reindexAndRecheck"
+                    >
+                      <Loader2 v-if="reindexing" class="w-3.5 h-3.5 animate-spin" />
+                      {{ reindexing ? t('settings.healthReindexing') : t('settings.healthReindexAction') }}
+                    </button>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -400,44 +578,44 @@ async function toggleAutostart() {
           <div v-if="activeTab === 'shortcuts'" class="space-y-6 animate-fade-in">
             <div>
               <h3 class="text-base font-semibold mb-4 text-content-primary">{{ t('desktopSettings.shortcutsTitle') }}</h3>
-              <div class="space-y-0.5 border border-divider rounded-lg overflow-hidden bg-surface-1">
+              <div class="space-y-0.5 border border-border rounded-lg overflow-hidden bg-surface-1">
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.openCommandPalette') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>K</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.openSearch') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>F</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.createNote') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>Alt</kbd><kbd>N</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.toggleSidebar') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>\</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.saveNote') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>S</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.bold') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>B</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.italic') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Cmd/Ctrl</kbd><kbd>I</kbd></div>
                 </div>
                 
-                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-divider">
+                <div class="flex items-center justify-between px-4 py-3 bg-surface-2/50 border-b border-border">
                   <span class="text-[13px] text-content-primary">{{ t('desktopSettings.closeDialog') }}</span>
                   <div class="flex items-center gap-1.5"><kbd>Esc</kbd></div>
                 </div>

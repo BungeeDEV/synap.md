@@ -381,6 +381,100 @@ async fn fetch_manifest(
     }
 }
 
+// =======================
+// VAULT HEALTH CHECK
+// =======================
+// Read-only: fetches the report the server already derives from its
+// links/notes index (see apps/web/server/utils/vaultHealth.ts) - the
+// desktop app never keeps its own copy of that index, since links are only
+// meaningful vault-wide and the server is always the authority for it.
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BrokenLink {
+    pub path: String,
+    pub title: String,
+    pub target: String,
+    pub occurrences: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrphanedNote {
+    pub path: String,
+    pub title: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultHealthReport {
+    pub broken_links: Vec<BrokenLink>,
+    pub orphaned_notes: Vec<OrphanedNote>,
+    pub checked_at: String,
+}
+
+async fn fetch_vault_health(
+    client: &Client,
+    url: &str,
+    token: &str,
+) -> Result<VaultHealthReport, String> {
+    let health_url = format!("{}/api/vault/health", url.trim_end_matches('/'));
+    let res = client
+        .get(&health_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+        .map_err(|e| format!("Network Error: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("HTTP Error {}", res.status()));
+    }
+
+    res.json::<VaultHealthReport>()
+        .await
+        .map_err(|e| format!("Invalid response: {}", e))
+}
+
+#[tauri::command]
+async fn get_vault_health(
+    url: String,
+    token: String,
+    state: State<'_, AppState>,
+) -> Result<VaultHealthReport, String> {
+    fetch_vault_health(&state.client, &url, &token).await
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ReindexResult {
+    pub total: i64,
+    pub indexed: i64,
+}
+
+async fn fetch_reindex(client: &Client, url: &str, token: &str) -> Result<ReindexResult, String> {
+    let reindex_url = format!("{}/api/admin/reindex", url.trim_end_matches('/'));
+    let res = client
+        .post(&reindex_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+        .map_err(|e| format!("Network Error: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("HTTP Error {}", res.status()));
+    }
+
+    res.json::<ReindexResult>()
+        .await
+        .map_err(|e| format!("Invalid response: {}", e))
+}
+
+#[tauri::command]
+async fn reindex_vault(
+    url: String,
+    token: String,
+    state: State<'_, AppState>,
+) -> Result<ReindexResult, String> {
+    fetch_reindex(&state.client, &url, &token).await
+}
+
 pub async fn perform_sync(
     app_handle: &tauri::AppHandle,
     url: &str,
@@ -888,6 +982,8 @@ pub fn run() {
             stop_background_sync,
             pull_file,
             push_file,
+            get_vault_health,
+            reindex_vault,
             wipe_sync_db,
             open_sticky,
             set_secure_token,
@@ -1126,5 +1222,26 @@ mod tests {
         assert_eq!(status, "Synced");
         assert_eq!(lh, "h1");
         assert_eq!(rh, "h1");
+    }
+
+    // ---- VaultHealthReport JSON mapping ----
+    // fetch_vault_health itself needs a live/mocked server (like
+    // fetch_manifest, untested for the same reason) - but the
+    // #[serde(rename_all = "camelCase")] mapping onto the server's actual
+    // JSON shape (apps/web/server/utils/vaultHealth.ts) is pure and worth
+    // guarding against a typo'd field name silently dropping data.
+    #[test]
+    fn vault_health_report_deserializes_server_camel_case_shape() {
+        let json = r#"{
+            "brokenLinks": [{"path": "a.md", "title": "A", "target": "Missing", "occurrences": 2}],
+            "orphanedNotes": [{"path": "b.md", "title": "B"}],
+            "checkedAt": "2026-01-01T00:00:00.000Z"
+        }"#;
+
+        let report: VaultHealthReport = serde_json::from_str(json).unwrap();
+        assert_eq!(report.broken_links.len(), 1);
+        assert_eq!(report.broken_links[0].occurrences, 2);
+        assert_eq!(report.orphaned_notes.len(), 1);
+        assert_eq!(report.checked_at, "2026-01-01T00:00:00.000Z");
     }
 }

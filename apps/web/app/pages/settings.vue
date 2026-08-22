@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Trash2, User, Key, Palette } from '@lucide/vue'
+import { ArrowLeft, Archive, Download, HardDrive, Info, Keyboard, LayoutTemplate, Settings as SettingsIcon, Stethoscope, Trash2, User, Key, Palette } from '@lucide/vue'
 import type { Component } from 'vue'
 import AboutTab from '~/components/settings/AboutTab.vue'
 import AccountTab from '~/components/settings/AccountTab.vue'
@@ -8,6 +8,7 @@ import ApiTab from '~/components/settings/ApiTab.vue'
 import ArchivePanel from '~/components/settings/ArchivePanel.vue'
 import BackupTab from '~/components/settings/BackupTab.vue'
 import EditorTab from '~/components/settings/EditorTab.vue'
+import HealthTab from '~/components/settings/HealthTab.vue'
 import ShortcutsTab from '~/components/settings/ShortcutsTab.vue'
 import TemplatesTab from '~/components/settings/TemplatesTab.vue'
 import TrashPanel from '~/components/settings/TrashPanel.vue'
@@ -30,6 +31,7 @@ const tabs: SettingsTab[] = [
   { id: 'appearance', label: () => t('settings.appearance'), icon: Palette, component: AppearanceTab },
   { id: 'templates', label: () => t('settings.templates'), icon: LayoutTemplate, component: TemplatesTab },
   { id: 'vault', label: () => t('settings.vaultAndStorage'), icon: HardDrive, component: VaultStatsTab },
+  { id: 'health', label: () => t('settings.health'), icon: Stethoscope, component: HealthTab },
   { id: 'api', label: () => t('settings.apiTokens'), icon: Key, component: ApiTab },
   { id: 'archive', label: () => t('settings.archive'), icon: Archive, component: ArchivePanel },
   { id: 'trash', label: () => t('settings.trash'), icon: Trash2, component: TrashPanel },
