@@ -31,12 +31,16 @@ pnpm --filter synap-desktop run dev  # Vite dev server only (frontend, no Tauri 
 pnpm --filter synap-desktop run tauri:dev  # full desktop app with hot reload (Rust + WebView)
 ```
 
-There is no dedicated `vitest.config.ts` — Vitest runs with defaults, no
-Nuxt test environment wired in. Test files live next to the code they cover
-(`apps/web/server/utils/*.test.ts`), not in a separate `test/` tree, and only exist
-under `apps/web/server/utils/` today (`vault-path`, `password`, `indexer`, `trash`,
-`templates`). Prefer this convention for new server-side unit tests.
+`apps/web/vitest.config.ts` only excludes `e2e/**` (the Playwright specs,
+see below) from Vitest's default discovery — no Nuxt test environment wired
+in otherwise. Test files live next to the code they cover
+(`apps/web/server/utils/*.test.ts`, `apps/web/app/utils/*.test.ts`), not in a
+separate `test/` tree. Prefer this convention for new unit tests.
 `packages/*` have no real test suites (`"test": "echo No tests"`).
+
+`apps/web/e2e/` holds Playwright end-to-end specs (`*.spec.ts`), run via
+`pnpm --filter synap-md test:e2e`, separately from `pnpm test`/Vitest — see
+`apps/web/e2e/README.md`.
 
 Local dev without Docker needs `.env` with `NUXT_VAULT_PATH`/`NUXT_DATA_PATH`
 pointed at local folders (copy `.env.example`).
