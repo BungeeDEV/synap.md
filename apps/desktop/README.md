@@ -41,6 +41,21 @@ pnpm build             # tsc + Vite-Build
 pnpm tauri build        # produktives Desktop-Binary/Installer
 ```
 
+## Tests
+
+Die Sync-Kernlogik im Rust-Backend (Pfad-Guard, Vault-Scan, Hashing, die
+`sync_state`-Statusübergänge und die Push-Entscheidung) ist per `cargo test`
+abgedeckt (`src-tauri/src/lib.rs`, `#[cfg(test)] mod tests`).
+
+```bash
+pnpm build                                              # einmal, erzeugt dist/
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+`pnpm build` muss vorher gelaufen sein: `generate_context!` bettet das
+Frontend (`frontendDist: ../dist`) ein, sonst kompiliert das Crate nicht. In
+CI läuft das als eigener `test-desktop`-Job.
+
 ## Projektstruktur
 
 ```

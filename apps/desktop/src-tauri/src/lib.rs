@@ -61,6 +61,95 @@ fn safe_join(vault_root: &Path, rel_path: &str) -> Result<PathBuf, String> {
     Ok(vault_root.join(rel))
 }
 
+// =======================
+// SYNC STATE (DB) HELPERS
+// =======================
+// Extracted from the command handlers so the exact SQL and the push decision
+// are unit-testable against an in-memory SQLite, with no server or Tauri
+// handle. The SQL is byte-for-byte what the handlers used inline.
+
+fn apply_schema(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sync_state (
+            path TEXT PRIMARY KEY,
+            local_hash TEXT,
+            local_mtime INTEGER,
+            remote_hash TEXT,
+            remote_mtime INTEGER,
+            status TEXT NOT NULL
+        )",
+        [],
+    )?;
+    Ok(())
+}
+
+/// Register/refresh a file found on disk during a local scan. New files land
+/// as 'local'; an existing row whose content hash changed flips to 'modified',
+/// otherwise its status is preserved (e.g. an mtime-only touch stays 'Synced').
+fn record_local_scan(
+    conn: &Connection,
+    rel_path: &str,
+    hash: &str,
+    mtime_ms: i64,
+) -> rusqlite::Result<usize> {
+    conn.execute(
+        "INSERT INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status)
+             VALUES (?, ?, ?, NULL, 0, 'local')
+             ON CONFLICT(path) DO UPDATE SET
+                local_hash = excluded.local_hash,
+                local_mtime = excluded.local_mtime,
+                status = CASE WHEN sync_state.local_hash != excluded.local_hash
+            THEN 'modified'
+            ELSE sync_state.status
+            END",
+        params![rel_path, hash, mtime_ms],
+    )
+}
+
+/// Mark a tracked file that has disappeared from disk as 'deleted'.
+fn mark_deleted(conn: &Connection, rel_path: &str) -> rusqlite::Result<usize> {
+    conn.execute(
+        "UPDATE sync_state SET status = 'deleted' WHERE path = ?",
+        params![rel_path],
+    )
+}
+
+/// Decide whether a locally-present file needs pushing to the server: anything
+/// not yet fully synced, or whose local hash no longer matches the remote one.
+fn should_push(db_status: Option<(&str, Option<&str>)>, local_hash: &str) -> bool {
+    match db_status {
+        None => true, // Not in DB at all
+        Some((status, remote_hash)) => {
+            status == "local"
+                || status == "modified"
+                || status == "PendingUpload"
+                || remote_hash != Some(local_hash)
+        }
+    }
+}
+
+/// Persist a freshly pulled file as fully in sync with the server.
+fn record_pulled(
+    conn: &Connection,
+    rel_path: &str,
+    local_hash: &str,
+    remote_hash: &str,
+    remote_mtime: i64,
+) -> rusqlite::Result<usize> {
+    conn.execute(
+        "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, ?, 'Synced')",
+        params![rel_path, local_hash, remote_hash, remote_mtime],
+    )
+}
+
+/// Persist a freshly pushed file as fully in sync (local hash is now authoritative).
+fn record_pushed(conn: &Connection, rel_path: &str, hash: &str) -> rusqlite::Result<usize> {
+    conn.execute(
+        "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
+        params![rel_path, hash, hash],
+    )
+}
+
 #[tauri::command]
 fn init_db(
     app_handle: tauri::AppHandle,
@@ -84,18 +173,7 @@ fn init_db(
     conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")
         .map_err(|e| format!("Failed to set PRAGMA: {}", e))?;
 
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS sync_state (
-            path TEXT PRIMARY KEY,
-            local_hash TEXT,
-            local_mtime INTEGER,
-            remote_hash TEXT,
-            remote_mtime INTEGER,
-            status TEXT NOT NULL
-        )",
-        [],
-    )
-    .map_err(|e| format!("Failed to initialize DB schema: {}", e))?;
+    apply_schema(&conn).map_err(|e| format!("Failed to initialize DB schema: {}", e))?;
 
     *state.db.lock().unwrap() = Some(conn);
     *state.vault_path.lock().unwrap() = Some(vault_path);
@@ -237,18 +315,7 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
             }
         };
 
-        tx.execute(
-            "INSERT INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status)
-             VALUES (?, ?, ?, NULL, 0, 'local')
-             ON CONFLICT(path) DO UPDATE SET
-                local_hash = excluded.local_hash,
-                local_mtime = excluded.local_mtime,
-                status = CASE WHEN sync_state.local_hash != excluded.local_hash
-            THEN 'modified'
-            ELSE sync_state.status
-            END",
-            params![rel_path, hash, mtime_ms],
-        ).ok();
+        record_local_scan(&tx, rel_path, &hash, mtime_ms).ok();
     }
 
     // 4. Mark files that are in DB but no longer on disk
@@ -263,11 +330,7 @@ fn get_local_files(state: State<'_, AppState>) -> Result<Vec<LocalFile>, String>
     drop(stmt);
     for db_path in &db_paths {
         if !disk_files.contains(db_path) {
-            tx.execute(
-                "UPDATE sync_state SET status = 'deleted' WHERE path = ?",
-                params![db_path],
-            )
-            .ok();
+            mark_deleted(&tx, db_path).ok();
         }
     }
 
@@ -442,10 +505,7 @@ async fn perform_sync_inner(
         let conn = db_guard.as_ref().ok_or("DB not initialized")?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         for u in &pulled_updates {
-            tx.execute(
-                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, ?, 'Synced')",
-                params![u.path, u.new_hash, u.remote_hash, u.remote_mtime]
-            ).ok();
+            record_pulled(&tx, &u.path, &u.new_hash, &u.remote_hash, u.remote_mtime).ok();
         }
 
         tx.commit().map_err(|e| e.to_string())?;
@@ -477,17 +537,12 @@ async fn perform_sync_inner(
             .unwrap_or(None)
         };
 
-        let should_push = match &db_status {
-            None => true, // Not in DB at all
-            Some((status, remote_hash)) => {
-                status == "local"
-                    || status == "modified"
-                    || status == "PendingUpload"
-                    || remote_hash.as_deref() != Some(&local_hash)
-            }
-        };
+        let need_push = should_push(
+            db_status.as_ref().map(|(s, r)| (s.as_str(), r.as_deref())),
+            &local_hash,
+        );
 
-        if should_push && let Ok(content) = fs::read_to_string(&abs_path) {
+        if need_push && let Ok(content) = fs::read_to_string(&abs_path) {
             let push_url = format!("{}/api/vault/sync/push", url.trim_end_matches('/'));
             let payload = serde_json::json!({
                 "files": [{ "path": rel_path, "content": content }]
@@ -515,10 +570,7 @@ async fn perform_sync_inner(
         let conn = db_guard.as_ref().ok_or("DB not initialized")?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         for u in &pushed_updates {
-            tx.execute(
-                "INSERT OR REPLACE INTO sync_state (path, local_hash, local_mtime, remote_hash, remote_mtime, status) VALUES (?, ?, 0, ?, 0, 'Synced')",
-                params![u.path, u.hash, u.hash]
-            ).ok();
+            record_pushed(&tx, &u.path, &u.hash).ok();
         }
         tx.commit().map_err(|e| e.to_string())?;
     }
@@ -902,4 +954,177 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::{Connection, params};
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn mem_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        apply_schema(&conn).unwrap();
+        conn
+    }
+
+    fn status_of(conn: &Connection, path: &str) -> Option<String> {
+        conn.query_row(
+            "SELECT status FROM sync_state WHERE path = ?",
+            params![path],
+            |r| r.get(0),
+        )
+        .optional()
+        .unwrap()
+    }
+
+    fn temp_dir(tag: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("synap_test_{}_{}", tag, nanos));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    // ---- safe_join (path-traversal defense) ----
+
+    #[test]
+    fn safe_join_accepts_normal_relative_paths() {
+        let root = Path::new("/vault");
+        assert_eq!(
+            safe_join(root, "notes/a.md").unwrap(),
+            PathBuf::from("/vault/notes/a.md")
+        );
+    }
+
+    #[test]
+    fn safe_join_rejects_traversal_and_absolute() {
+        let root = Path::new("/vault");
+        assert!(safe_join(root, "../secret").is_err());
+        assert!(safe_join(root, "a/../../b").is_err());
+        assert!(safe_join(root, "/etc/passwd").is_err());
+    }
+
+    // ---- scan_local_md_files ----
+
+    #[test]
+    fn scan_finds_md_recursively_and_skips_noise() {
+        let root = temp_dir("scan");
+        let write = |rel: &str| {
+            let p = root.join(rel);
+            fs::create_dir_all(p.parent().unwrap()).unwrap();
+            fs::write(&p, "x").unwrap();
+        };
+        write("a.md");
+        write("b.txt"); // not markdown
+        write("sub/c.md"); // nested
+        write(".hidden/d.md"); // hidden dir
+        write("node_modules/e.md");
+        write("target/f.md");
+        write("dist/g.md");
+
+        let found = scan_local_md_files(&root);
+        // Sorted, forward slashes, only real .md files outside skipped dirs.
+        assert_eq!(found, vec!["a.md".to_string(), "sub/c.md".to_string()]);
+        fs::remove_dir_all(&root).ok();
+    }
+
+    // ---- compute_hash ----
+
+    #[test]
+    fn compute_hash_matches_known_sha256() {
+        let root = temp_dir("hash");
+        let f = root.join("h.txt");
+        fs::write(&f, "hello").unwrap();
+        assert_eq!(
+            compute_hash(&f).unwrap(),
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        );
+        fs::remove_dir_all(&root).ok();
+    }
+
+    // ---- record_local_scan status transitions ----
+
+    #[test]
+    fn record_local_scan_new_file_is_local() {
+        let db = mem_db();
+        record_local_scan(&db, "a.md", "h1", 100).unwrap();
+        assert_eq!(status_of(&db, "a.md").as_deref(), Some("local"));
+    }
+
+    #[test]
+    fn record_local_scan_same_hash_preserves_status() {
+        let db = mem_db();
+        record_pushed(&db, "a.md", "h1").unwrap(); // now 'Synced'
+        record_local_scan(&db, "a.md", "h1", 200).unwrap(); // mtime-only touch
+        assert_eq!(status_of(&db, "a.md").as_deref(), Some("Synced"));
+    }
+
+    #[test]
+    fn record_local_scan_changed_hash_becomes_modified() {
+        let db = mem_db();
+        record_pushed(&db, "a.md", "h1").unwrap();
+        record_local_scan(&db, "a.md", "h2", 300).unwrap();
+        assert_eq!(status_of(&db, "a.md").as_deref(), Some("modified"));
+    }
+
+    // ---- mark_deleted ----
+
+    #[test]
+    fn mark_deleted_sets_status() {
+        let db = mem_db();
+        record_pushed(&db, "a.md", "h1").unwrap();
+        mark_deleted(&db, "a.md").unwrap();
+        assert_eq!(status_of(&db, "a.md").as_deref(), Some("deleted"));
+    }
+
+    // ---- should_push decision matrix ----
+
+    #[test]
+    fn should_push_matrix() {
+        assert!(should_push(None, "h1")); // untracked → push
+        assert!(should_push(Some(("local", None)), "h1"));
+        assert!(should_push(Some(("modified", Some("h1"))), "h1"));
+        assert!(should_push(Some(("PendingUpload", Some("h1"))), "h1"));
+        assert!(should_push(Some(("Synced", Some("old"))), "h1")); // remote differs
+        assert!(!should_push(Some(("Synced", Some("h1"))), "h1")); // fully in sync
+    }
+
+    // ---- record_pulled / record_pushed ----
+
+    #[test]
+    fn record_pulled_marks_synced_with_remote_meta() {
+        let db = mem_db();
+        record_pulled(&db, "a.md", "lh", "rh", 12345).unwrap();
+        let (status, rh, rm): (String, String, i64) = db
+            .query_row(
+                "SELECT status, remote_hash, remote_mtime FROM sync_state WHERE path = ?",
+                params!["a.md"],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(status, "Synced");
+        assert_eq!(rh, "rh");
+        assert_eq!(rm, 12345);
+    }
+
+    #[test]
+    fn record_pushed_sets_local_hash_as_remote() {
+        let db = mem_db();
+        record_pushed(&db, "a.md", "h1").unwrap();
+        let (status, lh, rh): (String, String, String) = db
+            .query_row(
+                "SELECT status, local_hash, remote_hash FROM sync_state WHERE path = ?",
+                params!["a.md"],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(status, "Synced");
+        assert_eq!(lh, "h1");
+        assert_eq!(rh, "h1");
+    }
 }

@@ -90,6 +90,47 @@ jobs:
           path: apps/web/playwright-report
           retention-days: 7
 
+  test-desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile --filter=synap-desktop...
+
+      # generate_context! embeds the frontend (frontendDist: ../dist), so the
+      # Vite build must run before the Rust crate will compile.
+      - name: Build Frontend
+        run: pnpm exec turbo run build --filter=synap-desktop...
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+
   build-desktop:
     strategy:
       matrix:
