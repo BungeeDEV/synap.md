@@ -1,5 +1,6 @@
-# Playwright E2E (throwaway vault/index + reports)
+# Playwright E2E (throwaway vault/index + saved session + reports)
 e2e/.tmp
+e2e/.auth
 test-results
 playwright-report
 

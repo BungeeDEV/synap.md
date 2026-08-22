@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
+import { authFile } from './e2e/helpers'
 
 // Isolated throwaway vault + SQLite index so E2E never touches a real vault
 // and every run starts from a known-empty state (see e2e/global-setup.ts,
@@ -8,6 +9,7 @@ const tmpDir = fileURLToPath(new URL('./e2e/.tmp', import.meta.url))
 // Dedicated port so E2E never reuses a normal `pnpm dev` server that's
 // pointed at your real vault.
 const PORT = 3100
+const isCI = !!process.env.CI
 
 export default defineConfig({
   testDir: './e2e',
@@ -17,22 +19,33 @@ export default defineConfig({
   // per-worker vaults only if the suite gets slow enough to need it.
   workers: 1,
   fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  reporter: 'list',
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry'
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Creates the admin once and saves its session; every other spec starts
+    // authenticated via storageState. See e2e/auth.setup.ts.
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
+      dependencies: ['setup']
+    }
+  ],
   webServer: {
-    // ponytail: dev server, not a prod build — fastest local loop. For CI,
-    // swap to `pnpm build && node .output/server/index.mjs` if dev-mode
-    // on-demand compilation makes the first navigation flaky.
-    command: 'pnpm dev',
+    // Locally: dev server, fastest loop. In CI: run the production build (the
+    // job builds synap-md first) — representative and free of dev-mode
+    // on-demand-compilation flakiness.
+    command: isCI ? 'node .output/server/index.mjs' : 'pnpm dev',
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    reuseExistingServer: !isCI,
+    // Generous: a cold `.nuxt` dev build (Vite + Nitro) can take well over a
+    // minute on first run. The CI production server starts far faster.
+    timeout: 180_000,
     env: {
       PORT: String(PORT),
       NUXT_VAULT_PATH: `${tmpDir}/vault`,
