@@ -6,21 +6,18 @@ what's actively being worked on, or to weigh in on an idea.
 
 ## Planned (in priority order)
 
-1. **End-to-end test coverage** — the app only has unit tests today
-   (`apps/web/server/utils/*.test.ts`); no Playwright/E2E setup exists yet.
-   Foundation for building everything below with confidence.
-2. **Version history** — per-note history, likely as its own reserved vault
+1. **Version history** — per-note history, likely as its own reserved vault
    folder/snapshot mechanism (same pattern as `_trash`/`_archive`) rather
    than a full VCS. Currently there's explicitly none (see
    [`docs/sync-plan.md`](docs/sync-plan.md): "no built-in version history"
    was a deliberate Phase-1 decision, revisited here).
-3. **Whiteboard support** — a canvas note type (drawings, arrows, sticky
+2. **Whiteboard support** — a canvas note type (drawings, arrows, sticky
    notes) alongside the Markdown editor, likely its own file format stored
    in the vault the same way notes are, not a separate backing store.
-4. **Plugin system** — user-extensible slash commands/editor extensions.
+3. **Plugin system** — user-extensible slash commands/editor extensions.
    Needs a real security/sandboxing story before anything ships, since this
    is a self-hosted app that's often reachable from the internet.
-5. **Multi-user / team vaulting / vault sharing** — the most invasive item
+4. **Multi-user / team vaulting / vault sharing** — the most invasive item
    on this list: it cuts against "self-hosted & single-user" as currently
    documented (see [Features](README.md#features) in the README) and
    [`docs/sync-plan.md`](docs/sync-plan.md)'s explicit single-user-across-devices
