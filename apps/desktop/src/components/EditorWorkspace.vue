@@ -138,12 +138,12 @@ const syncDotClass = computed(() => {
     <div class="statusbar shadow-float z-50">
       <span v-if="appState.statusMsg" class="truncate max-w-[200px]">{{ appState.statusMsg }}</span>
       <span v-else>{{ t('desktopApp.ready') }}</span>
-      <div class="w-px h-4 bg-divider-strong mx-1"></div>
+      <div class="w-px h-4 bg-border-strong mx-1"></div>
       <div class="flex items-center gap-1.5">
         <div :class="['w-2 h-2 rounded-full shrink-0', syncDotClass]"></div>
         <span class="whitespace-nowrap">{{ syncStatusLabel }}</span>
       </div>
-      <div class="w-px h-4 bg-divider-strong mx-1"></div>
+      <div class="w-px h-4 bg-border-strong mx-1"></div>
       <div :class="['save-dot', appState.justSaved ? 'just-saved' : '']"></div>
     </div>
     

@@ -137,11 +137,11 @@ function handleItemHover(item: ContextMenuItem, globalIndex: number) {
       <!-- Menu Panel -->
       <div 
         ref="menuRef"
-        class="absolute bg-surface-1/95 backdrop-blur-md border border-divider shadow-float rounded-lg py-1.5 w-64 flex flex-col"
+        class="absolute bg-surface-1/95 backdrop-blur-md border border-border shadow-float rounded-lg py-1.5 w-64 flex flex-col"
         :style="{ top: `${posY}px`, left: `${posX}px` }"
       >
         <template v-for="(group, gIdx) in groups" :key="gIdx">
-          <div v-if="gIdx > 0" class="h-px bg-divider my-1.5 mx-2"></div>
+          <div v-if="gIdx > 0" class="h-px bg-border my-1.5 mx-2"></div>
           
           <div class="px-1.5 flex flex-col gap-0.5">
             <template v-for="(item, iIdx) in group" :key="item.id">

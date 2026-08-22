@@ -73,9 +73,9 @@ function selectFile(path: string) {
   <div v-if="appState.isSearchOpen" class="modal-backdrop z-[60] items-start pt-[15vh]">
     <div class="absolute inset-0" @click="appState.isSearchOpen = false"></div>
     
-    <div class="modal-panel relative z-10 w-full max-w-[600px] flex flex-col overflow-hidden bg-surface-1 shadow-2xl border border-divider p-0 rounded-xl">
+    <div class="modal-panel relative z-10 w-full max-w-[600px] flex flex-col overflow-hidden bg-surface-1 shadow-2xl border border-border p-0 rounded-xl">
       <!-- Search Input -->
-      <div class="flex items-center px-4 py-3 border-b border-divider gap-3 bg-surface-1">
+      <div class="flex items-center px-4 py-3 border-b border-border gap-3 bg-surface-1">
         <Search class="w-5 h-5 text-content-tertiary" stroke-width="1.5" />
         <input 
           ref="searchInput"
@@ -83,7 +83,7 @@ function selectFile(path: string) {
           class="flex-1 bg-transparent text-[15px] text-content-primary focus:outline-none placeholder:text-content-tertiary"
           :placeholder="t('desktopApp.searchPlaceholder')"
         />
-        <div class="text-[11px] font-mono text-content-tertiary bg-surface-2 px-1.5 py-0.5 rounded border border-divider">ESC</div>
+        <div class="text-[11px] font-mono text-content-tertiary bg-surface-2 px-1.5 py-0.5 rounded border border-border">ESC</div>
       </div>
 
       <!-- Results List -->
@@ -118,9 +118,9 @@ function selectFile(path: string) {
       </div>
 
       <!-- Footer Info -->
-      <div class="px-4 py-2 border-t border-divider bg-surface-2 flex items-center gap-4 text-[11px] text-content-tertiary">
-        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↑</span> <span class="font-mono bg-surface-1 px-1 rounded border border-divider">↓</span> {{ t('editor.navigate') }}</span>
-        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-divider">↵</span> {{ t('editor.select') }}</span>
+      <div class="px-4 py-2 border-t border-border bg-surface-2 flex items-center gap-4 text-[11px] text-content-tertiary">
+        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-border">↑</span> <span class="font-mono bg-surface-1 px-1 rounded border border-border">↓</span> {{ t('editor.navigate') }}</span>
+        <span class="flex items-center gap-1"><span class="font-mono bg-surface-1 px-1 rounded border border-border">↵</span> {{ t('editor.select') }}</span>
       </div>
     </div>
   </div>

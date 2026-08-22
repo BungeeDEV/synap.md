@@ -29,7 +29,7 @@ const folderCount = computed(() => {
 </script>
 
 <template>
-  <aside class="w-64 h-full border-r border-divider bg-surface-1 flex flex-col shrink-0 overflow-hidden">
+  <aside class="w-64 h-full border-r border-border bg-surface-1 flex flex-col shrink-0 overflow-hidden">
     
     <!-- Workspace Header -->
     <div class="h-11 shrink-0 flex items-center justify-between px-3 border-b border-border">

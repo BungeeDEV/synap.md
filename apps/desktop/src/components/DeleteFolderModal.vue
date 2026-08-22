@@ -84,7 +84,7 @@ async function confirmDelete() {
     
     <div class="modal-panel relative z-10 w-full max-w-[480px] p-0 flex flex-col overflow-hidden animate-fade-in shadow-2xl">
       <!-- Header -->
-      <div class="px-5 py-4 border-b border-divider flex items-center justify-between bg-surface-2">
+      <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-surface-2">
         <h2 class="text-sm font-semibold text-content-primary flex items-center gap-2">
           <Trash2 class="w-4 h-4 text-danger-DEFAULT" /> {{ t('dialogs.deleteFolder') }}
         </h2>
@@ -95,7 +95,7 @@ async function confirmDelete() {
 
       <!-- Body -->
       <div class="p-6 flex flex-col gap-5 bg-surface-1">
-        <div class="p-4 bg-base border-t border-b border-divider">
+        <div class="p-4 bg-base border-t border-b border-border">
           <p class="text-[13px] text-content-primary mb-3">
             {{ t('dialogs.deleteFolderConfirm', { name: targetNode.name }) }}
           </p>
@@ -136,7 +136,7 @@ async function confirmDelete() {
       </div>
 
       <!-- Footer -->
-      <div class="px-5 py-4 border-t border-divider bg-surface-2 flex items-center justify-end gap-3">
+      <div class="px-5 py-4 border-t border-border bg-surface-2 flex items-center justify-end gap-3">
         <button @click="close" class="btn-secondary text-[13px]" :disabled="isDeleting">
           {{ t('dialogs.cancel') }}
         </button>

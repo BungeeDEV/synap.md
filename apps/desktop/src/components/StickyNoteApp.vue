@@ -192,54 +192,54 @@ async function startDrag() {
     </div>
 
     <!-- Fixed Bottom Toolbar -->
-    <div v-if="editor" class="toolbar w-full bg-surface-1 border-t border-divider px-2 py-1.5 flex items-center justify-between gap-1 overflow-x-auto shrink-0 scrollbar-hide">
+    <div v-if="editor" class="toolbar w-full bg-surface-1 border-t border-border px-2 py-1.5 flex items-center justify-between gap-1 overflow-x-auto shrink-0 scrollbar-hide">
       
       <!-- Grouped actions for narrower footprint -->
       <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
         
         <!-- Text Group -->
-        <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
+        <div class="flex items-center bg-surface-2 rounded-md border border-border-strong overflow-hidden">
             <button @click="editor.chain().focus().toggleBold().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bold') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.boldTooltip')">
             <Bold class="w-3.5 h-3.5" />
             </button>
-            <div class="w-px h-3.5 bg-divider mx-0.5"></div>
+            <div class="w-px h-3.5 bg-border mx-0.5"></div>
             <button @click="editor.chain().focus().toggleItalic().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('italic') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.italicTooltip')">
             <Italic class="w-3.5 h-3.5" />
             </button>
-            <div class="w-px h-3.5 bg-divider mx-0.5"></div>
+            <div class="w-px h-3.5 bg-border mx-0.5"></div>
             <button @click="editor.chain().focus().toggleStrike().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('strike') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.strikeTooltip')">
             <Strikethrough class="w-3.5 h-3.5" />
             </button>
         </div>
 
         <!-- Headings Group -->
-        <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
+        <div class="flex items-center bg-surface-2 rounded-md border border-border-strong overflow-hidden">
             <button @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 1 }) }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.heading1Tooltip')">
             <Heading1 class="w-3.5 h-3.5" />
             </button>
-            <div class="w-px h-3.5 bg-divider mx-0.5"></div>
+            <div class="w-px h-3.5 bg-border mx-0.5"></div>
             <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :class="{ 'text-accent bg-accent/20': editor.isActive('heading', { level: 2 }) }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.heading2Tooltip')">
             <Heading2 class="w-3.5 h-3.5" />
             </button>
         </div>
 
         <!-- Lists Group -->
-        <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
+        <div class="flex items-center bg-surface-2 rounded-md border border-border-strong overflow-hidden">
             <button @click="editor.chain().focus().toggleBulletList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('bulletList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.bulletListTooltip')">
             <List class="w-3.5 h-3.5" />
             </button>
-            <div class="w-px h-3.5 bg-divider mx-0.5"></div>
+            <div class="w-px h-3.5 bg-border mx-0.5"></div>
             <button @click="editor.chain().focus().toggleOrderedList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('orderedList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.orderedListTooltip')">
             <ListOrdered class="w-3.5 h-3.5" />
             </button>
-            <div class="w-px h-3.5 bg-divider mx-0.5"></div>
+            <div class="w-px h-3.5 bg-border mx-0.5"></div>
             <button @click="editor.chain().focus().toggleTaskList().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('taskList') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.taskListTooltip')">
             <CheckSquare class="w-3.5 h-3.5" />
             </button>
         </div>
 
         <!-- Code -->
-        <div class="flex items-center bg-surface-2 rounded-md border border-divider-strong overflow-hidden">
+        <div class="flex items-center bg-surface-2 rounded-md border border-border-strong overflow-hidden">
             <button @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ 'text-accent bg-accent/20': editor.isActive('codeBlock') }" class="p-1 hover:bg-surface-1 transition-colors" :title="t('desktopApp.codeBlockTooltip')">
             <Code class="w-3.5 h-3.5" />
             </button>
