@@ -9,10 +9,13 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@lucide/vue": "^1.31.0",
     "@nuxt/eslint": "1.17.0",
     "@pinia/nuxt": "^1.0.2",
     "@synap/config-tailwind": "workspace:*",
@@ -36,7 +39,6 @@
     "eslint": "^10.7.0",
     "gray-matter": "^4.0.3",
     "katex": "^0.18.4",
-    "@lucide/vue": "^1.31.0",
     "mdast-util-to-string": "^4.0.0",
     "nuxt": "^4.4.8",
     "nuxt-auth-utils": "^0.5.29",
@@ -65,6 +67,7 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/archiver": "^8.0.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/hast": "^3.0.5",
